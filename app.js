@@ -6,10 +6,10 @@ var logger = require('morgan');
 const passport = require('passport')
 
 
-require('./src/auth/auth');
+require('./src/middlewares/auth/auth');
 
-const clientesRouter = require('./src/api/clientes/clientes_routes');
-const loginRouter = require('./src/api/login/login')
+const clientesRouter = require('./src/controllers/clientes/clientes_routes');
+const loginRouter = require('./src/controllers/login/login')
 
 var app = express();
 
@@ -27,7 +27,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', loginRouter)
  
 // Plug in the JWT strategy as a middleware so only verified users can access this route.
-app.use('/clientes', passport.authenticate('jwt', {session: false}) ,clientesRouter)
+app.use('/clientes', passport.authenticate('jwt', {session: false}) , clientesRouter)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -40,6 +40,8 @@ app.use(function(err, req, res, next) {
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
+  console.log('error found route')
+  
   // render the error page
   res.status(err.status || 500);
   res.json(err)

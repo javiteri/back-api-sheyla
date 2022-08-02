@@ -6,14 +6,19 @@ const cookie = require('cookie')
 
 router.post('/login', async (req, res, next) => {
 
+        console.log('inside loguin ')
+
         passport.authenticate('login', async (err, user, info) => {
                 try{
                     if(err || !user){
-                        const error = new Error('ocurrio un error')
-
+                        //const error = new Error('ocurrio un error')
+                        
                         return res.send(info.message) 
                         //next(error)
                     }
+                
+                    console.log('user cedula: ' + user.cedula)
+                    console.log('user nombre: ' + user.nombre)
 
                     req.login(
                         user,
@@ -39,8 +44,8 @@ router.post('/login', async (req, res, next) => {
             }
         )
         (req, res, next)
-
-       // res.send('login terminado')
+        
+        //res.send('login terminado')
     }
 );
 

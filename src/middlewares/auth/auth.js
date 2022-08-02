@@ -2,7 +2,7 @@ const passport = require('passport');
 const localStrategy = require('passport-local').Strategy
 const JWTstrategy = require('passport-jwt').Strategy
 const ExtractJWT = require('passport-jwt').ExtractJwt
-const loginRepository = require('../api/login/loginRepository')
+const loginRepository = require('../../controllers/login/loginRepository')
 
 const cookieExtractor = req => {
     let jwt = null
