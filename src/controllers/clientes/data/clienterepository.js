@@ -1,7 +1,30 @@
 const pool = require('../../../connectiondb/mysqlconnection')
 
 exports.getListClientes = async (limit) => {
-    const listClientes = pool.query(`SELECT cli_cedula, cli_nombre, cli_email, cli_tipo_id, cli_telefonos, cli_nacionalidad FROM clientes LIMIT ${limit}`);
+    
 
-    return listClientes;
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+
+            try{
+                
+                listClientes = pool.query(`SELECT * FROM clientes ORDER BY cli_id DESC LIMIT ${limit}`);    
+                resolve(listClientes)
+            }catch(e){
+                resolve('error: ' + e)
+            }
+
+        }, 2000)
+    });
+
+    /*var listClientes = null
+    try{
+
+        listClientes = pool.query(`SELECT * FROM clientes LIMIT ${limit}`);
+            return listClientes;
+        
+    }catch(e){
+        console.log('error en select clientes')
+    }*/
+
 }

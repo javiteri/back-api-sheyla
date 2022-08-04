@@ -3,10 +3,10 @@ var util = require('util')
 
 var pool = mysql.createPool({
     connectinoLimit: 10,
-    host: '179.49.15.230',//'sheyla.dyndns.info',
-    user: 'root',
-    password: 'miguel66677710101418/2=golosos',
-    database: 'dilice'//'database_new_empresa'
+    host: 'sheyla2.dyndns.info',//'sheyla.dyndns.info',
+    user: 'efactura_web',
+    password: 'm10101417M210101418',
+    database: 'efactura_web'//'database_new_empresa'
 })
 
 pool.getConnection((err, connection) => {
@@ -20,6 +20,9 @@ pool.getConnection((err, connection) => {
         if (err.code === 'ECONNREFUSED') {
             console.error('Database connection was refused.')
         }
+    }
+    if(err){
+        console.error('Eror al conectar: ' + err);
     }
 
     if(connection) connection.release()
