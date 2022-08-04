@@ -17,6 +17,8 @@ router.post('/login', async (req, res, next) => {
                         //next(error)
                     }
                 
+                    console.log('user cedula: ' + user.cedula)
+                    console.log('user nombre: ' + user.nombre)
 
                     req.login(
                         user,

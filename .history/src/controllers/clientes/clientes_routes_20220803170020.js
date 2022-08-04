@@ -22,11 +22,13 @@ router.get('/', async (req, res) => {
         })
     });
 
+    console.log(listClientesMap)
+
     const responseObj = {
         //token: req.headers.authorization.split('Bearer')[1].trim(),// query.secret_token,
         isSucces: true,
         user: req.user,
-        data: listClientesMap//listClientes
+        data: listClientes
     }
 
     res.send(responseObj)

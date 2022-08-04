@@ -11,13 +11,14 @@ const loginUser = function(user, password){
             
             poolMysql.query(query, [user, password], function(err, results, fields) {
     
-                                if(!results | results == undefined | results == null){
+                                if(!results){
                                     reject('no existe usuario')
                                 }
     
                                 let userMysqlData; 
     
                                 Object.keys(results).forEach(function(key){
+                                    console.log('keys result ' + key)
                                     var row = results[key]
                                     userMysqlData = {
                                         'cedula': row.USU_CEDULA,

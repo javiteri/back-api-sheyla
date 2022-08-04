@@ -11,7 +11,7 @@ const loginUser = function(user, password){
             
             poolMysql.query(query, [user, password], function(err, results, fields) {
     
-                                if(!results | results == undefined | results == null){
+                                if(!results){
                                     reject('no existe usuario')
                                 }
     

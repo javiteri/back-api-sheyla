@@ -22,6 +22,7 @@ passport.use(
         },
         async (token, done) => {
             try{
+                console.log('token user ' + token.user)
                 return done(null, token.user);
             }catch(error){
                 done(error);

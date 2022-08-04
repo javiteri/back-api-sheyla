@@ -6,7 +6,7 @@ var pool = mysql.createPool({
     host: '179.49.15.230',//'sheyla.dyndns.info',
     user: 'root',
     password: 'miguel66677710101418/2=golosos',
-    database: 'dilice'//'database_new_empresa'
+    database: 'database_new_empresa'
 })
 
 pool.getConnection((err, connection) => {

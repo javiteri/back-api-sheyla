@@ -64,3 +64,21 @@ passport.use('login',
     })
 );
 
+
+
+/*passport.use(
+    'singup',
+    new localStrategy(
+        {
+            usernameField: 'user',
+            passwordField: 'password'
+        },
+        async(user, password, done) => {
+            try{
+
+            }catch(error){
+                done(error);
+            }
+        }
+    )
+)*/

@@ -18,7 +18,7 @@ passport.use(
     new JWTstrategy(
         {
             secretOrKey: 'TOP SECRET KEY',
-            jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken()//cookieExtractor//ExtractJWT.fromAuthHeaderAsBearerToken()// fromUrlQueryParameter('secret_token')
+            jwtFromRequest: cookieExtractor//ExtractJWT.fromAuthHeaderAsBearerToken()// fromUrlQueryParameter('secret_token')
         },
         async (token, done) => {
             try{
@@ -64,3 +64,21 @@ passport.use('login',
     })
 );
 
+
+
+/*passport.use(
+    'singup',
+    new localStrategy(
+        {
+            usernameField: 'user',
+            passwordField: 'password'
+        },
+        async(user, password, done) => {
+            try{
+
+            }catch(error){
+                done(error);
+            }
+        }
+    )
+)*/

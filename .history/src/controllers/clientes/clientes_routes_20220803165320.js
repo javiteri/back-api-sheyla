@@ -9,24 +9,15 @@ router.get('/', async (req, res) => {
 
     const listClientes = await clienteRepository.getListClientes(100)
 
-    var listClientesMap = new Array()
-
     listClientes.forEach(element => {
-        listClientesMap.push({
-            'ci': element['cli_cedula'],
-            'nombre': element['cli_nombre'], 
-            'tipo': element['cli_tipo_id'],
-            'email': element['cli_email'],
-            'telefono': element['cli_telefonos'],
-            'nacionalidad': element['cli_nacionalidad']
-        })
+        console.log(element')
     });
 
     const responseObj = {
         //token: req.headers.authorization.split('Bearer')[1].trim(),// query.secret_token,
         isSucces: true,
         user: req.user,
-        data: listClientesMap//listClientes
+        data: listClientes
     }
 
     res.send(responseObj)

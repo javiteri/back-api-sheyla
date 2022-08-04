@@ -13,7 +13,7 @@ const loginRouter = require('./src/controllers/login/login')
 
 var app = express();
 
-app.use(cors())
+app.use(cors)
 
 app.use(logger('dev'));
 app.use(express.json());
