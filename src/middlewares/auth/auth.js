@@ -13,11 +13,10 @@ const cookieExtractor = req => {
     return jwt
 }
 
-
 passport.use(
     new JWTstrategy(
         {
-            secretOrKey: 'TOP SECRET KEY',
+            secretOrKey: process.env.SECRECT_KEY_HASH,
             jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken()//cookieExtractor//ExtractJWT.fromAuthHeaderAsBearerToken()// fromUrlQueryParameter('secret_token')
         },
         async (token, done) => {
@@ -37,7 +36,7 @@ passport.use('login',
     },
     async (user, password, done) => {
         try{
-
+            
             const userPromise = loginRepository.loginUser(user, password);
             
             userPromise.then( 

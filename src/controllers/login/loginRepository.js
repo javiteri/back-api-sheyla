@@ -40,7 +40,7 @@ exports.loginUser = function(user, password){
     })
 }
 
-exports.loginValidateExistsClientRuc = function(ruc){
+exports.loginValidateExistEmpresaRucBd1 = function(ruc){
     
     return new Promise((resolve, reject) => {
         try {
@@ -96,7 +96,7 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
         try{
 
             let query = "SELECT * FROM empresas WHERE emp_ruc = ? LIMIT 1";
-            let queryUser = "SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ?";
+            let queryUser = "SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1";
 
             let queryInsertEmpresa = "INSERT INTO empresas (emp_ruc, emp_nombre, emp_fecha_inicio) VALUES (?, ?, ?)";
             let queryInsertUserDefaultEmpresa = `INSERT INTO usuarios (usu_empresa_id, usu_nombres, usu_telefonos,usu_direccion, 
@@ -106,7 +106,7 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
             poolMysql.query(query, [ruc], function(err, results, fields){
 
                 if(err){
-                    reject('ocurrio un error: ' + err);
+                    reject('error en BD2');
                     return;
                 }
 
@@ -136,7 +136,6 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                                         return;
                                     } else {
                                         
-                                        console.log('idGenerated: ' + resultsEmpresa.insertId);
                                         connection.query(queryInsertUserDefaultEmpresa, 
                                             [resultsEmpresa.insertId, 'Usuario Default','', '', '', '2000-01-01', 'ADMIN', 'ADMIN', 1], function(err, resultsUser){
 
@@ -151,6 +150,7 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                                                         connection.rollback(function() {
                                                             connection.release();
                                                             reject('error insertando usuario: ' + err);
+                                                            return;
                                                             //Failure
                                                         });
                                                     }else{
@@ -158,8 +158,13 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                                                         console.log('idGeneratedUser: ' + resultsUser.insertId);
 
                                                         resolve({
+                                                            isSuccess: true,
                                                             message: 'datos insertados (empresa, usuario)',
-                                                            idUsuario: resultsUser.insertId
+                                                            idUsuario: resultsUser.insertId,
+                                                            idEmpresa: resultsEmpresa.insertId,
+                                                            rucEmpresa: ruc,
+                                                            redirecRegistroEmp: true,
+                                                            firstInserted: true
                                                         })
 
                                                         return;
@@ -181,10 +186,15 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                     //return;
 
                 }else{
-                 
+                    
+                    let idEmpresa;
+                    Object.keys(results).forEach(function(key) {
+                        idEmpresa = results[key].EMP_ID;
+                    });
+                    
                     // VALIDATE IF USER EXISTS
                     poolMysql.query(queryUser, [user, password, idEmpresa], function(error, resultado, campos){
-
+                        
                         if(error){
                             reject('ocurrio un error: ' + err);
                             return;
@@ -192,24 +202,29 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                         
     
                         if(!resultado.length){
-                            resolve('no existe el usuario');
-                            return;
-                        }
-    
-                        if(results.length && resultado.length){
-                            resolve('empresa existe y usuario existe');
+                            reject('no existe el usuario');
                             return;
                         }
                         if(results.length && !resultado.length){
-                            resolve('no existe el usuario');
+                            reject('no existe el usuario');
                             return;
                         }
-    
-                        if(!results.length && resultado.length){
-                            resolve('no existe la empresa, debe llenar sus datos');
-                            return;
-                        }
-    
+
+                    
+                        let idUsuario;
+                        Object.keys(resultado).forEach(function(key) {
+                            idUsuario = results[key].usu_id;
+                        });
+
+                        //EXISTE EL USUARIO
+                        resolve({
+                            isSuccess: true,
+                            message: 'ruc y usuario validado correctamente',
+                            idUsuario: idUsuario,
+                            idEmpresa: idEmpresa,
+                            rucEmpresa: ruc,
+                            redirectToHome: true
+                        });
                     });
                 }
 

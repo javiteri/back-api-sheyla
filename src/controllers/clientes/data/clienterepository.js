@@ -4,7 +4,7 @@ exports.getListClientes = async (limit) => {
     
 
     return new Promise((resolve, reject) => {
-       
+        
         try{
                 
             listClientes = pool.query(`SELECT * FROM clientes ORDER BY cli_id DESC LIMIT ${limit}`);    
@@ -12,7 +12,6 @@ exports.getListClientes = async (limit) => {
         }catch(e){
             resolve('error: ' + e)
         }
-    });
+    });    
 
 }
-

@@ -3,10 +3,10 @@ var util = require('util')
 
 var pool = mysql.createPool({
     connectionLimit: 10,
-    host: 'sheyla2.dyndns.info',//'sheyla.dyndns.info',
-    user: 'efactura_web',
-    password: 'm10101417M210101418',
-    database: 'efactura_web',
+    host: process.env.hostDb,
+    user: process.env.dbUsername,
+    password: process.env.dbPassword,
+    database: process.env.dbEFacturaWeb,
     connectTimeout: 10000//'database_new_empresa'
 })
 
