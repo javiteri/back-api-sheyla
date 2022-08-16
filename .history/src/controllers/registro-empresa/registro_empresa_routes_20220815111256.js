@@ -25,20 +25,8 @@ router.post('/getEmpresaByRuc', function (req, res, next) {
 
 router.post('/updateempresa', function (req, res, next) {
 
-    const resultQueryUpdateEmpresa = empresaRepository.updateDatosEmpresa(req.body);
-
-    resultQueryUpdateEmpresa.then(
-        function(result){
-            res.status(200).send(result);
-        },
-        function(error){
-            console.log('inside error update datos Empresa: ' + error);
-            res.status(500).send({
-                isSucess: false,
-                error: error 
-            });
-        }
-    );
+    const {} = req.body;
+    
 });
 
 module.exports = router;

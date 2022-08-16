@@ -73,7 +73,6 @@ exports.updateDatosEmpresa = function (datosEmpresa){
                                             EMP_COMENTARIOS = ? WHERE EMP_ID = ? `;
 
             console.log('comentario: ' + comentario);
-            console.log('sucursal2: ' + sucursal2);
             poolMysql.query(queryInsertDatosEmpresa, [
                                 nombreEmpresa, razonSocial, fechaInicio, 
                                 eslogan, web, email, telefonos, direccionMatriz, sucursal1, sucursal2,
@@ -95,7 +94,7 @@ exports.updateDatosEmpresa = function (datosEmpresa){
                                     updateDatosEmpresaResponse['isSucess'] = true;
                                 }
 
-                                resolve(updateDatosEmpresaResponse);
+                                resolve(datosEmpresaResponse);
 
                             });
 

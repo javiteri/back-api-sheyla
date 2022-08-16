@@ -2,7 +2,7 @@ var mysql = require('mysql')
 var util = require('util')
 
 var pool = mysql.createPool({
-    connectionLimit: 10,
+    connectionLimit: 20,
     host: process.env.hostDb,
     user: process.env.dbUsername,
     password: process.env.dbPassword,
@@ -23,7 +23,7 @@ pool.getConnection((err, connection) => {
         }
     }
     if(err){
-        console.error('Error al conectar: ' + err);
+        console.error('Eror al conectar: ' + err);
     }
 
     if(connection) connection.release()

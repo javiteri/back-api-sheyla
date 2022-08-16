@@ -32,7 +32,7 @@ router.post('/updateempresa', function (req, res, next) {
             res.status(200).send(result);
         },
         function(error){
-            console.log('inside error update datos Empresa: ' + error);
+            console.log('inside error update datos Empresa: ' + error)];
             res.status(500).send({
                 isSucess: false,
                 error: error 

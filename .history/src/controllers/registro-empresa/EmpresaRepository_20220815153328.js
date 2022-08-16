@@ -95,7 +95,7 @@ exports.updateDatosEmpresa = function (datosEmpresa){
                                     updateDatosEmpresaResponse['isSucess'] = true;
                                 }
 
-                                resolve(updateDatosEmpresaResponse);
+                                resolve(datosEmpresaResponse);
 
                             });
 

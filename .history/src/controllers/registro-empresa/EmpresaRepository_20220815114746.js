@@ -65,22 +65,19 @@ exports.updateDatosEmpresa = function (datosEmpresa){
 
             const {idEmpresa, ruc, nombreEmpresa, razonSocial, fechaInicio, eslogan, 
                 web, email, telefonos, direccionMatriz, sucursal1, sucursal2, 
-                sucursal3, propietario, comentario  } = datosEmpresa;
-            
-            queryInsertDatosEmpresa = ` UPDATE empresas SET EMP_NOMBRE = ?, EMP_RAZON_SOCIAL = ?, EMP_FECHA_INICIO = ?, EMP_SLOGAN = ?, 
+                sucursal3, comentario  } = datosEmpresa;
+
+            queryInsertDatosEmpresa = ```UPDATE empresas SET EMP_NOMBRE = ?, EMP_RAZON_SOCIAL = ?, EMP_FECHA_INICIO = ?, EMP_SLOGAN = ?, 
                                             EMP_WEB = ?, EMP_MAIL = ?, EMP_TELEFONOS = ?, EMP_DIRECCION_MATRIZ = ?, EMP_DIRECCION_SUCURSAL1 = ?,
                                             EMP_DIRECCION_SUCURSAL2 = ?, EMP_DIRECCION_SUCURSAL3 = ?, EMP_PROPIETARIO = ?,
-                                            EMP_COMENTARIOS = ? WHERE EMP_ID = ? `;
+                                            EMP_COMENTARIOS = ? WHERE EMP_ID = ?  ```;
 
-            console.log('comentario: ' + comentario);
-            console.log('sucursal2: ' + sucursal2);
             poolMysql.query(queryInsertDatosEmpresa, [
                                 nombreEmpresa, razonSocial, fechaInicio, 
                                 eslogan, web, email, telefonos, direccionMatriz, sucursal1, sucursal2,
-                                sucursal3, propietario, comentario, idEmpresa
+                                sucursal3, comentario, idEmpresa
                             ], function(err, results, fields) {
-                                
-
+                                   
                                 if(err){
                                     reject('error actualizando datos empresa: ' + err);
                                     return;
@@ -88,14 +85,14 @@ exports.updateDatosEmpresa = function (datosEmpresa){
 
                                 const affectedRows = results.affectedRows;
                                 let updateDatosEmpresaResponse = {}
-                                if(affectedRows === 0){
+                                if(affectedRows === 1){
+                                    updateDatosEmpresaResponse['isSucess'] = true;
+                                }else{
                                     updateDatosEmpresaResponse['isSucess'] = false;
                                     updateDatosEmpresaResponse['message'] = 'error al actualizar datos empresa';
-                                }else{
-                                    updateDatosEmpresaResponse['isSucess'] = true;
                                 }
 
-                                resolve(updateDatosEmpresaResponse);
+                                resolve(datosEmpresaResponse);
 
                             });
 

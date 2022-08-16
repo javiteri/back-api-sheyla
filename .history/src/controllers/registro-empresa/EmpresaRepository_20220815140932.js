@@ -71,9 +71,7 @@ exports.updateDatosEmpresa = function (datosEmpresa){
                                             EMP_WEB = ?, EMP_MAIL = ?, EMP_TELEFONOS = ?, EMP_DIRECCION_MATRIZ = ?, EMP_DIRECCION_SUCURSAL1 = ?,
                                             EMP_DIRECCION_SUCURSAL2 = ?, EMP_DIRECCION_SUCURSAL3 = ?, EMP_PROPIETARIO = ?,
                                             EMP_COMENTARIOS = ? WHERE EMP_ID = ? `;
-
-            console.log('comentario: ' + comentario);
-            console.log('sucursal2: ' + sucursal2);
+         
             poolMysql.query(queryInsertDatosEmpresa, [
                                 nombreEmpresa, razonSocial, fechaInicio, 
                                 eslogan, web, email, telefonos, direccionMatriz, sucursal1, sucursal2,
@@ -95,7 +93,7 @@ exports.updateDatosEmpresa = function (datosEmpresa){
                                     updateDatosEmpresaResponse['isSucess'] = true;
                                 }
 
-                                resolve(updateDatosEmpresaResponse);
+                                resolve(datosEmpresaResponse);
 
                             });
 
