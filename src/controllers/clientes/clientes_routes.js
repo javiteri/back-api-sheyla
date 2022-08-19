@@ -48,4 +48,75 @@ router.get('/', async (req, res) => {
     res.send(responseObj);
 }) 
 
+router.get('/getClienteIdEmp', async (req, res) => {
+    const clienteByIdEmp = clienteRepository.getClienteByIdEmp(req.query.idCliente, req.query.idEmp);
+
+    clienteByIdEmp.then(
+        function (clientes){
+            res.status(200).send(clientes);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.get('/getClientesIdEmp', async (req, res) => {
+
+    const clientesByIdEmp = clienteRepository.getListClientesByIdEmp(req.query.idEmp);
+
+    clientesByIdEmp.then(
+        function (clientes){
+            res.status(200).send(clientes);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.post('/insertar', async (req, res) => {
+
+    const insertClientePromise = clienteRepository.insertCliente(req.body);
+
+    insertClientePromise.then(
+        function(result) {
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.post('/update', async (req, res) => {
+    const updateCliente = clienteRepository.updateCliente(req.body);
+
+    updateCliente.then(
+        function(result) {
+            console.log(result);
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.post('/delete', async (req, res) => {
+
+    const {idEmpresa, idCliente} = req.body;
+    
+    const deleteClientePromise = clienteRepository.deleteCliente(idEmpresa, idCliente);
+
+    deleteClientePromise.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 module.exports = router;
