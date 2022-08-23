@@ -17,7 +17,6 @@ exports.getListClientes = async (limit) => {
 }
 
 exports.insertCliente = async (datosCliente) => {
-
     return new Promise((resolve, reject ) => {
         try{
 
@@ -41,9 +40,8 @@ exports.insertCliente = async (datosCliente) => {
                 }
 
                 const cantClients = result[0].CANT;
-                console.log('cant client: ' + cantClients);
                 if(cantClients >= 1){
-                    console.log('ya existe: ');
+                    
                     reject({
                         isSucess: false,
                         code: 400,
@@ -58,8 +56,6 @@ exports.insertCliente = async (datosCliente) => {
                     function (error, result){
 
                         if(error){
-                            console.log('error');
-                            console.log(error);
                         reject({
                             isSucess: false,
                             code: 400,
@@ -93,8 +89,6 @@ exports.insertCliente = async (datosCliente) => {
 }
 
 exports.getListClientesByIdEmp = async (idEmpresa) => {
-    
-
     return new Promise((resolve, reject) => {
         
         try{
@@ -127,8 +121,6 @@ exports.getListClientesByIdEmp = async (idEmpresa) => {
 }
 
 exports.getClienteByIdEmp = async (idCliente, idEmpresa) => {
-    
-
     return new Promise((resolve, reject) => {
         
         try{
@@ -149,7 +141,7 @@ exports.getClienteByIdEmp = async (idCliente, idEmpresa) => {
                     resolve({
                         isSucess: true,
                         code: 400,
-                        message: 'no se encontro usuario'
+                        message: 'no se encontro cliente'
                     });
 
                     return;
@@ -195,7 +187,6 @@ exports.updateCliente = async (datosClienteUpdate) => {
                 }
 
                 const cantClients = result[0].CANT;
-                console.log(cantClients);
                 if(cantClients == 0){
                     reject({
                         isSucess: false,

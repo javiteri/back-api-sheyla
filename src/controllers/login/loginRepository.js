@@ -99,7 +99,7 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
             let queryUser = "SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1";
 
             let queryInsertEmpresa = "INSERT INTO empresas (emp_ruc, emp_nombre, emp_fecha_inicio) VALUES (?, ?, ?)";
-            let queryInsertUserDefaultEmpresa = `INSERT INTO usuarios (usu_empresa_id, usu_nombres, usu_telefonos,usu_direccion, 
+            let queryInsertUserDefaultEmpresa = `INSERT INTO usuarios (usu_empresa_id, usu_identificacion, usu_nombres, usu_telefonos,usu_direccion, 
                                                 usu_mail, usu_fecha_nacimiento, usu_username, usu_password, usu_permiso_escritura)
                                                 VALUES (?,?,?,?,?,?,?,?,?)`;
 
@@ -137,7 +137,8 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                                     } else {
                                         
                                         connection.query(queryInsertUserDefaultEmpresa, 
-                                            [resultsEmpresa.insertId, 'Usuario Default','', '', '', '2000-01-01', 'ADMIN', 'ADMIN', 1], function(err, resultsUser){
+                                            [resultsEmpresa.insertId, '9999999999','Usuario Default','', '', '', '2000-01-01', 'ADMIN', 'ADMIN', 1], 
+                                            function(err, resultsUser){
 
                                             if(err){
                                                 connection.rollback(function(){ connection.release()});
@@ -180,10 +181,6 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                             
                         });
                     });
-
-                    //reject('no existe empresa');
-                    //console.log('before return first query');
-                    //return;
 
                 }else{
                     
