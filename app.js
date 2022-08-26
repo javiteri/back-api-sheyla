@@ -13,6 +13,8 @@ const loginRouter = require('./src/controllers/login/login_routes');
 const registroEmpresaRouter = require('./src/controllers/registro-empresa/registro_empresa_routes');
 const clientesRouter = require('./src/controllers/clientes/clientes_routes');
 const usuariosRouter = require('./src/controllers/usuarios/usuarios-routes');
+const proveedoresRouter = require('./src/controllers/proveedores/proveedores-routes');
+const productosRouter = require('./src/controllers/productos/productos-routes');
 
 var app = express();
 
@@ -30,7 +32,8 @@ app.use('/api', passport.authenticate('jwt', {session: false}), registroEmpresaR
 
 // Plug in the JWT strategy as a middleware so only verified users can access this route.
 app.use('/api/clientes', passport.authenticate('jwt', {session: false}) , clientesRouter)
-
+app.use('/api/proveedores', passport.authenticate('jwt', {session: false}), proveedoresRouter);
+app.use('/api/productos', passport.authenticate('jwt', {session: false}), productosRouter);
 app.use('/api/usuarios', passport.authenticate('jwt', {session: false}), usuariosRouter);
 
 // catch 404 and forward to error handler
