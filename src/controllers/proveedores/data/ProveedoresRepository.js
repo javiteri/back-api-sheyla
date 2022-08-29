@@ -113,7 +113,7 @@ exports.insertProveedor = async (datosProveedor) => {
                 }
 
                 pool.query(queryInsertProveedor, [idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
-                                                    observacion, telefono, celular, email, paginaWeb, direccion, 
+                                                    observacion?observacion : '', telefono, celular, email, paginaWeb, direccion?direccion:'', 
                                                     cedulaRepre ? cedulaRepre : '', nombreRepre, telefonoRepre, direccionRepre, emailRepre], 
                     function (error, result){
                         console.log(error);
