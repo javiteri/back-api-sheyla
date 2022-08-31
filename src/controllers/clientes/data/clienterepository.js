@@ -292,4 +292,37 @@ exports.deleteCliente = async (idEmpresa, idCliente) => {
     });
 }
 
+exports.searchClientesByIdEmp = async (idEmpresa, textSearch) => {
+    return new Promise((resolve, reject) => {
+        
+        try{
+            let querySearchClientes = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND (cli_nombres_natural LIKE ? || cli_documento_identidad LIKE ?)
+                                         ORDER BY cli_id DESC`
+            
+            pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(e){
+            reject('error: ' + e);
+        }
+    });    
+
+}
+
 

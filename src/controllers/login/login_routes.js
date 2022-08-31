@@ -57,7 +57,6 @@ router.post('/login', async (req, res, next) => {
 
 router.post('/loginverify', async (req, res, next) => {
 
-    
     const {ruc, user, password} = req.body;
 
     const resultValidate = loginRepository.loginValidateExistEmpresaRucBd1(ruc);    

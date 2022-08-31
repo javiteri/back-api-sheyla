@@ -283,3 +283,36 @@ exports.deleteProveedor = async (idEmpresa, idProv) => {
         }
     });
 }
+
+exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch) => {
+    return new Promise((resolve, reject) => {
+        
+        try{
+            let querySearchClientes = `SELECT * FROM proveedores WHERE pro_empresa_id = ? AND (pro_nombre_natural LIKE ? || pro_documento_identidad LIKE ?)
+                                         ORDER BY pro_id DESC`
+            
+            pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(e){
+            reject('error: ' + e);
+        }
+    });    
+
+}

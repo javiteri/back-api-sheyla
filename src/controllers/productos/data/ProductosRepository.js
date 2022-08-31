@@ -5,7 +5,7 @@ exports.getListProductosByIdEmp = async (idEmpresa) => {
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectProductosByIdEmp = 'SELECT * FROM productos WHERE prod_empresa_id = ?';
+            let querySelectProductosByIdEmp = 'SELECT * FROM productos WHERE prod_empresa_id = ? ORDER BY prod_id DESC';
             pool.query(querySelectProductosByIdEmp, [idEmpresa], function (error, results, fields){
 
                 if(error){
@@ -293,6 +293,39 @@ exports.getMarcasByIdEmp = async (idEmpresa) => {
                     return;
                 }
 
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(e){
+            reject('error: ' + e);
+        }
+    });    
+
+}
+
+exports.searchProductosByIdEmp = async (idEmpresa, textSearch) => {
+    return new Promise((resolve, reject) => {
+        
+        try{
+            let querySearchClientes = `SELECT * FROM productos WHERE prod_empresa_id = ? AND (prod_nombre LIKE ? || prod_codigo LIKE ?)
+                                         ORDER BY prod_id DESC`
+            
+            pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
                 resolve({
                     isSucess: true,
                     code: 200,

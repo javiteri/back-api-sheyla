@@ -117,4 +117,18 @@ router.post('/delete', async (req, res) => {
     );
 });
 
+router.get('/searchClienteByIdEmp', async (req, res) => {
+    const searchClientesByIdEmpPromise = clienteRepository.searchClientesByIdEmp(req.query.idEmp, req.query.textSearch);
+
+    searchClientesByIdEmpPromise.then(
+        function (clientes){
+            res.status(200).send(clientes);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+
 module.exports = router;

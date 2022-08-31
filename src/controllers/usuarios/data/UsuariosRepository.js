@@ -276,3 +276,36 @@ exports.deleteUsuario = async (idEmpresa, idUser) => {
         }
     });
 }
+
+exports.searchUsuariosByIdEmp = async (idEmpresa, textSearch) => {
+    return new Promise((resolve, reject) => {
+        
+        try{
+            let querySearchUsuarios = `SELECT * FROM usuarios WHERE usu_empresa_id = ? AND (usu_nombres LIKE ? || usu_identificacion LIKE ?)
+                                         ORDER BY usu_id DESC`
+            
+            pool.query(querySearchUsuarios, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(e){
+            reject('error: ' + e);
+        }
+    });    
+
+}

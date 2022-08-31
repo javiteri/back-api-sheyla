@@ -71,5 +71,19 @@ router.post('/delete', async (req, res) => {
     );
 });
 
+router.get('/searchUsuariosByIdEmp', async (req, res) => {
+    const searchProductosByIdEmpPromise = usuarioRepository.searchUsuariosByIdEmp(req.query.idEmp, req.query.textSearch);
+
+    searchProductosByIdEmpPromise.then(
+        function (clientes){
+            res.status(200).send(clientes);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+
 
 module.exports = router;
