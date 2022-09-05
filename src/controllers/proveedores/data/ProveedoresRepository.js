@@ -5,7 +5,7 @@ exports.getListProveedoresByIdEmp = async (idEmpresa) => {
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectProveedoresByIdEmp = 'SELECT * FROM proveedores WHERE pro_empresa_id = ?';
+            let querySelectProveedoresByIdEmp = 'SELECT * FROM proveedores WHERE pro_empresa_id = ? LIMIT 1000';
             pool.query(querySelectProveedoresByIdEmp, [idEmpresa], function (error, results, fields){
 
                 if(error){

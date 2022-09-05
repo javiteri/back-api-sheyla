@@ -92,7 +92,7 @@ exports.getListClientesByIdEmp = async (idEmpresa) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectClientes = `SELECT * FROM clientes WHERE cli_empresa_id = ? ORDER BY cli_id DESC`
+            let querySelectClientes = `SELECT * FROM clientes WHERE cli_empresa_id = ? ORDER BY cli_id DESC LIMIT 1000`
             
             pool.query(querySelectClientes, [idEmpresa], (err, results) => {
 

@@ -47,7 +47,7 @@ exports.getListUsuariosByIdEmp = async (idEmpresa) => {
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectUsuariosByIdEmp = 'SELECT * FROM usuarios WHERE usu_empresa_id = ?';
+            let querySelectUsuariosByIdEmp = 'SELECT * FROM usuarios WHERE usu_empresa_id = ? LIMIT 1000';
             pool.query(querySelectUsuariosByIdEmp, [idEmpresa], function (error, results, fields){
 
                 if(error){

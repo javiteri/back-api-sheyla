@@ -5,7 +5,7 @@ exports.getListProductosByIdEmp = async (idEmpresa) => {
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectProductosByIdEmp = 'SELECT * FROM productos WHERE prod_empresa_id = ? ORDER BY prod_id DESC';
+            let querySelectProductosByIdEmp = 'SELECT * FROM productos WHERE prod_empresa_id = ? ORDER BY prod_id DESC LIMIT 1000';
             pool.query(querySelectProductosByIdEmp, [idEmpresa], function (error, results, fields){
 
                 if(error){
