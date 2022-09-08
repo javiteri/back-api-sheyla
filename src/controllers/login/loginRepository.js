@@ -101,7 +101,7 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
             let queryInsertEmpresa = "INSERT INTO empresas (emp_ruc, emp_nombre, emp_fecha_inicio) VALUES (?, ?, ?)";
             let queryInsertUserDefaultEmpresa = `INSERT INTO usuarios (usu_empresa_id, usu_identificacion, usu_nombres, usu_telefonos,usu_direccion, 
                                                 usu_mail, usu_fecha_nacimiento, usu_username, usu_password, usu_permiso_escritura)
-                                                VALUES (?,?,?,?,?,?,?,?,?)`;
+                                                VALUES (?,?,?,?,?,?,?,?,?,?)`;
 
             poolMysql.query(query, [ruc], function(err, results, fields){
 
