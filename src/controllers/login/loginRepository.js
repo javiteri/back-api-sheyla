@@ -156,7 +156,6 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                                                         });
                                                     }else{
                                                         connection.release()
-                                                        console.log('idGeneratedUser: ' + resultsUser.insertId);
 
                                                         resolve({
                                                             isSuccess: true,
@@ -210,7 +209,7 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                     
                         let idUsuario;
                         Object.keys(resultado).forEach(function(key) {
-                            idUsuario = results[key].usu_id;
+                            idUsuario = resultado[key].usu_id;
                         });
 
                         //EXISTE EL USUARIO
