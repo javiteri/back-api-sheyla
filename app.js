@@ -6,7 +6,7 @@ var path = require('path');
 var createError = require('http-errors');
 const passport = require('passport')
 
-require('dotenv').config();
+require('dotenv').config({path: path.join(__dirname, '.env')});
 require('./src/middlewares/auth/auth');
 
 const loginRouter = require('./src/controllers/login/login_routes');
