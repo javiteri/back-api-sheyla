@@ -31,6 +31,7 @@ exports.insertCliente = async (datosCliente) => {
             
             pool.query(queryExistClient, [idEmpresa, documentoIdentidad], function(error, result, fields){
                 if(error){
+                    
                     reject({
                         isSucess: false,
                         code: 400,
@@ -56,6 +57,7 @@ exports.insertCliente = async (datosCliente) => {
                     function (error, result){
 
                         if(error){
+                            console.log(error);
                         reject({
                             isSucess: false,
                             code: 400,
@@ -67,10 +69,16 @@ exports.insertCliente = async (datosCliente) => {
                         const insertId = result.insertId;
                         let insertClienteResponse = {}
                         if(insertId > 0){
-                        insertClienteResponse['isSucess'] = true;
+                            insertClienteResponse['isSucess'] = true;
                         }else{
-                        insertClienteResponse['isSucess'] = false;
-                        insertClienteResponse['message'] = 'error al insertar cliente';
+                            insertClienteResponse['isSucess'] = false;
+                            insertClienteResponse['message'] = 'error al insertar cliente';
+                        }
+                        insertClienteResponse['data'] = {
+                            id: insertId,
+                            ciRuc: documentoIdentidad,
+                            nombre: nombreNatural,
+                            email: email ? email : ''
                         }
 
                         resolve(insertClienteResponse);
