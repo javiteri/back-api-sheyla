@@ -115,3 +115,55 @@ exports.insertVenta = async (datosVenta) => {
         }
     });
 }
+
+exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin) => {
+    return new Promise((resolve, reject) => {
+        try{
+            let valueNombreClient = "";
+            let valueCiRucClient = "";
+
+            if(nombreOrCiRuc){
+            
+                const containsNumber =  /^[0-9]*$/.test(nombreOrCiRuc);
+                valueCiRucClient = containsNumber ? nombreOrCiRuc : "";
+
+                const containsText =  !containsNumber;///^[A-Za-z]*$/.test(nombreOrCiRuc);
+                valueNombreClient = containsText ? nombreOrCiRuc : "";
+
+            }
+            console.log(fechaIni);
+            console.log(fechaFin);
+            const queryGetListaVentas = `SELECT venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
+                                         venta_total AS total,usu_username AS usuario,cli_nombres_natural AS cliente, cli_documento_identidad AS cc_ruc_pasaporte,
+                                         venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
+                                         FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
+                                         AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
+                                         AND  venta_fecha_hora  BETWEEN ? AND ? LIMIT 1000`;
+            pool.query(queryGetListaVentas, 
+                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
+                fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
+
+                if(error){
+                    
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ocurrio un error'
+                    });
+                    return;
+                }
+                
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(exception){
+            console.log('error obteniendo lista de ventas');
+            console.log(exception);
+        }
+    });
+}

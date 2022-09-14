@@ -16,4 +16,23 @@ router.post('/insertar', async (req, res, next) => {
     );
 });
 
+router.get('/listaVentasIdEmp', async(req, res, next) => {
+
+    let idEmp = req.query.idEmp;
+    let nombreCi = req.query.ciname;
+    let noDoc = req.query.nodoc;
+    let fechaIni = req.query.fechaini;
+    let fechaFin = req.query.fechafin;
+
+    const listaVentasIdEmpProm = ventasRepository.getListVentasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin);
+    listaVentasIdEmpProm.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    )
+});
+
 module.exports = router;
