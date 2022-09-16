@@ -85,7 +85,6 @@ exports.insertPoducto = async (datosProducto) => {
                 costo, utilidad, stock, unidadMedida, iva, activo, 
                 categoria, marca, observacion} = datosProducto;
             
-            //let queryExistProveedor = "SELECT COUNT(*) AS CANT FROM productos WHERE prod_empresa_id = ? AND pro_documento_identidad = ?";
             let queryInsertProducto = `INSERT INTO productos (prod_empresa_id, prod_codigo, prod_codigo_barras, 
                                         prod_nombre, prod_costo, prod_utilidad, prod_pvp, prod_iva_si_no, prod_stock,prod_unidad_medida, 
                                         prod_observaciones, pro_categoria, prod_marca, prod_activo_si_no) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;

@@ -82,7 +82,7 @@ exports.insertProveedor = async (datosProveedor) => {
         try{
 
             const {idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
-                observacion, telefono, celular, email, paginaWeb, direccion, cedulaRepre,
+                observacion, telefono, celular, email, paginaWeb, direccion, identificacionRepre,
                 nombreRepre, telefonoRepre, direccionRepre, emailRepre} = datosProveedor;
             
             let queryExistProveedor = "SELECT COUNT(*) AS CANT FROM proveedores WHERE pro_empresa_id = ? AND pro_documento_identidad = ?";
@@ -114,7 +114,7 @@ exports.insertProveedor = async (datosProveedor) => {
 
                 pool.query(queryInsertProveedor, [idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
                                                     observacion?observacion : '', telefono, celular, email, paginaWeb, direccion?direccion:'', 
-                                                    cedulaRepre ? cedulaRepre : '', nombreRepre, telefonoRepre, direccionRepre, emailRepre], 
+                                                    identificacionRepre ? identificacionRepre : '', nombreRepre, telefonoRepre, direccionRepre, emailRepre], 
                     function (error, result){
                         console.log(error);
                         if(error){
@@ -155,7 +155,7 @@ exports.updateProveedor = async (datosProveedor) => {
         try{
 
             const {idProveedor, idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
-                observacion, telefono, celular, email, paginaWeb, direccion, cedulaRepre,
+                observacion, telefono, celular, email, paginaWeb, direccion, identificacionRepre,
                 nombreRepre, telefonoRepre, direccionRepre, emailRepre} = datosProveedor;
             
             let queryExistProveedor = "SELECT COUNT(*) AS CANT FROM proveedores WHERE pro_empresa_id = ? AND pro_documento_identidad = ?";
@@ -189,7 +189,7 @@ exports.updateProveedor = async (datosProveedor) => {
                 if(cantClients == 1){
                     
                     pool.query(queryUpdateProveedor, [tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
-                        observacion, telefono, celular, email, paginaWeb, direccion, cedulaRepre ? cedulaRepre : '', nombreRepre, telefonoRepre, 
+                        observacion, telefono, celular, email, paginaWeb, direccion, identificacionRepre ? identificacionRepre : '', nombreRepre, telefonoRepre, 
                         direccionRepre, emailRepre, idEmpresa, idProveedor], 
                         function (error, result){
     

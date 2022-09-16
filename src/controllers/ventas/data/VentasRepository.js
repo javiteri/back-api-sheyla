@@ -1,3 +1,4 @@
+const { query } = require('express');
 const pool = require('../../../connectiondb/mysqlconnection');
 
 exports.insertVenta = async (datosVenta) => {
@@ -131,8 +132,7 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
                 valueNombreClient = containsText ? nombreOrCiRuc : "";
 
             }
-            console.log(fechaIni);
-            console.log(fechaFin);
+
             const queryGetListaVentas = `SELECT venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
                                          venta_total AS total,usu_username AS usuario,cli_nombres_natural AS cliente, cli_documento_identidad AS cc_ruc_pasaporte,
                                          venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
@@ -144,7 +144,6 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
                 fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
 
                 if(error){
-                    
                     reject({
                         isSucess: false,
                         code: 400,
@@ -164,6 +163,73 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
         }catch(exception){
             console.log('error obteniendo lista de ventas');
             console.log(exception);
+        }
+    });
+}
+
+exports.getOrCreateConsFinalByIdEmp = async (idEmp) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const consumidorFinalName = 'CONSUMIDOR FINAL';
+            const queryGetConsumidorFinal = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_nombres_natural LIKE ? LIMIT 1`;
+            const insertDefaultConsumidorFinal = `INSERT INTO clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
+                                                    cli_nombres_natural, cli_teleono) VALUES (?,?,?,?,?,?)`
+
+            pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`], (error, results) => {
+                if(error){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ocurrio un error'
+                    });
+                    return;
+                }
+
+                if(!results[0] | results == undefined | results == null){
+
+                    pool.query(insertDefaultConsumidorFinal, [idEmp,'Ecuador','9999999999','CI',
+                                'CONSUMIDOR FINAL','0999999999'], (error, resultado) => {
+                        if(error){
+                            reject({
+                                isSucess: false,
+                                code: 400,
+                                messageError: 'error insertando consumidor final'
+                            });
+                            return;
+                        }
+
+
+                        const idInserted = resultado.insertId;
+                        const resultData = {
+                            cli_id: idInserted,
+                            cli_documento_identidad: '9999999999',
+                            cli_nombres_natural: 'CONSUMIDOR FINAL',
+                            cli_teleono: '0999999999'
+                        }
+
+                        resolve({
+                            isSucess: true,
+                            code: 200,
+                            data: resultData
+                        });
+
+                    });
+
+                }else{
+                    resolve({
+                        isSucess: true,
+                        code: 200,
+                        data: results[0]
+                    });
+                }
+
+                
+            });
+
+        }catch(exception){
+            console.log('error obteniendo lista de ventas');
+            console.log(exception);
+            reject('error obteniendo el consumidor final');
         }
     });
 }

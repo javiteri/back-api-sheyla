@@ -30,9 +30,21 @@ router.get('/listaVentasIdEmp', async(req, res, next) => {
             res.status(200).send(result);
         },
         function(error){
-            res.status(400).send(error);
+            res.status(200).send(error);
         }
     )
+});
+
+router.get('/getorcreateconsfinalbyidemp', async(req, res, next) => {
+    const getConsumidorFinalProm = ventasRepository.getOrCreateConsFinalByIdEmp(req.query.idEmp);
+    getConsumidorFinalProm.then(
+        function(results){
+            res.status(200).send(results);
+        },
+        function(error){
+            res.status(200).send(error);
+        }
+    );
 });
 
 module.exports = router;
