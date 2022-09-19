@@ -54,7 +54,6 @@ exports.insertVenta = async (datosVenta) => {
                         }
 
                         const idVentaGenerated = results.insertId;
-                        console.log('insertVentaId: ' + idVentaGenerated);
 
                         const arrayListVentaDetalle = Array.from(ventaDetallesArray);
                         arrayListVentaDetalle.forEach(ventaDetalle => {
@@ -117,6 +116,237 @@ exports.insertVenta = async (datosVenta) => {
     });
 }
 
+exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const {idEmpresa,idVenta,estado} = datos;
+            const sqlSelectDetalleVenta = `SELECT * FROM ventas_detalles WHERE ventad_venta_id = ?`;
+            const sqlUpdateEstadoVenta = `UPDATE ventas SET venta_anulado = ? WHERE venta_id = ? AND venta_empresa_id = ?`;
+            const sqlQueryUpdateStockProducto = `UPDATE productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
+
+            pool.getConnection(function(error, connection){
+                connection.beginTransaction(function(err){
+                    if(err){
+                        connection.rollback(function(){
+                            connection.release();
+                            reject('error en conexion transaction');
+                            return;
+                        });
+                    }
+
+                    connection.query(sqlUpdateEstadoVenta, [estado,idVenta,idEmpresa], function(errorr, result){
+                        if(errorr){
+                            connection.rollback(function(){ connection.release()});
+                            reject({
+                                isSucess: false,
+                                code: 400,
+                                message: errorr.message
+                            });
+                            return;
+                        }
+                        
+                        connection.query(sqlSelectDetalleVenta, [idVenta], function(erro, results){
+                            if(erro){
+                                
+                                connection.rollback(function(){ connection.release()});
+                                reject({
+                                    isSucess: false,
+                                    code: 400,
+                                    message: erro.message
+                                });
+                                return;
+                            }
+                            
+                            const listVentaDetalle = Array.from(results);
+                            
+                            listVentaDetalle.forEach((ventaDetalle) => {
+                                const cantidad = ventaDetalle.ventad_cantidad;
+                                const prodId = ventaDetalle.ventad_prod_id;
+                                
+                                
+                                connection.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId], function(errorrr, results){
+                                    if(errorrr){
+                                        connection.rollback(function(){ connection.release()});
+                                        reject('error sumando inventario');
+                                        return;
+                                    }
+                                });
+
+                            });
+
+                            connection.commit(function(errorComit){
+                                if(errorComit){
+                                    connection.rollback(function(){
+                                        connection.release();
+                                        reject('error actualizando estado venta');
+                                        return;
+                                    });   
+                                }
+                                connection.release();
+                                resolve({
+                                    isSuccess: true,
+                                    message: 'Venta anulada correctamente'
+                                })
+                            });
+
+                        });
+
+                    });                    
+                });
+            });
+
+        }catch(exp){
+            console.log('error actualizando update estado venta');
+            console.log(exp);
+        }
+    });
+}
+
+exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
+    return new Promise((resolve, reject) => {
+
+        try{
+
+            const {idEmpresa,idVenta,estado} = datos;
+
+            const sqlSelectDetalleVenta = `SELECT * FROM ventas_detalles WHERE ventad_venta_id = ?`;
+            const sqlQueryUpdateStockProducto = `UPDATE productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
+            const queryDeleteVentaByIdEmp = `DELETE FROM ventas WHERE venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
+            const queryDeleteVentaDetalleByIdEmp = `DELETE FROM ventas_detalles WHERE ventad_venta_id = ?`;
+
+            pool.getConnection(function(error, connection){
+                connection.beginTransaction(function(err){
+                    if(err){
+                        connection.rollback(function(){
+                            connection.release();
+                            reject('error en conexion transaction');
+                            return;
+                        });
+                    }
+
+                    if(estado == 0){
+
+                        connection.query(sqlSelectDetalleVenta, [idVenta], function(erro, results){
+                            if(erro){
+                                connection.rollback(function(){ connection.release()});
+                                reject({
+                                    isSucess: false,
+                                    code: 400,
+                                    message: erro.message
+                                });
+                                return;
+                            }
+
+                            const listVentaDetalle = Array.from(results);
+                            listVentaDetalle.forEach((ventaDetalle) => {
+                                const cantidad = ventaDetalle.ventad_cantidad;
+                                const prodId = ventaDetalle.ventad_prod_id;
+                                
+                                connection.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId], function(errorrr, results){
+                                    if(errorrr){
+                                        connection.rollback(function(){ connection.release()});
+                                        reject('error sumando inventario');
+                                        return;
+                                    }
+                                   
+                                });
+                            });
+
+                            connection.query(queryDeleteVentaDetalleByIdEmp, [idVenta], function (err, resultss){
+                                if(err){
+                                    connection.rollback(function(){ connection.release()});
+                                    reject({
+                                        isSucess: false,
+                                        code: 400,
+                                        message: erro.message
+                                    });
+                                    return;
+                                }
+
+                                connection.query(queryDeleteVentaByIdEmp, [idVenta,idEmpresa], function (errores, resultsss){
+                                    if(errores){
+                                        connection.rollback(function(){ connection.release()});
+                                        reject({
+                                            isSucess: false,
+                                            code: 400,
+                                            message: errores.message
+                                        });
+                                        return;
+                                    }
+
+                                    connection.commit(function(errorComit){
+                                        if(errorComit){
+                                            connection.rollback(function(){
+                                                connection.release();
+                                                reject('error eliminando venta');
+                                                return;
+                                            });   
+                                        }
+                                        connection.release();
+                                        resolve({
+                                            isSuccess: true,
+                                            message: 'Venta eliminada correctamente'
+                                        })
+                                    });
+
+                                });
+
+                            });
+
+                        });
+
+                    }else{
+                        connection.query(queryDeleteVentaDetalleByIdEmp, [idVenta], function (err, resultss){
+                            if(err){
+                                connection.rollback(function(){ connection.release()});
+                                reject({
+                                    isSucess: false,
+                                    code: 400,
+                                    message: erro.message
+                                });
+                                return;
+                            }
+
+                            connection.query(queryDeleteVentaByIdEmp, [idVenta, idEmpresa], function (errores, resultsss){
+                                if(errores){
+                                    connection.rollback(function(){ connection.release()});
+                                    reject({
+                                        isSucess: false,
+                                        code: 400,
+                                        message: errores.message
+                                    });
+                                    return;
+                                }
+
+                                connection.commit(function(errorComit){
+                                    if(errorComit){
+                                        connection.rollback(function(){
+                                            connection.release();
+                                            reject('error eliminando venta');
+                                            return;
+                                        });   
+                                    }
+                                    connection.release();
+                                    resolve({
+                                        isSuccess: true,
+                                        message: 'Venta eliminada correctamente'
+                                    })
+                                });
+
+                            });
+
+                        });
+                    }
+                });
+            });
+
+        }catch(exception){
+            console.log('error eliminando venta');
+            console.log(exception);
+        }
+    });
+}
+
 exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin) => {
     return new Promise((resolve, reject) => {
         try{
@@ -133,8 +363,8 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
 
             }
 
-            const queryGetListaVentas = `SELECT venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
-                                         venta_total AS total,usu_username AS usuario,cli_nombres_natural AS cliente, cli_documento_identidad AS cc_ruc_pasaporte,
+            const queryGetListaVentas = `SELECT venta_id as id, venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
+                                         venta_anulado as anulado, venta_total AS total,usu_username AS usuario,cli_nombres_natural AS cliente, cli_documento_identidad AS cc_ruc_pasaporte,
                                          venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
                                          FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
                                          AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
@@ -166,6 +396,55 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
         }
     });
 }
+
+exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin) => {
+    return new Promise((resolve, reject) => {
+        try{
+            let valueNombreClient = "";
+            let valueCiRucClient = "";
+
+            if(nombreOrCiRuc){
+                const containsNumber =  /^[0-9]*$/.test(nombreOrCiRuc);
+                valueCiRucClient = containsNumber ? nombreOrCiRuc : "";
+
+                const containsText =  !containsNumber;
+                valueNombreClient = containsText ? nombreOrCiRuc : "";
+            }
+
+            const queryGetListaResumenVentas = `SELECT venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
+            cli_nombres_natural AS cliente,cli_documento_identidad AS cc_ruc_pasaporte,venta_forma_pago AS forma_pago,venta_subtotal_12 AS subtotalIva,
+            venta_subtotal_0 AS subtotalCero, venta_valor_iva AS valorIva,venta_total AS total FROM ventas,clientes,usuarios WHERE venta_empresa_id=? 
+            AND venta_usu_id=usu_id AND venta_cliente_id=cli_id AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
+            AND venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 LIMIT 1000`;
+
+            pool.query(queryGetListaResumenVentas, 
+                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc,
+                fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
+
+                if(error){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ocurrio un error'
+                    });
+                    return;
+                }
+                
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(exception){
+            console.log('error obteniendo lista resumen ventas');
+            console.log(exception);
+        }
+    });
+};
+
 
 exports.getOrCreateConsFinalByIdEmp = async (idEmp) => {
     return new Promise((resolve, reject) => {

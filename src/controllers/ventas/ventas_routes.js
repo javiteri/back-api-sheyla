@@ -16,6 +16,32 @@ router.post('/insertar', async (req, res, next) => {
     );
 });
 
+router.post('/updateEstadoVenta', async(req, res, next) => {
+    
+    const resultUpdateEstadoVenta = ventasRepository.updateEstadoAnuladoVentaByIdEmpresa(req.body);
+    resultUpdateEstadoVenta.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(200).send(error);
+        }
+    );
+});
+
+router.post('/deleteVenta', async(req, res, next) => {
+    
+    const resultDeleteEstadoVenta = ventasRepository.deleteVentaEstadoAnuladoByIdEmpresa(req.body);
+    resultDeleteEstadoVenta.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(200).send(error);
+        }
+    );
+});
+
 router.get('/listaVentasIdEmp', async(req, res, next) => {
 
     let idEmp = req.query.idEmp;
@@ -26,6 +52,25 @@ router.get('/listaVentasIdEmp', async(req, res, next) => {
 
     const listaVentasIdEmpProm = ventasRepository.getListVentasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin);
     listaVentasIdEmpProm.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(200).send(error);
+        }
+    )
+});
+
+router.get('/listaResumenVentasIdEmp', async(req, res, next) => {
+
+    let idEmp = req.query.idEmp;
+    let nombreCi = req.query.ciname;
+    let noDoc = req.query.nodoc;
+    let fechaIni = req.query.fechaini;
+    let fechaFin = req.query.fechafin;
+
+    const listaResumenVentasIdEmpProm = ventasRepository.getListResumenVentasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin);
+    listaResumenVentasIdEmpProm.then(
         function(result){
             res.status(200).send(result);
         },
