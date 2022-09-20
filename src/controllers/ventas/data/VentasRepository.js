@@ -477,7 +477,6 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp) => {
                             return;
                         }
 
-
                         const idInserted = resultado.insertId;
                         const resultData = {
                             cli_id: idInserted,
@@ -509,6 +508,45 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp) => {
             console.log('error obteniendo lista de ventas');
             console.log(exception);
             reject('error obteniendo el consumidor final');
+        }
+    });
+}
+
+
+exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002) => {
+
+    console.log(idEmp);
+    console.log(tipoDoc);
+    console.log(fac001);
+    console.log(fac002);
+    return new Promise((resolve, reject) => {
+        try{
+            const queryNextSecencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) as numero FROM ventas WHERE venta_001 = ? AND venta_002 = ? AND venta_tipo = ?  
+                                        AND venta_empresa_id = ?`;
+            pool.query(queryNextSecencial, [fac001,fac002,tipoDoc,idEmp], function(error, results){
+                if(error){
+                    console.log('error consltando sigiente secuencial');
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ocurrio un error'
+                    });
+                    return;
+                }
+
+                if(!results[0].numero){
+                    console.log('no existe numero');
+                }
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results[0].numero ? Number(results[0].numero) + 1 : 1
+                });
+
+            });
+        }catch(exception){
+            console.log('error obteniendo siguiente secuencial');
+            reject('error obteniendo siguiente secuencial');
         }
     });
 }

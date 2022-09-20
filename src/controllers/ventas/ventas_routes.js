@@ -92,4 +92,19 @@ router.get('/getorcreateconsfinalbyidemp', async(req, res, next) => {
     );
 });
 
+router.get('/getNextNumeroSecuencialByIdEmp', async(req,res,next) => {
+    const {idEmp, tipoDoc, fac001, fac002} = req.query;
+    const nextSecuencialProm = 
+            ventasRepository.getNextNumeroSecuencialByIdEmp(idEmp,tipoDoc,fac001,fac002);
+    nextSecuencialProm.then(
+        function(results){
+            res.status(200).send(results);
+        },
+        function(error){
+            res.status(200).send(error);
+        }
+    );
+});
+
+
 module.exports = router;
