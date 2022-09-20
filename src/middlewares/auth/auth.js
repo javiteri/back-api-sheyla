@@ -3,6 +3,7 @@ const localStrategy = require('passport-local').Strategy
 const JWTstrategy = require('passport-jwt').Strategy
 const ExtractJWT = require('passport-jwt').ExtractJwt
 const loginRepository = require('../../controllers/login/loginRepository')
+const secretkey = process.env.SECRET_KEY_HASH;
 
 const cookieExtractor = req => {
     let jwt = null
@@ -16,7 +17,7 @@ const cookieExtractor = req => {
 passport.use(
     new JWTstrategy(
         {
-            secretOrKey: process.env.SECRECT_KEY_HASH,
+            secretOrKey: secretkey,//process.env.SECRECT_KEY_HASH,
             jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken()//cookieExtractor//ExtractJWT.fromAuthHeaderAsBearerToken()// fromUrlQueryParameter('secret_token')
         },
         async (token, done) => {

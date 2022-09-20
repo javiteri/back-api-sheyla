@@ -5,6 +5,7 @@ const router = express.Router()
 const cookie = require('cookie')
 
 const loginRepository = require('./loginRepository')
+const secretkey = process.env.SECRET_KEY_HASH;
 
 router.post('/login', async (req, res, next) => {
 
@@ -12,20 +13,10 @@ router.post('/login', async (req, res, next) => {
 
         passport.authenticate('login', async (err, user, info) => {
                 try{
-                    
-                    //console.log('err ' + err);
-                    console.log('info ' + info.message);
-                
-                    console.log('user ' + user);
-
                     if(err || !user){
-                        //const error = new Error('ocurrio un error')
-                        
                         return res.send(info.message) 
-                        //next(error)
                     }
                 
-
                     req.login(
                         user,
                         {session: false},
@@ -74,7 +65,7 @@ router.post('/loginverify', async (req, res, next) => {
                             
                         const token = jwt.sign({
                                 user: body,
-                        }, process.env.SECRECT_KEY_HASH, {expiresIn: 43200});//seconds = 12 horas
+                        }, secretkey/*process.env.SECRECT_KEY_HASH*/, {expiresIn: 43200});//seconds = 12 horas
 
 
                         response["token"] = token;
