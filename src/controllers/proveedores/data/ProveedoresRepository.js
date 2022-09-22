@@ -129,10 +129,19 @@ exports.insertProveedor = async (datosProveedor) => {
                         const insertId = result.insertId;
                         let insertClienteResponse = {}
                         if(insertId > 0){
-                        insertClienteResponse['isSucess'] = true;
+                            insertClienteResponse['isSucess'] = true;
                         }else{
-                        insertClienteResponse['isSucess'] = false;
-                        insertClienteResponse['message'] = 'error al insertar Proveedor';
+                            insertClienteResponse['isSucess'] = false;
+                            insertClienteResponse['message'] = 'error al insertar Proveedor';
+                        }
+
+                        insertClienteResponse['data'] = {
+                            id: insertId,
+                            ciRuc: documentoIdentidad,
+                            nombre: nombreNatural,
+                            email: email ? email : '',
+                            direccion: direccion ? direccion : '',
+                            telefono: telefono ? telefono : ''
                         }
 
                         resolve(insertClienteResponse);

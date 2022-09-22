@@ -1,4 +1,3 @@
-const { query } = require('express');
 const pool = require('../../../connectiondb/mysqlconnection');
 
 exports.insertVenta = async (datosVenta) => {
@@ -56,7 +55,7 @@ exports.insertVenta = async (datosVenta) => {
                         const idVentaGenerated = results.insertId;
 
                         const arrayListVentaDetalle = Array.from(ventaDetallesArray);
-                        arrayListVentaDetalle.forEach(ventaDetalle => {
+                        arrayListVentaDetalle.forEach((ventaDetalle, index) => {
 
                             const {prodId, cantidad,iva,nombreProd,
                                 valorUnitario,descuento,valorTotal} = ventaDetalle;
@@ -68,7 +67,6 @@ exports.insertVenta = async (datosVenta) => {
                                 if(errorr){
                                     connection.rollback(function(){ connection.release()});
                                     reject('error insertando Venta Detalle');
-                                    console.log(errorr);
                                     return;
                                 }
 
@@ -77,30 +75,31 @@ exports.insertVenta = async (datosVenta) => {
                                     if(errorrr){
                                         connection.rollback(function(){ connection.release()});
                                         reject('error descontando inventario');
-                                        console.log(errorrr);
                                         return;
+                                    }
+
+                                    if(index == arrayListVentaDetalle.length - 1){
+                                        connection.commit(function(errorComit){
+                                            if(errorComit){
+                                                connection.rollback(function(){
+                                                    connection.release();
+                                                    reject('error insertando la venta');
+                                                    return;
+                                                });   
+                                            }
+                
+                                            connection.release();
+                                            resolve({
+                                                isSuccess: true,
+                                                message: 'Venta insertada correctamente'
+                                            })
+                
+                                        });
                                     }
 
                                 });
 
                             });
-                        });
-
-                        connection.commit(function(errorComit){
-                            if(errorComit){
-                                connection.rollback(function(){
-                                    connection.release();
-                                    reject('error insertando la venta');
-                                    return;
-                                });   
-                            }
-
-                            connection.release();
-                            resolve({
-                                isSuccess: true,
-                                message: 'Venta insertada correctamente'
-                            })
-
                         });
 
                     });
@@ -159,7 +158,7 @@ exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
                             
                             const listVentaDetalle = Array.from(results);
                             
-                            listVentaDetalle.forEach((ventaDetalle) => {
+                            listVentaDetalle.forEach((ventaDetalle, index) => {
                                 const cantidad = ventaDetalle.ventad_cantidad;
                                 const prodId = ventaDetalle.ventad_prod_id;
                                 
@@ -170,24 +169,27 @@ exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
                                         reject('error sumando inventario');
                                         return;
                                     }
+
+                                    if(index == listVentaDetalle.length - 1){
+                                        connection.commit(function(errorComit){
+                                            if(errorComit){
+                                                connection.rollback(function(){
+                                                    connection.release();
+                                                    reject('error actualizando estado venta');
+                                                    return;
+                                                });   
+                                            }
+                                            connection.release();
+                                            resolve({
+                                                isSuccess: true,
+                                                message: 'Venta anulada correctamente'
+                                            })
+                                        });
+                                    }
                                 });
 
                             });
 
-                            connection.commit(function(errorComit){
-                                if(errorComit){
-                                    connection.rollback(function(){
-                                        connection.release();
-                                        reject('error actualizando estado venta');
-                                        return;
-                                    });   
-                                }
-                                connection.release();
-                                resolve({
-                                    isSuccess: true,
-                                    message: 'Venta anulada correctamente'
-                                })
-                            });
 
                         });
 
@@ -238,7 +240,7 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
                             }
 
                             const listVentaDetalle = Array.from(results);
-                            listVentaDetalle.forEach((ventaDetalle) => {
+                            listVentaDetalle.forEach((ventaDetalle, index) => {
                                 const cantidad = ventaDetalle.ventad_cantidad;
                                 const prodId = ventaDetalle.ventad_prod_id;
                                 
@@ -249,90 +251,68 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
                                         return;
                                     }
                                    
-                                });
-                            });
-
-                            connection.query(queryDeleteVentaDetalleByIdEmp, [idVenta], function (err, resultss){
-                                if(err){
-                                    connection.rollback(function(){ connection.release()});
-                                    reject({
-                                        isSucess: false,
-                                        code: 400,
-                                        message: erro.message
-                                    });
-                                    return;
-                                }
-
-                                connection.query(queryDeleteVentaByIdEmp, [idVenta,idEmpresa], function (errores, resultsss){
-                                    if(errores){
-                                        connection.rollback(function(){ connection.release()});
-                                        reject({
-                                            isSucess: false,
-                                            code: 400,
-                                            message: errores.message
+                                    if(index == listVentaDetalle.length - 1){
+                                        connection.query(queryDeleteVentaByIdEmp, [idVenta,idEmpresa], function (errores, resultsss){
+                                            if(errores){
+                                                connection.rollback(function(){ connection.release()});
+                                                reject({
+                                                    isSucess: false,
+                                                    code: 400,
+                                                    message: errores.message
+                                                });
+                                                return;
+                                            }
+        
+                                            connection.commit(function(errorComit){
+                                                if(errorComit){
+                                                    connection.rollback(function(){
+                                                        connection.release();
+                                                        reject('error eliminando venta');
+                                                        return;
+                                                    });   
+                                                }
+                                                connection.release();
+                                                resolve({
+                                                    isSuccess: true,
+                                                    message: 'Venta eliminada correctamente'
+                                                })
+                                            });
+        
                                         });
-                                        return;
                                     }
 
-                                    connection.commit(function(errorComit){
-                                        if(errorComit){
-                                            connection.rollback(function(){
-                                                connection.release();
-                                                reject('error eliminando venta');
-                                                return;
-                                            });   
-                                        }
-                                        connection.release();
-                                        resolve({
-                                            isSuccess: true,
-                                            message: 'Venta eliminada correctamente'
-                                        })
-                                    });
-
                                 });
-
                             });
+
+                            
 
                         });
 
                     }else{
-                        connection.query(queryDeleteVentaDetalleByIdEmp, [idVenta], function (err, resultss){
-                            if(err){
+                        connection.query(queryDeleteVentaByIdEmp, [idVenta, idEmpresa], function (errores, resultsss){
+                            if(errores){
                                 connection.rollback(function(){ connection.release()});
                                 reject({
                                     isSucess: false,
                                     code: 400,
-                                    message: erro.message
+                                    message: errores.message
                                 });
                                 return;
                             }
 
-                            connection.query(queryDeleteVentaByIdEmp, [idVenta, idEmpresa], function (errores, resultsss){
-                                if(errores){
-                                    connection.rollback(function(){ connection.release()});
-                                    reject({
-                                        isSucess: false,
-                                        code: 400,
-                                        message: errores.message
-                                    });
-                                    return;
+                            connection.commit(function(errorComit){
+                                if(errorComit){
+                                    connection.rollback(function(){
+                                        connection.release();
+                                        reject('error eliminando venta');
+                                        return;
+                                    });   
                                 }
-
-                                connection.commit(function(errorComit){
-                                    if(errorComit){
-                                        connection.rollback(function(){
-                                            connection.release();
-                                            reject('error eliminando venta');
-                                            return;
-                                        });   
-                                    }
-                                    connection.release();
-                                    resolve({
-                                        isSuccess: true,
-                                        message: 'Venta eliminada correctamente'
-                                    })
-                                });
-
+                                connection.release();
+                                resolve({
+                                    isSuccess: true,
+                                    message: 'Venta eliminada correctamente'
+                                })
                             });
 
                         });
@@ -515,10 +495,6 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp) => {
 
 exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002) => {
 
-    console.log(idEmp);
-    console.log(tipoDoc);
-    console.log(fac001);
-    console.log(fac002);
     return new Promise((resolve, reject) => {
         try{
             const queryNextSecencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) as numero FROM ventas WHERE venta_001 = ? AND venta_002 = ? AND venta_tipo = ?  
