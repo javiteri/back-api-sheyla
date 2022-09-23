@@ -394,7 +394,6 @@ exports.deleteCompraByIdEmpresa = async (datos) => {
                         if(erro){
                             connection.rollback(function(){ connection.release()});
                             reject({
-                                isSucess: false,
                                 code: 400,
                                 message: erro.message
                             });
