@@ -47,7 +47,7 @@ exports.getListUsuariosByIdEmp = async (idEmpresa) => {
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectUsuariosByIdEmp = 'SELECT * FROM usuarios WHERE usu_empresa_id = ? LIMIT 1000';
+            let querySelectUsuariosByIdEmp = 'SELECT * FROM usuarios WHERE usu_empresa_id = ? ';
             pool.query(querySelectUsuariosByIdEmp, [idEmpresa], function (error, results, fields){
 
                 if(error){
@@ -91,7 +91,6 @@ exports.insertUsuario = async (datosCliente) => {
             
             pool.query(queryExistUsuario, [idEmpresa, identificacion], function(error, result, fields){
                 if(error){
-
                     reject({
                         isSucess: false,
                         code: 400,
@@ -110,19 +109,17 @@ exports.insertUsuario = async (datosCliente) => {
                     });
                     return;
                 }
-                console.log('permiso escritura');
-                console.log(permisoEscritura);
-                pool.query(queryInsertUser, [idEmpresa, nombreNatural, identificacion, telefono, direccion, email, fechaNacimiento, 
+
+                pool.query(queryInsertUser, [idEmpresa, nombreNatural, identificacion, telefono, direccion?direccion:'', email, fechaNacimiento, 
                                             nombreUsuario, password, permisoEscritura], 
                     function (error, result){
-
                         if(error){
-                        reject({
-                            isSucess: false,
-                            code: 400,
-                            messageError: error
-                        });
-                        return;
+                            reject({
+                                isSucess: false,
+                                code: 400,
+                                messageError: error
+                            });
+                            return;
                         }
 
                         const insertId = result.insertId;

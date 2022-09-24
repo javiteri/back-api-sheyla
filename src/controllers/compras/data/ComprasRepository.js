@@ -164,7 +164,7 @@ exports.getListComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni
                 const containsNumber =  /^[0-9]*$/.test(nombreOrCiRuc);
                 valueCiRucClient = containsNumber ? nombreOrCiRuc : "";
 
-                const containsText =  !containsNumber;///^[A-Za-z]*$/.test(nombreOrCiRuc);
+                const containsText =  !containsNumber;
                 valueNombreClient = containsText ? nombreOrCiRuc : "";
 
             }
@@ -174,10 +174,10 @@ exports.getListComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni
                                             compra_forma_pago AS forma_pago,compra_observaciones AS Observaciones FROM compras,proveedores,usuarios 
                                             WHERE compra_empresa_id= ? AND compra_usu_id=usu_id AND compra_proveedor_id=pro_id 
                                             AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ?
-                                            AND  compra_fecha_hora  BETWEEN '2020-01-01 00:00:00' AND '2023-01-01 23:59:59'`;
+                                            AND  compra_fecha_hora  BETWEEN ? AND ? `;
             pool.query(queryGetListaVentas, 
-                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc/*, 
-            fechaIni+" 00:00:00",fechaFin+" 23:59:59"*/], (error, results) => {
+                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
+            fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
 
                 if(error){
                     reject({
@@ -221,7 +221,7 @@ exports.getListResumenComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, f
             pro_nombre_natural AS proveedor,pro_documento_identidad AS cc_ruc_pasaporte,compra_forma_pago AS forma_pago,compra_subtotal_12 AS subtotalIva,
             compra_subtotal_0 AS subtotalCero, compra_valor_iva AS valorIva,compra_total AS total FROM compras,proveedores,usuarios WHERE compra_empresa_id=? 
             AND compra_usu_id=usu_id AND compra_proveedor_id=pro_id AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ?
-            AND compra_fecha_hora BETWEEN ? AND ? LIMIT 1000`;
+            AND compra_fecha_hora BETWEEN ? AND ? `;
 
             pool.query(queryGetListaResumenVentas, 
                 [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc,
@@ -255,9 +255,10 @@ exports.getOrCreateProveedorGenericoByIdEmp = async (idEmp) => {
     return new Promise((resolve, reject) => {
         try{
             const consumidorFinalName = 'PROVEEDOR GENERICO';
+            
             const queryGetConsumidorFinal = `SELECT * FROM proveedores WHERE pro_empresa_id = ? AND pro_nombre_natural LIKE ? LIMIT 1`;
             const insertDefaultProveedorGenerico = `INSERT INTO proveedores (pro_empresa_id, pro_documento_identidad, pro_tipo_documento_identidad, 
-                                                    pro_nombre_natural, pro_telefono) VALUES (?,?,?,?,?)`
+                                                    pro_nombre_natural, pro_telefono,pro_direccion) VALUES (?,?,?,?,?,?)`
 
             pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`], (error, results) => {
                 if(error){
@@ -272,7 +273,7 @@ exports.getOrCreateProveedorGenericoByIdEmp = async (idEmp) => {
                 if(!results[0] | results == undefined | results == null){
 
                     pool.query(insertDefaultProveedorGenerico, [idEmp,'9999999999','CI',
-                                consumidorFinalName,'0999999999'], (error, resultado) => {
+                                consumidorFinalName,'0999999999', consumidorFinalName], (error, resultado) => {
                         if(error){
                             reject({
                                 isSucess: false,

@@ -5,8 +5,43 @@ exports.getListProductosByIdEmp = async (idEmpresa) => {
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectProductosByIdEmp = 'SELECT * FROM productos WHERE prod_empresa_id = ? ORDER BY prod_id DESC LIMIT 1000';
+            let querySelectProductosByIdEmp = 'SELECT * FROM productos WHERE prod_empresa_id = ? ORDER BY prod_id DESC ';
             pool.query(querySelectProductosByIdEmp, [idEmpresa], function (error, results, fields){
+
+                if(error){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+
+            });
+        }catch(err) {
+            reject({
+                isSucess: false,
+                code: 400,
+                messageError: err
+            });
+        }
+    });
+}
+
+exports.getListProductosNoAnuladoByIdEmp = async (idEmpresa) => {
+
+    return new Promise((resolve, reject) => {
+        try {
+            
+            let querySelectProductosByIdEmp = 'SELECT * FROM productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC ';
+            pool.query(querySelectProductosByIdEmp, [idEmpresa, 1], function (error, results, fields){
 
                 if(error){
                     reject({
@@ -315,6 +350,39 @@ exports.searchProductosByIdEmp = async (idEmpresa, textSearch) => {
                                          ORDER BY prod_id DESC`
             
             pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(e){
+            reject('error: ' + e);
+        }
+    });    
+
+}
+
+exports.searchProductosByIdEmpActivo = async (idEmpresa, textSearch) => {
+    return new Promise((resolve, reject) => {
+        
+        try{
+            let querySearchClientes = `SELECT * FROM productos WHERE prod_empresa_id = ? AND (prod_nombre LIKE ? || prod_codigo LIKE ?) AND prod_activo_si_no = ?
+                                         ORDER BY prod_id DESC`
+            
+            pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%', 1], (err, results) => {
 
                 if(err){
                     reject({

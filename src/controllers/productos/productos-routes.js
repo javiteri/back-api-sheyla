@@ -16,6 +16,20 @@ router.get('/getProductosByIdEmp', async (req, res) => {
     );
 });
 
+router.get('/getProductosNoAnuladoByIdEmp', async (req, res) => {
+
+    const productosByIdEmpresa = productosRepository.getListProductosNoAnuladoByIdEmp(req.query.idEmp);
+    productosByIdEmpresa.then(
+        function(usuarios){
+            res.status(200).send(usuarios);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+
 router.get('/getProductoByIdEmp', async (req, res) => {
 
     const productoByIdEmpresa = productosRepository.getProductoByIdEmp(req.query.id, req.query.idEmp);
@@ -100,6 +114,19 @@ router.get('/getMarcasByIdEmp', async (req, res) => {
 
 router.get('/searchProductosByIdEmp', async (req, res) => {
     const searchProductosByIdEmpPromise = productosRepository.searchProductosByIdEmp(req.query.idEmp, req.query.textSearch);
+
+    searchProductosByIdEmpPromise.then(
+        function (clientes){
+            res.status(200).send(clientes);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.get('/searchProductosByIdEmpActivo', async (req, res) => {
+    const searchProductosByIdEmpPromise = productosRepository.searchProductosByIdEmpActivo(req.query.idEmp, req.query.textSearch);
 
     searchProductosByIdEmpPromise.then(
         function (clientes){

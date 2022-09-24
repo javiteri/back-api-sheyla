@@ -348,7 +348,7 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
                                          venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
                                          FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
                                          AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
-                                         AND  venta_fecha_hora  BETWEEN ? AND ? LIMIT 1000`;
+                                         AND  venta_fecha_hora  BETWEEN ? AND ? `;
             pool.query(queryGetListaVentas, 
                 [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
                 fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
@@ -395,7 +395,7 @@ exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fe
             cli_nombres_natural AS cliente,cli_documento_identidad AS cc_ruc_pasaporte,venta_forma_pago AS forma_pago,venta_subtotal_12 AS subtotalIva,
             venta_subtotal_0 AS subtotalCero, venta_valor_iva AS valorIva,venta_total AS total FROM ventas,clientes,usuarios WHERE venta_empresa_id=? 
             AND venta_usu_id=usu_id AND venta_cliente_id=cli_id AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
-            AND venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 LIMIT 1000`;
+            AND venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 `;
 
             pool.query(queryGetListaResumenVentas, 
                 [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc,
@@ -430,9 +430,10 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp) => {
     return new Promise((resolve, reject) => {
         try{
             const consumidorFinalName = 'CONSUMIDOR FINAL';
+
             const queryGetConsumidorFinal = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_nombres_natural LIKE ? LIMIT 1`;
             const insertDefaultConsumidorFinal = `INSERT INTO clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
-                                                    cli_nombres_natural, cli_teleono) VALUES (?,?,?,?,?,?)`
+                                                    cli_nombres_natural, cli_teleono, cli_direccion) VALUES (?,?,?,?,?,?,?)`
 
             pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`], (error, results) => {
                 if(error){
@@ -447,7 +448,7 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp) => {
                 if(!results[0] | results == undefined | results == null){
 
                     pool.query(insertDefaultConsumidorFinal, [idEmp,'Ecuador','9999999999','CI',
-                                'CONSUMIDOR FINAL','0999999999'], (error, resultado) => {
+                                'CONSUMIDOR FINAL','0999999999',consumidorFinalName], (error, resultado) => {
                         if(error){
                             reject({
                                 isSucess: false,

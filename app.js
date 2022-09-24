@@ -17,6 +17,7 @@ const proveedoresRouter = require('./src/controllers/proveedores/proveedores-rou
 const productosRouter = require('./src/controllers/productos/productos-routes');
 const ventasRouter = require('./src/controllers/ventas/ventas_routes');
 const comprasRouter = require('./src/controllers/compras/compras_routes');
+const configsRouter = require('./src/controllers/configuracion/configs_routes');
 
 var app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/productos', passport.authenticate('jwt', {session: false}), produc
 app.use('/api/usuarios', passport.authenticate('jwt', {session: false}), usuariosRouter);
 app.use('/api/ventas', passport.authenticate('jwt', {session: false}), ventasRouter);
 app.use('/api/compras', passport.authenticate('jwt',{session: false}), comprasRouter);
+app.use('/api/configs', passport.authenticate('jwt',{session: false}), configsRouter );
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
