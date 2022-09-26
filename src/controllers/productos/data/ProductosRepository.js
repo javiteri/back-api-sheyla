@@ -220,7 +220,7 @@ exports.deleteProducto = async (idEmpresa, idProducto) => {
                     reject({
                         isSucess: false,
                         code: 400,
-                        message: error.message
+                        tieneMovimientos: error.message.includes('a foreign key constraint fails') ? true : false
                     });
                     return;
                 }

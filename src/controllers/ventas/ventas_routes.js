@@ -106,5 +106,17 @@ router.get('/getNextNumeroSecuencialByIdEmp', async(req,res,next) => {
     );
 });
 
+router.get('/getDataByIdVenta',async(req,res,next) => {
+    const getDataByIdVentaPromise = 
+            ventasRepository.getDataByIdVenta(req.query.id, req.query.idEmp);
+    getDataByIdVentaPromise.then(
+        function(results){
+            res.status(200).send(results);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
 
 module.exports = router;

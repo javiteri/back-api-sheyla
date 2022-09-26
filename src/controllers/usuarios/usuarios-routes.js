@@ -66,7 +66,7 @@ router.post('/delete', async (req, res) => {
             res.status(200).send(result);
         },
         function(error){
-            res.status(400).send(error);
+            res.status(200).send(error);
         }
     );
 });

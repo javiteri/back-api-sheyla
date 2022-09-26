@@ -5,9 +5,9 @@ exports.insertConfigsList = async (datosConfig) => {
         try{
             
             let queryExistConfig = "SELECT COUNT(*) AS CANT FROM config WHERE con_empresa_id = ? AND con_nombre_config = ?";
-            let queryInsertUserDefaultEmpresa = `INSERT INTO config (con_empresa_id,con_nombre_config,con_valor) 
+            let queryInsertConfig = `INSERT INTO config (con_empresa_id,con_nombre_config,con_valor) 
                                                  VALUES (?,?,?)`;
-            let updateConfigIfExist = `UPDATE config SET con_valor = ? WHERE con_empresa_id = ? AND con_nombre_config = ?`;                          
+            let updateConfigIfExist = `UPDATE config SET con_valor = ? WHERE con_empresa_id = ? AND con_nombre_config = ?`;
 
             pool.getConnection(function(error, connection){
                 connection.beginTransaction(function(err){
@@ -22,13 +22,10 @@ exports.insertConfigsList = async (datosConfig) => {
 
                 const configsListArray = Array.from(datosConfig);
                 configsListArray.forEach((config, index) => {
-                    console.log('vuelta: ' + index);
-                    console.log(config.nombreConfig);
+
                     const {idEmpresa,nombreConfig,valorConfig} = config;
 
                     connection.query(queryExistConfig, [idEmpresa, nombreConfig], function(errorr, result, fields){
-                        console.log('inside exist Config: ' + nombreConfig);
-                        console.log(result);
 
                         if(errorr){
                             console.log(errorr);
@@ -42,87 +39,77 @@ exports.insertConfigsList = async (datosConfig) => {
         
                         const cantClients = result[0].CANT;
                         if(cantClients >= 1){
-                            connection.query(updateConfigIfExist, [valorConfig,idEmpresa]);                            /*reject({
-                                isSucess: false,
-                                code: 400,
-                                messageError: 'ya existe el cliente',
-                                duplicate: true
+                            connection.query(updateConfigIfExist, [valorConfig,idEmpresa,nombreConfig], function(error, resultsss) {
+                                if(error){
+                                    reject({
+                                        isSucess: false,
+                                        code: 400,
+                                        messageError: 'ocurrio un error al actualizar config'
+                                    });
+                                    return;
+                                }
+
+                                if(index == configsListArray.length - 1){
+                                    console.log('aqui se ejecutaria el commit');
+                                    connection.commit(function(errorComit){
+                                        if(errorComit){
+                                            connection.rollback(function(){
+                                                connection.release();
+                                                reject('error actualizando config');
+                                                return;
+                                            });   
+                                        }
+            
+                                        connection.release();
+                                        resolve({
+                                            isSuccess: true,
+                                            message: 'config actualizada correctamente'
+                                        })
+            
+                                    });
+                                }
+
+
+                            }); 
+                        }else{
+                            connection.query(queryInsertConfig, [idEmpresa,nombreConfig,valorConfig], function(errorr, resultsss) {
+                                if(errorr){
+                                    console.log(errorr);
+                                    reject({
+                                        isSucess: false,
+                                        code: 400,
+                                        messageError: 'ocurrio un error al insertar config'
+                                    });
+                                    return;
+                                }
+
+                                if(index == configsListArray.length - 1){
+                                    console.log('aqui se ejecutaria el commit insert');
+                                    connection.commit(function(errorComit){
+                                        if(errorComit){
+                                            connection.rollback(function(){
+                                                connection.release();
+                                                reject('error insetando config');
+                                                return;
+                                            });   
+                                        }
+            
+                                        connection.release();
+                                        resolve({
+                                            isSuccess: true,
+                                            message: 'config insertada correctamente'
+                                        })
+            
+                                    });
+                                }
                             });
-                            return;*/
-
                         }
-
-                        if(index == configsListArray.length - 1){
-                            console.log('aqui se ejecutaria el commit');
-                        }
+ 
                     });    
                 });                
 
             });
 
-
-            /*let queryExistConfig = "SELECT COUNT(*) AS CANT FROM config WHERE con_empresa_id = ? AND con_nombre_config = ?";
-            let queryInsertUserDefaultEmpresa = `INSERT INTO config (con_empresa_id,con_nombre_config,con_valor) 
-            VALUES (?,?,?)`;
-
-            const {idEmpresa, nombreConfig, valorConfig} = datosConfig;
-        
-            pool.query(queryExistClient, [idEmpresa, documentoIdentidad], function(error, result, fields){
-                if(error){
-                    
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: error
-                    });
-                    return;
-                }
-
-                const cantClients = result[0].CANT;
-                if(cantClients >= 1){
-                    
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ya existe el cliente',
-                        duplicate: true
-                    });
-                    return;
-                }
-                pool.query(queryInsertUserDefaultEmpresa, [idEmpresa, nacionalidad, documentoIdentidad, tipoIdentificacion, nombreNatural, razonSocial ? razonSocial : '', 
-                                        comentario ? comentario : '', fechaNacimiento, telefonos ? telefonos : '', celular ? celular : '', email ? email : '', 
-                                        direccion ? direccion : '', profesion ? profesion : ''], 
-                    function (error, result){
-
-                        if(error){
-                            console.log(error);
-                        reject({
-                            isSucess: false,
-                            code: 400,
-                            messageError: error
-                        });
-                        return;
-                        }
-
-                        const insertId = result.insertId;
-                        let insertClienteResponse = {}
-                        if(insertId > 0){
-                            insertClienteResponse['isSucess'] = true;
-                        }else{
-                            insertClienteResponse['isSucess'] = false;
-                            insertClienteResponse['message'] = 'error al insertar cliente';
-                        }
-                        insertClienteResponse['data'] = {
-                            id: insertId,
-                            ciRuc: documentoIdentidad,
-                            nombre: nombreNatural,
-                            email: email ? email : ''
-                        }
-
-                        resolve(insertClienteResponse);
-                });
-
-            });*/
 
         }catch(error){
             reject({
@@ -132,4 +119,68 @@ exports.insertConfigsList = async (datosConfig) => {
             });
         }
     });
+}
+
+exports.getListConfigsByIdEmp = async (idEmpresa) => {
+    return new Promise((resolve, reject) => {
+        
+        try{
+            let querySelectConfigs = `SELECT * FROM config WHERE con_empresa_id = ? ORDER BY con_id DESC `
+            
+            pool.query(querySelectConfigs, [idEmpresa], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(e){
+            reject('error: ' + e);
+        }
+    });    
+
+}
+
+exports.getConfigByIdEmp = async (idEmpresa, nombreConfig) => {
+    return new Promise((resolve, reject) => {
+        
+        try{
+            let querySelectConfigs = `SELECT * FROM config WHERE con_empresa_id = ? AND con_nombre_config = ? ORDER BY con_id DESC `
+            
+            pool.query(querySelectConfigs, [idEmpresa, nombreConfig], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(e){
+            reject('error: ' + e);
+        }
+    });    
+
 }

@@ -40,8 +40,8 @@ exports.insertVenta = async (datosVenta) => {
                     connection.query(sqlQueryInsertVenta, [empresaId,tipoVenta,venta001,venta002,ventaNumero,
                                     ventaFechaHora,usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,
                                     formaPago,obs, `${empresaId}_${tipoVenta}_${venta001}_${venta002}_${ventaNumero}`], function(erro, results){
-
                         if(erro){
+                            
                             connection.rollback(function(){ connection.release()});
                             reject({
                                 isSuccess: false,
@@ -59,12 +59,14 @@ exports.insertVenta = async (datosVenta) => {
 
                             const {prodId, cantidad,iva,nombreProd,
                                 valorUnitario,descuento,valorTotal} = ventaDetalle;
-                            
+                            console.log(ventaDetalle);
                             connection.query(sqlQueryInsertVentaDetalle, [idVentaGenerated,prodId,
                                             cantidad,iva,nombreProd,valorUnitario,
                                             descuento,valorTotal], function(errorr, results){
 
                                 if(errorr){
+                                    console.log('inside before commit');
+                                    console.log(errorr);
                                     connection.rollback(function(){ connection.release()});
                                     reject('error insertando Venta Detalle');
                                     return;
@@ -79,6 +81,7 @@ exports.insertVenta = async (datosVenta) => {
                                     }
 
                                     if(index == arrayListVentaDetalle.length - 1){
+                                        
                                         connection.commit(function(errorComit){
                                             if(errorComit){
                                                 connection.rollback(function(){
@@ -348,7 +351,7 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
                                          venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
                                          FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
                                          AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
-                                         AND  venta_fecha_hora  BETWEEN ? AND ? `;
+                                         AND  venta_fecha_hora  BETWEEN ? AND ? ORDER BY venta_id DESC`;
             pool.query(queryGetListaVentas, 
                 [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
                 fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
@@ -524,6 +527,76 @@ exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002) =
         }catch(exception){
             console.log('error obteniendo siguiente secuencial');
             reject('error obteniendo siguiente secuencial');
+        }
+    });
+}
+
+exports.getDataByIdVenta = async (idVenta, idEmp) => {
+    return new Promise((resolve, reject) => {
+        try{
+
+            const queryListVentaDelleByIdVenta = `SELECT ventad_cantidad,ventad_descuento,ventad_id,ventad_iva,
+            ventad_prod_id,ventad_producto,ventad_venta_id,ventad_vt,ventad_vu,prod_codigo FROM ventas_detalles, productos 
+            WHERE ventad_prod_id = prod_id AND ventad_venta_id = ?`;
+            const queryGetListaVentas = `SELECT venta_id as id, venta_fecha_hora AS fechaHora, venta_tipo AS documento,venta_001 AS venta001,venta_002 AS venta002, venta_numero AS numero,
+                                         venta_anulado as anulado, venta_total AS total, venta_subtotal_12 AS subtotal12, venta_subtotal_0 AS subtotal0, venta_valor_iva AS valorIva,
+                                         usu_username AS usuario,cli_nombres_natural AS cliente,cli_id as clienteId,cli_teleono as clienteTele,
+                                         cli_direccion as clienteDir,cli_email as clienteEmail,cli_documento_identidad AS cc_ruc_pasaporte,cli_teleono AS telefono,
+                                         venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
+                                         FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
+                                         AND venta_id = ? `;
+
+            pool.query(queryGetListaVentas,[idEmp, idVenta], (error, results) => {
+                
+                if(error){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ocurrio un error'
+                    });
+                    return;
+                }
+
+                console.log('results lenght');
+                console.log(results.length);
+                if(results.length > 0){
+                    pool.query(queryListVentaDelleByIdVenta,[idVenta], (errorr, resultss) => {
+                    
+                        if(errorr){
+                            reject({
+                                isSucess: false,
+                                code: 400,
+                                messageError: 'ocurrio un error obteniendo venta detalle'
+                            });
+                            return;
+                        }
+    
+                        let sendResult = results[0];
+                        sendResult['data'] = resultss;
+    
+                        resolve({
+                            isSucess: true,
+                            code: 200,
+                            data: sendResult
+                        });
+
+                        return;
+                    });
+                }else{
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'no existe venta con ese id empresa',
+                        notExist: true
+                    });
+                    return;
+                }
+
+            });
+
+        }catch(exception){
+            console.log('error obteniendo lista de ventas');
+            console.log(exception);
         }
     });
 }

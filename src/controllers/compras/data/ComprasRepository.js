@@ -460,3 +460,72 @@ exports.deleteCompraByIdEmpresa = async (datos) => {
         }
     });
 }
+
+exports.getDataByIdCompra = async (idCompra, idEmp) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const queryListCompraDelleByIdCompra = `SELECT comprad_cantidad,comprad_descuento,comprad_id,comprad_iva,
+            comprad_pro_id,comprad_producto,comprad_compra_id,comprad_vt,comprad_vu,prod_codigo, prod_pvp AS prod_precio FROM compras_detalles, productos 
+            WHERE comprad_pro_id = prod_id AND comprad_compra_id = ?`;
+            const queryGetListaCompras = `SELECT compra_id as id, compra_fecha_hora AS fechaHora, compra_tipo AS documento,compra_numero AS numero,
+                                         compra_total AS total, compra_subtotal_12 AS subtotal12, compra_subtotal_0 AS subtotal0, compra_valor_iva AS valorIva,
+                                         compra_sri_sustento AS sustentoSri, compra_autorizacion_sri AS numeroAutorizacion,
+                                         usu_username AS usuario,pro_nombre_natural AS proveedor,pro_id as proveedorId,pro_telefono as proveedorTele,
+                                         pro_direccion as proveedorDir,pro_email as proveedorEmail,pro_documento_identidad AS cc_ruc_pasaporte,
+                                         compra_forma_pago AS forma_pago,compra_observaciones AS Observaciones 
+                                         FROM compras,proveedores,usuarios WHERE compra_empresa_id=? AND compra_usu_id=usu_id AND compra_proveedor_id=pro_id 
+                                         AND compra_id = ? `;
+
+            pool.query(queryGetListaCompras,[idEmp,idCompra], (error, results) => {
+                
+                if(error){
+                    console.log(error);
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ocurrio un error'
+                    });
+                    return;
+                }
+
+                if(results.length > 0){
+                    pool.query(queryListCompraDelleByIdCompra,[idCompra], (errorr, resultss) => {
+                    
+                        if(errorr){
+                            reject({
+                                isSucess: false,
+                                code: 400,
+                                messageError: 'ocurrio un error obteniendo compra detalle'
+                            });
+                            return;
+                        }
+    
+                        let sendResult = results[0];
+                        sendResult['data'] = resultss;
+    
+                        resolve({
+                            isSucess: true,
+                            code: 200,
+                            data: sendResult
+                        });
+
+                        return;
+                    });
+                }else{
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'no existe compra con ese id empresa',
+                        notExist: true
+                    });
+                    return;
+                }
+
+            });
+
+        }catch(exception){
+            console.log('error obteniendo lista de compras');
+            console.log(exception);
+        }
+    });
+}

@@ -261,10 +261,11 @@ exports.deleteCliente = async (idEmpresa, idCliente) => {
 
             pool.query(queryDeleteCliente, [idEmpresa, idCliente], function(error, results, fields){
                 if(error){
+                    console.log(error);
                     reject({
                         isSucess: false,
                         code: 400,
-                        message: error.message
+                        tieneMovimientos: error.message.includes('a foreign key constraint fails') ? true : false
                     });
                     return;
                 }

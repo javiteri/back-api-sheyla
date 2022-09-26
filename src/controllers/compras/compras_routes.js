@@ -92,5 +92,18 @@ router.post('/deleteCompra', async(req, res, next) => {
     );
 });
 
+router.get('/getDataByIdCompra',async(req,res,next) => {
+    const getDataByIdCompraPromise = 
+            comprasRepository.getDataByIdCompra(req.query.id, req.query.idEmp);
+    getDataByIdCompraPromise.then(
+        function(results){
+            res.status(200).send(results);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 
 module.exports = router;
