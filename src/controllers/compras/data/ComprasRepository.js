@@ -325,7 +325,6 @@ exports.getNextNumeroSecuencialByIdEmp = async(idEmp,tipoDoc,idProveedor,compraN
             const queryNextSecencial = `SELECT CAST(MID(compra_numero,9,15) AS UNSIGNED) AS numero FROM compras WHERE compra_numero LIKE ? AND compra_empresa_id = ? 
             AND compra_proveedor_id = ? AND compra_tipo =? ORDER BY  CAST(MID(compra_numero,9,15) AS UNSIGNED) DESC LIMIT 1`;
 
-            console.log(compraNumero);
             pool.query(queryNextSecencial, [`${compraNumero}-%`,idEmp,idProveedor,tipoDoc], function(error, results){
                 if(error){
                     console.log('error consltando sigiente secuencial');
