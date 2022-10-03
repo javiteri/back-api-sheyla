@@ -177,7 +177,7 @@ exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
         
         try{
             let queryProductosDelMes = `SELECT COUNT(*) AS cantidad,ventad_producto, SUM(venta_total) AS total FROM
-                                        ventas,ventas_detalles WHERE venta_id=ventad_id AND venta_empresa_id=? AND
+                                        ventas,ventas_detalles WHERE venta_id=ventad_venta_id AND venta_empresa_id=? AND
                                         venta_fecha_hora BETWEEN ? AND ? AND
                                         venta_anulado=0 GROUP BY ventad_prod_id ORDER BY SUM(venta_total) LIMIT 10`;
             
