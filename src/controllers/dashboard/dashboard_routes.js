@@ -5,10 +5,13 @@ const dashboardRepository = require('./data/DashboardRepository');
 
 router.get('/getinfoventadiaria', async (req, res) => {
 
+    console.log('inside');
+    
     const idEmp = req.query.idEmp;
+    const fechaIni = req.query.fechaIni;
+    const fechaFin = req.query.fechaFin;
 
-
-    const getInfoVentaPromise = dashboardRepository.getInfoVentaDiaria(idEmp,'','');
+    const getInfoVentaPromise = dashboardRepository.getInfoVentaDiaria(idEmp,fechaIni,fechaFin);
 
     getInfoVentaPromise.then(
         function(result) {

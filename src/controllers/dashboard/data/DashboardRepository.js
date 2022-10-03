@@ -2,10 +2,11 @@ const pool = require('../../../connectiondb/mysqlconnection');
 
 exports.getInfoVentaDiaria = async (idEmpresa, fechaIni,fechaFin) => {
     return new Promise((resolve, reject) => {
-        
+
+        console.log('inside info diairia');
         try{
             let querySelectVentaDiaria = `SELECT SUM(venta_total) AS 'total' FROM ventas WHERE venta_empresa_id= ? AND
-                                    venta_fecha_hora BETWEEN '2022-10-02 00:00:00' AND '2022-10-02 23:59:59' AND
+                                    venta_fecha_hora BETWEEN ? AND ? AND
                                     venta_anulado=0`
             
             pool.query(querySelectVentaDiaria, [idEmpresa, fechaIni,fechaFin], (err, results) => {
@@ -19,6 +20,7 @@ exports.getInfoVentaDiaria = async (idEmpresa, fechaIni,fechaFin) => {
                     return;
                 }
                 
+
                 resolve({
                     isSucess: true,
                     code: 200,
@@ -179,6 +181,8 @@ exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
                                         venta_fecha_hora BETWEEN ? AND ? AND
                                         venta_anulado=0 GROUP BY ventad_prod_id ORDER BY SUM(venta_total) LIMIT 10`;
             
+                                        console.log(fechaIni);
+                                        console.log(fechaFin);
             pool.query(queryProductosDelMes, [idEmp,fechaIni,fechaFin], (err, results) => {
 
                 if(err){
@@ -189,7 +193,7 @@ exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
                     });
                     return;
                 }
-                
+                console.log(results);
                 resolve({
                     isSucess: true,
                     code: 200,
