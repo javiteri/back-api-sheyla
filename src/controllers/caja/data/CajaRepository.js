@@ -115,8 +115,7 @@ exports.getListCuadreCajaMovimientosGrupo = async (idEmp, idUsuario,fechaIni,fec
                         const arrayResults = Array.from(results);
                        
                         getDataDetalleCuadreCaja(arrayResults,idEmp,fechaIni,fechaFin,idUsuario).then(function(returnedData){
-                            console.log('returned data');
-                            console.log(returnedData);
+
                             resolve({
                                 isSucess: true,
                                 code: 200,

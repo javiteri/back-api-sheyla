@@ -19,6 +19,7 @@ const ventasRouter = require('./src/controllers/ventas/ventas_routes');
 const comprasRouter = require('./src/controllers/compras/compras_routes');
 const cajaRouter = require('./src/controllers/caja/caja-routes');
 const configsRouter = require('./src/controllers/configuracion/configs_routes');
+const dashboardRoter = require('./src/controllers/dashboard/dashboard_routes');
 
 var app = express();
 
@@ -43,6 +44,7 @@ app.use('/api/ventas', passport.authenticate('jwt', {session: false}), ventasRou
 app.use('/api/compras', passport.authenticate('jwt',{session: false}), comprasRouter);
 app.use('/api/caja', passport.authenticate('jwt',{session: false}), cajaRouter);
 app.use('/api/configs', passport.authenticate('jwt',{session: false}), configsRouter );
+app.use('/api/dashboard', passport.authenticate('jwt',{session: false}), dashboardRoter );
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
