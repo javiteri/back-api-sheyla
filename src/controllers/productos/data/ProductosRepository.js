@@ -1,4 +1,8 @@
 const pool = require('../../../connectiondb/mysqlconnection');
+const excelJS = require("exceljs");
+
+const fs = require('fs');
+
 
 exports.getListProductosByIdEmp = async (idEmpresa) => {
 
@@ -405,5 +409,138 @@ exports.searchProductosByIdEmpActivo = async (idEmpresa, textSearch) => {
             reject('error: ' + e);
         }
     });    
+
+}
+
+exports.getListProductosExcel = async (idEmpresa) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const valueResultPromise = createExcelFileProductos(idEmpresa);
+            valueResultPromise.then( 
+                function (data) {
+                    resolve(data);
+                },
+                function (error) {
+                    resolve(error);
+                }
+            );
+        }catch(exception){
+            reject('error creando excel');
+        }
+    });
+}
+
+function createExcelFileProductos(idEmp){
+
+    return new Promise((resolve, reject) => {
+        try{
+
+            let querySelectProducto = `SELECT * FROM productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC`
+            
+            pool.query(querySelectProducto, [idEmp, 1], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        message: err
+                    });
+                    return;
+                }
+                
+                const arrayData = Array.from(results);
+
+                const workBook = new excelJS.Workbook(); // Create a new workbook
+                const worksheet = workBook.addWorksheet("Lista Productos");
+                const path = `./files/${idEmp}`;
+
+                console.log(results);
+
+                worksheet.columns = [
+                    {header: 'Codigo', key:'codigo', width: 20},
+                    {header: 'Codigo Barras', key:'codigobarras',width: 20},
+                    {header: 'Nombre', key:'nombre',width: 50},
+                    {header: 'Stock', key:'stock',width: 20},
+                    {header: 'Unidad Medida', key:'unidad',width: 20},
+                    {header: 'Categoria', key:'categoria',width: 20},
+                    {header: 'Marca', key:'marca',width: 20}
+                ];
+            
+                
+                arrayData.forEach(valor => {
+                    let valorInsert = {
+                        codigo: valor.prod_codigo,
+                        codigobarras: valor.prod_codigo_barras,
+                        nombre: valor.prod_nombre,
+                        stock: valor.prod_stock,
+                        unidad: valor.prod_unidad_medida,
+                        categoria: valor.pro_categoria,
+                        marca: valor.prod_marca
+                    }
+                    worksheet.addRow(valorInsert);
+                });
+
+                // Making first line in excel
+                worksheet.getRow(1).eachCell((cell) => {
+                    cell.font = {bold: true},
+                    cell.border = {
+                        top: {style:'thin'},
+                        left: {style:'thin'},
+                        bottom: {style:'thin'},
+                        right: {style:'thin'}
+                    }
+                });
+
+                try{
+
+                    const nameFile = `/${Date.now()}_productos.xlsx`;
+            
+                    if(!fs.existsSync(`${path}`)){
+                        fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                            if (err) {
+                                return console.error(err);
+                            }
+            
+                            workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            
+                                resolve({
+                                    isSucess: true,
+                                    message: 'archivo creado correctamente',
+                                    pathFile: `${path}${nameFile}`
+                                });
+
+                            });
+                        });
+                    }else{
+                        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+                        });
+                    }
+            
+                }catch(exception){
+                    console.log(`exception`);
+                    console.log(exception);
+            
+                    reject({
+                        isSucess: false,
+                        error: 'error creando archivo, reintente'
+                    });
+                }
+
+            });
+
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo, reintente'
+            });
+        }
+    });
 
 }

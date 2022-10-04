@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var fs = require('fs');
 const productosRepository = require('./data/ProductosRepository');
 
 
@@ -131,6 +132,26 @@ router.get('/searchProductosByIdEmpActivo', async (req, res) => {
     searchProductosByIdEmpPromise.then(
         function (clientes){
             res.status(200).send(clientes);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.get('/getlistproductosexcel', async(req, res) => {
+    
+    
+    const getListProductosExcelPromise = productosRepository.getListProductosExcel(req.query.idEmp);
+
+    getListProductosExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
         },
         function(error){
             res.status(400).send(error);

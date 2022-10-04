@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var fs = require('fs');
 const clienteRepository = require('./data/clienterepository')
 
 /* GET clientes data. */
@@ -129,6 +130,26 @@ router.get('/searchClienteByIdEmp', async (req, res) => {
         }
     );
 });
+
+router.get('/getlistclientesexcel', async(req, res) => {
+    
+    
+    const getListClientesExcelPromise = clienteRepository.getListClientesExcel(req.query.idEmp);
+
+    getListClientesExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+})
 
 
 module.exports = router;

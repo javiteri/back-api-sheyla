@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+const fs = require('fs');
 const proveedoresRepository = require('./data/ProveedoresRepository');
 
 router.get('/getProveedoresByIdEmp', async (req, res) => {
@@ -84,6 +85,26 @@ router.get('/searchProveedorByIdEmp', async (req, res) => {
         }
     );
 });
+
+router.get('/getlistproveedoresexcel', async(req, res) => {
+    
+    
+    const getListClientesExcelPromise = proveedoresRepository.getListProveedoresExcel(req.query.idEmp);
+
+    getListClientesExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+})
 
 
 module.exports = router;

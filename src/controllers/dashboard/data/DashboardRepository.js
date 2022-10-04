@@ -244,3 +244,38 @@ exports.getClientesDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
     });
 
 }
+
+exports.getVentasDiaFormaPagoByIdEmp = async(idEmp,fechaIni,fechaFin) => {
+
+    return new Promise((resolve, reject) => {
+        
+        try{
+            let queryVentasDelDiaFormaPago = `SELECT COUNT(*) AS cantidad,venta_forma_pago,SUM(venta_total) AS total
+                                FROM ventas WHERE venta_empresa_id= ? AND 
+                                venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 GROUP BY venta_forma_pago`;
+            
+            pool.query(queryVentasDelDiaFormaPago, [idEmp,fechaIni,fechaFin], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(e){
+            reject('error: ' + e);
+        }
+    });
+
+}

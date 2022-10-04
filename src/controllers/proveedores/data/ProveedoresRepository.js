@@ -1,4 +1,6 @@
 const pool = require('../../../connectiondb/mysqlconnection');
+const excelJS = require("exceljs");
+const fs = require('fs');
 
 exports.getListProveedoresByIdEmp = async (idEmpresa) => {
 
@@ -325,3 +327,133 @@ exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch) => {
     });    
 
 }
+
+exports.getListProveedoresExcel = async (idEmpresa) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const valueResultPromise = createExcelFileProveedores(idEmpresa);
+            valueResultPromise.then( 
+                function (data) {
+                    resolve(data);
+                },
+                function (error) {
+                    resolve(error);
+                }
+            );
+        }catch(exception){
+            reject('error creando excel');
+        }
+    });
+}
+
+function createExcelFileProveedores(idEmp){
+
+    return new Promise((resolve, reject) => {
+        try{
+
+
+            let querySelectProveedoresByIdEmp = 'SELECT * FROM proveedores WHERE pro_empresa_id = ? ';
+            pool.query(querySelectProveedoresByIdEmp, [idEmp], function (error, results){
+
+                if(error){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
+                
+                console.log(results);    
+                const arrayData = Array.from(results);
+
+                const workBook = new excelJS.Workbook(); // Create a new workbook
+                const worksheet = workBook.addWorksheet("Lista Proveedores");
+                const path = `./files/${idEmp}`;
+
+                worksheet.columns = [
+                    {header: 'Identificacion', key:'identificacion', width: 20},
+                    {header: 'Nombre', key:'nombre',width: 50},
+                    {header: 'Email', key:'email',width: 40},
+                    {header: 'Telefono', key:'telefono',width: 20},
+                    {header: 'Observacion', key:'observacion',width: 40}
+                ];
+            
+                
+                arrayData.forEach(valor => {
+                    let valorInsert = {
+                        identificacion: valor.pro_documento_identidad,
+                        nombre: valor.pro_nombre_natural,
+                        email: valor.pro_email,
+                        telefono: valor.pro_telefono,
+                        observacion: valor.pro_observacion
+                    }
+                    worksheet.addRow(valorInsert);
+                });
+
+                // Making first line in excel
+                worksheet.getRow(1).eachCell((cell) => {
+                    cell.font = {bold: true},
+                    cell.border = {
+                        top: {style:'thin'},
+                        left: {style:'thin'},
+                        bottom: {style:'thin'},
+                        right: {style:'thin'}
+                    }
+                });
+
+                try{
+
+                    const nameFile = `/${Date.now()}_proveedores.xlsx`;
+            
+                    if(!fs.existsSync(`${path}`)){
+                        fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                            if (err) {
+                                return console.error(err);
+                            }
+            
+                            workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            
+                                resolve({
+                                    isSucess: true,
+                                    message: 'archivo creado correctamente',
+                                    pathFile: `${path}${nameFile}`
+                                });
+
+                            });
+                        });
+                    }else{
+                        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+                        });
+                    }
+            
+                }catch(exception){
+                    console.log(`exception`);
+                    console.log(exception);
+            
+                    reject({
+                        isSucess: false,
+                        error: 'error creando archivo, reintente'
+                    });
+                }
+
+            });
+
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo, reintente'
+            });
+        }
+    });
+
+}
+

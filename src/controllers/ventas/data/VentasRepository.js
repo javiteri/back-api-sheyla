@@ -1,4 +1,8 @@
 const pool = require('../../../connectiondb/mysqlconnection');
+const excelJS = require("exceljs");
+
+const fs = require('fs');
+
 
 exports.insertVenta = async (datosVenta) => {
 
@@ -599,4 +603,312 @@ exports.getDataByIdVenta = async (idVenta, idEmp) => {
             console.log(exception);
         }
     });
+}
+
+
+exports.getListListaVentasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const valueResultPromise = createExcelFileListaVentas(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc);
+            valueResultPromise.then( 
+                function (data) {
+                    resolve(data);
+                },
+                function (error) {
+                    resolve(error);
+                }
+            );
+        }catch(exception){
+            reject('error creando excel');
+        }
+    });
+}
+
+
+exports.getListListaResumenVentasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const valueResultPromise = createExcelFileResumenVentas(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc);
+            valueResultPromise.then( 
+                function (data) {
+                    resolve(data);
+                },
+                function (error) {
+                    resolve(error);
+                }
+            );
+        }catch(exception){
+            reject('error creando excel');
+        }
+    });
+}
+
+function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc){
+
+    return new Promise((resolve, reject) => {
+        try{
+
+            let valueNombreClient = "";
+            let valueCiRucClient = "";
+
+            if(nombreOrCiRuc){
+            
+                const containsNumber =  /^[0-9]*$/.test(nombreOrCiRuc);
+                valueCiRucClient = containsNumber ? nombreOrCiRuc : "";
+
+                const containsText =  !containsNumber;
+                valueNombreClient = containsText ? nombreOrCiRuc : "";
+
+            }
+
+            const queryGetListaVentas = `SELECT venta_id as id, venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
+            venta_anulado as anulado, venta_total AS total,usu_username AS usuario,cli_nombres_natural AS cliente, cli_documento_identidad AS cc_ruc_pasaporte,
+            venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
+            FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
+            AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
+            AND  venta_fecha_hora  BETWEEN ? AND ? ORDER BY venta_id DESC`;
+
+            pool.query(queryGetListaVentas, 
+                        [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
+                        fechaIni,fechaFin], (error, results) => {
+
+                if(error){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ocurrio un error'
+                    });
+                    return;
+                }
+                
+                const arrayData = Array.from(results);
+
+                const workBook = new excelJS.Workbook(); // Create a new workbook
+                const worksheet = workBook.addWorksheet("Lista Ventas");
+                const path = `./files/${idEmp}`;
+
+                worksheet.columns = [
+                    {header: 'Fecha Hora', key:'fechahora', width: 20},
+                    {header: 'Documento', key:'documento',width: 20},
+                    {header: 'Numero', key:'numero',width: 20},
+                    {header: 'Total', key:'total',width: 20},
+                    {header: 'Cliente', key:'cliente',width: 50},
+                    {header: 'Identificacion', key:'identificacion',width: 20},
+                    {header: 'Forma de Pago', key:'formapago',width: 20}
+                ];
+            
+                
+                arrayData.forEach(valor => {
+                    let valorInsert = {
+                        fechahora: valor.fechaHora,
+                        documento: valor.documento,
+                        numero: valor.numero,
+                        total: valor.total,
+                        cliente: valor.cliente,
+                        identificacion: valor.cc_ruc_pasaporte,
+                        formapago: valor.forma_pago
+                    }
+                    worksheet.addRow(valorInsert);
+                });
+
+                // Making first line in excel
+                worksheet.getRow(1).eachCell((cell) => {
+                    cell.font = {bold: true},
+                    cell.border = {
+                        top: {style:'thin'},
+                        left: {style:'thin'},
+                        bottom: {style:'thin'},
+                        right: {style:'thin'}
+                    }
+                });
+
+                try{
+
+                    const nameFile = `/${Date.now()}_listaventas.xlsx`;
+            
+                    if(!fs.existsSync(`${path}`)){
+                        fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                            if (err) {
+                                return console.error(err);
+                            }
+            
+                            workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            
+                                resolve({
+                                    isSucess: true,
+                                    message: 'archivo creado correctamente',
+                                    pathFile: `${path}${nameFile}`
+                                });
+
+                            });
+                        });
+                    }else{
+                        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+                        });
+                    }
+            
+                }catch(exception){
+                    console.log(`exception`);
+                    console.log(exception);
+            
+                    reject({
+                        isSucess: false,
+                        error: 'error creando archivo, reintente'
+                    });
+                }
+
+            });
+
+
+
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo, reintente'
+            });
+        }
+    });
+
+}
+
+
+function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc){
+
+    return new Promise((resolve, reject) => {
+        try{
+
+            let valueNombreClient = "";
+            let valueCiRucClient = "";
+
+            if(nombreOrCiRuc){
+                const containsNumber =  /^[0-9]*$/.test(nombreOrCiRuc);
+                valueCiRucClient = containsNumber ? nombreOrCiRuc : "";
+
+                const containsText =  !containsNumber;
+                valueNombreClient = containsText ? nombreOrCiRuc : "";
+            }
+
+            const queryGetListaResumenVentas = `SELECT venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
+            cli_nombres_natural AS cliente,cli_documento_identidad AS cc_ruc_pasaporte,venta_forma_pago AS forma_pago,venta_subtotal_12 AS subtotalIva,
+            venta_subtotal_0 AS subtotalCero, venta_valor_iva AS valorIva,venta_total AS total FROM ventas,clientes,usuarios WHERE venta_empresa_id=? 
+            AND venta_usu_id=usu_id AND venta_cliente_id=cli_id AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
+            AND venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 `;
+
+            pool.query(queryGetListaResumenVentas, 
+                        [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
+                        fechaIni,fechaFin], (error, results) => {
+
+                if(error){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ocurrio un error'
+                    });
+                    return;
+                }
+                
+                console.log(results);
+                const arrayData = Array.from(results);
+
+                const workBook = new excelJS.Workbook(); // Create a new workbook
+                const worksheet = workBook.addWorksheet("Resumen Ventas");
+                const path = `./files/${idEmp}`;
+
+                worksheet.columns = [
+                    {header: 'Fecha Hora', key:'fechahora', width: 20},
+                    {header: 'Documento', key:'documento',width: 20},
+                    {header: 'Numero', key:'numero',width: 20},
+                    {header: 'Total', key:'total',width: 20},
+                    {header: 'Cliente', key:'cliente',width: 50},
+                    {header: 'Identificacion', key:'identificacion',width: 20},
+                    {header: 'Forma de Pago', key:'formapago',width: 20}
+                ];
+            
+                
+                arrayData.forEach(valor => {
+                    let valorInsert = {
+                        fechahora: valor.fechaHora,
+                        documento: valor.documento,
+                        numero: valor.numero,
+                        cliente: valor.cliente,
+                        identificacion: valor.cc_ruc_pasaporte,
+                        formapago: valor.forma_pago,
+                        subtotal12: valor.subtotalIva,
+                        subtotal0: valor.subtotalCero,
+                        iva: valor.valorIva,
+                        total: valor.total
+                    }
+
+                    worksheet.addRow(valorInsert);
+                });
+
+                // Making first line in excel
+                worksheet.getRow(1).eachCell((cell) => {
+                    cell.font = {bold: true},
+                    cell.border = {
+                        top: {style:'thin'},
+                        left: {style:'thin'},
+                        bottom: {style:'thin'},
+                        right: {style:'thin'}
+                    }
+                });
+
+                try{
+
+                    const nameFile = `/${Date.now()}_resumenventas.xlsx`;
+            
+                    if(!fs.existsSync(`${path}`)){
+                        fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                            if (err) {
+                                return console.error(err);
+                            }
+            
+                            workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            
+                                resolve({
+                                    isSucess: true,
+                                    message: 'archivo creado correctamente',
+                                    pathFile: `${path}${nameFile}`
+                                });
+
+                            });
+                        });
+                    }else{
+                        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+                        });
+                    }
+            
+                }catch(exception){
+                    console.log(`exception`);
+                    console.log(exception);
+            
+                    reject({
+                        isSucess: false,
+                        error: 'error creando archivo, reintente'
+                    });
+                }
+
+            });
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo, reintente'
+            });
+        }
+    });
+
 }

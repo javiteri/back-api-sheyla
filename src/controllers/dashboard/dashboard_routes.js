@@ -6,7 +6,7 @@ const dashboardRepository = require('./data/DashboardRepository');
 router.get('/getinfoventadiaria', async (req, res) => {
 
     console.log('inside');
-    
+
     const idEmp = req.query.idEmp;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
@@ -118,6 +118,24 @@ router.get('/getclientesdelmes', async (req, res) => {
     const getClientesDelMesPromise = dashboardRepository.getClientesDelMesByIdEmp(idEmp,fechaIni,fechaFin);
 
     getClientesDelMesPromise.then(
+        function(result) {
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.get('/getventasdeldiaformapago', async (req, res) => {
+
+    const idEmp = req.query.idEmp;
+    const fechaIni = req.query.fechaIni;
+    const fechaFin = req.query.fechaFin;
+
+    const getVentasDelDiaFormaPagoPromise = dashboardRepository.getVentasDiaFormaPagoByIdEmp(idEmp,fechaIni,fechaFin);
+
+    getVentasDelDiaFormaPagoPromise.then(
         function(result) {
             res.status(200).send(result);
         },

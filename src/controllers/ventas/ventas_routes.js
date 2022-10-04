@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+var fs = require('fs');
 
 const ventasRepository = require('./data/VentasRepository');
 
@@ -112,6 +113,56 @@ router.get('/getDataByIdVenta',async(req,res,next) => {
     getDataByIdVentaPromise.then(
         function(results){
             res.status(200).send(results);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.get('/getlistventasexcel', async(req, res) => {
+    
+    const idEmp = req.query.idEmp;
+    const nombreCi = req.query.ciname;
+    const noDoc = req.query.nodoc;
+    const fechaIni = req.query.fechaIni;
+    const fechaFin = req.query.fechaFin;
+
+    const getListaVentasExcelPromise = ventasRepository.getListListaVentasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc);
+
+    getListaVentasExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.get('/getlistresumenventasexcel', async(req, res) => {
+    
+    const idEmp = req.query.idEmp;
+    const nombreCi = req.query.ciname;
+    const noDoc = req.query.nodoc;
+    const fechaIni = req.query.fechaIni;
+    const fechaFin = req.query.fechaFin;
+
+    const getListaVentasExcelPromise = ventasRepository.getListListaResumenVentasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc);
+
+    getListaVentasExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
         },
         function(error){
             res.status(400).send(error);

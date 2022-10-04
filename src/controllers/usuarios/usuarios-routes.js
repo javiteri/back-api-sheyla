@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
+var fs = require('fs');
 const usuarioRepository = require('./data/UsuariosRepository');
+
 
 router.get('/getUsuariosByIdEmp', async (req, res) => {
 
@@ -83,6 +85,28 @@ router.get('/searchUsuariosByIdEmp', async (req, res) => {
         }
     );
 });
+
+router.get('/getlistusersexcel', async(req, res) => {
+    console.log('inside excel files');
+    const getListUserExcelPromise = usuarioRepository.getListUsersExcel(req.query.idEmp);
+
+    getListUserExcelPromise.then(
+        function (clientes){
+            //res.status(200).send(clientes);
+            console.log(clientes['pathFile']);
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+})
 
 
 

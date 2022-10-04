@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
 const comprasRepository = require('./data/ComprasRepository');
+
 
 router.get('/listaComprasByIdEmp', async(req, res, next) => {
 
@@ -104,6 +106,58 @@ router.get('/getDataByIdCompra',async(req,res,next) => {
         }
     );
 });
+
+router.get('/getlistcomprasexcel', async(req, res) => {
+    
+    const idEmp = req.query.idEmp;
+    const nombreCi = req.query.ciname;
+    const noDoc = req.query.nodoc;
+    const fechaIni = req.query.fechaIni;
+    const fechaFin = req.query.fechaFin;
+
+    const getListaComprasExcelPromise = comprasRepository.getListaComprasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc);
+
+    getListaComprasExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.get('/getlistresumencomprasexcel', async(req, res) => {
+    
+    const idEmp = req.query.idEmp;
+    const nombreCi = req.query.ciname;
+    const noDoc = req.query.nodoc;
+    const fechaIni = req.query.fechaIni;
+    const fechaFin = req.query.fechaFin;
+
+    const getListaComprasExcelPromise = comprasRepository.getListaResumenComprasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc);
+
+    getListaComprasExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+
 
 
 module.exports = router;

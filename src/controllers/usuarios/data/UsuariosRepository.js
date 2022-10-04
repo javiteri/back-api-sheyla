@@ -1,4 +1,7 @@
 const pool = require('../../../connectiondb/mysqlconnection');
+const excelJS = require("exceljs");
+
+const fs = require('fs');
 
 exports.getUsuarioByIdEmp = async (idUser, idEmpresa) => {
     return new Promise((resolve, reject) => {
@@ -304,5 +307,133 @@ exports.searchUsuariosByIdEmp = async (idEmpresa, textSearch) => {
             reject('error: ' + e);
         }
     });    
+
+}
+
+exports.getListUsersExcel = async (idEmpresa) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const valueResultPromise = createExcelFileUsuarios(idEmpresa);
+            valueResultPromise.then( 
+                function (data) {
+                    console.log('call to resolve');
+                    resolve(data);
+                },
+                function (error) {
+                    resolve(error);
+                }
+            );
+        }catch(exception){
+            reject('error creando excel');
+        }
+    });
+}
+
+function createExcelFileUsuarios(idEmp){
+
+    return new Promise((resolve, reject) => {
+        try{
+
+            let querySelectUsuariosByIdEmp = 'SELECT * FROM usuarios WHERE usu_empresa_id = ? ';
+            pool.query(querySelectUsuariosByIdEmp, [idEmp], function (error, results){
+
+                if(error){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+
+            
+                console.log(results);    
+                const arrayData = Array.from(results);
+
+                const workBook = new excelJS.Workbook(); // Create a new workbook
+                const worksheet = workBook.addWorksheet("Lista Usuarios");
+                const path = `./files/${idEmp}`;
+
+                worksheet.columns = [
+                    {header: 'identificacion', key:'identificacion', width: 20},
+                    {header: 'nombre', key:'nombre',width: 50},
+                    {header: 'telefono', key:'telefono',width: 20},
+                    {header: 'email', key:'email',width: 40},
+                    {header: 'username', key:'username',width: 20}
+                ];
+            
+
+                arrayData.forEach(valor => {
+                    let valorInsert = {
+                        identificacion: valor.usu_identificacion,
+                        nombre: valor.usu_nombres,
+                        telefono: valor.usu_telefonos,
+                        email: valor.usu_mail,
+                        username: valor.usu_username
+                    }
+                    worksheet.addRow(valorInsert);
+                });
+
+                // Making first line in excel
+                worksheet.getRow(1).eachCell((cell) => {
+                    cell.font = {bold: true},
+                    cell.border = {
+                        top: {style:'thin'},
+                        left: {style:'thin'},
+                        bottom: {style:'thin'},
+                        right: {style:'thin'}
+                    }
+                });
+
+                try{
+
+                    const nameFile = `/${Date.now()}_users.xlsx`;
+            
+                    if(!fs.existsSync(`${path}`)){
+                        fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                            if (err) {
+                                return console.error(err);
+                            }
+            
+                            workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            
+                                resolve({
+                                    isSucess: true,
+                                    message: 'archivo creado correctamente',
+                                    pathFile: `${path}${nameFile}`
+                                });
+
+                            });
+                        });
+                    }else{
+                        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+                        });
+                    }
+            
+                }catch(exception){
+                    console.log(`exception`);
+                    console.log(exception);
+            
+                    reject({
+                        isSucess: false,
+                        error: 'error creando archivo, reintente'
+                    });
+                }
+
+            });
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo, reintente'
+            });
+        }
+    });
 
 }

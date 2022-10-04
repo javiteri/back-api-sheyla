@@ -1,4 +1,6 @@
 const pool = require('../../../connectiondb/mysqlconnection');
+const excelJS = require("exceljs");
+const fs = require('fs');
 
 exports.getListResumenCajaByIdEmp = async (idEmp,idUsuario,tipo,
     concepto,fechaIni,fechaFin) => {
@@ -370,4 +372,144 @@ exports.insertBitacoraIngresoOrEgreso = async (bitacoraData) => {
             });
         }
     });
+}
+
+
+exports.getListaMovimientosCajaExcel = async (idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const valueResultPromise = createExcelFileMovimientosCaja(idEmp,idUsuario,tipo,
+                concepto,fechaIni,fechaFin);
+            valueResultPromise.then( 
+                function (data) {
+                    resolve(data);
+                },
+                function (error) {
+                    resolve(error);
+                }
+            );
+        }catch(exception){
+            reject('error creando excel');
+        }
+    });
+}
+
+function createExcelFileMovimientosCaja(idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin){
+
+    return new Promise((resolve, reject) => {
+        try{
+
+            let searchByUsuario = '';
+                if(idUsuario && idUsuario != 0){
+                    searchByUsuario = `AND ie_user = ${idUsuario}`;
+                }
+                let searchByTipo = '';
+                if(tipo){
+                    searchByTipo = `AND bc_tipo = '${tipo}'`
+                }
+
+                const sqlQueryGetListResumen = `SELECT bc_Fecha_hora AS fecha,bc_tipo AS tipo,bc_monto AS monto,bc_concepto AS concepto,
+                                                usu_nombres AS responsable FROM bitacora_caja,usuarios 
+                                                WHERE bc_empresa_id = ? AND usu_id=ie_user ${searchByTipo} AND bc_concepto LIKE ?
+                                                ${searchByUsuario} AND bc_Fecha_hora BETWEEN ? AND ? ORDER BY bc_id`;
+                
+                pool.query(sqlQueryGetListResumen, [idEmp,"%"+concepto+"%",fechaIni,fechaFin], (error, results) => { 
+                    
+                    if(error){
+                        reject({
+                            isSucess: false,
+                            code: 400,
+                            messageError: 'ocurrio un error'
+                        });
+                        return;
+                    }
+                    
+                
+                const arrayData = Array.from(results);
+
+                const workBook = new excelJS.Workbook(); // Create a new workbook
+                const worksheet = workBook.addWorksheet("Lista Compras");
+                const path = `./files/${idEmp}`;
+
+                worksheet.columns = [
+                    {header: 'Fecha Hora', key:'fecha', width: 20},
+                    {header: 'Tipo', key:'tipo',width: 20},
+                    {header: 'Monto', key:'monto',width: 20},
+                    {header: 'Concepto', key:'concepto',width: 40},
+                    {header: 'Responsable', key:'responsable',width: 30}
+                ];
+            
+                
+                arrayData.forEach(valor => {
+                    let valorInsert = {
+                        fecha: valor.fecha,
+                        tipo: valor.tipo,
+                        monto: valor.monto,
+                        concepto: valor.concepto,
+                        responsable: valor.responsable
+                    }
+                    worksheet.addRow(valorInsert);
+                });
+
+                // Making first line in excel
+                worksheet.getRow(1).eachCell((cell) => {
+                    cell.font = {bold: true},
+                    cell.border = {
+                        top: {style:'thin'},
+                        left: {style:'thin'},
+                        bottom: {style:'thin'},
+                        right: {style:'thin'}
+                    }
+                });
+
+                try{
+
+                    const nameFile = `/${Date.now()}_movcaja.xlsx`;
+            
+                    if(!fs.existsSync(`${path}`)){
+                        fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                            if (err) {
+                                return console.error(err);
+                            }
+            
+                            workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            
+                                resolve({
+                                    isSucess: true,
+                                    message: 'archivo creado correctamente',
+                                    pathFile: `${path}${nameFile}`
+                                });
+
+                            });
+                        });
+                    }else{
+                        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+                        });
+                    }
+            
+                }catch(exception){
+                    console.log(`exception`);
+                    console.log(exception);
+            
+                    reject({
+                        isSucess: false,
+                        error: 'error creando archivo, reintente'
+                    });
+                }
+
+                });
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo, reintente'
+            });
+        }
+    });
+
 }

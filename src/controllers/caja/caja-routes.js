@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-
+const fs = require('fs');
 const cajaRepository = require('./data/CajaRepository');
 
 router.get('/listaResumenCajaIdEmp', async(req, res, next) => {
@@ -82,5 +82,32 @@ router.post('/insertingresoegreso', async(req, res, next) => {
         }
     );
 });
+
+router.get('/getlistmovimientoscajaexcel', async(req, res) => {
+    
+    let idEmp = req.query.idEmp;
+    let idUsuario = req.query.idUsu;
+    let tipo = req.query.tipo;
+    let concepto = req.query.concepto;
+    let fechaIni = req.query.fechaini;
+    let fechaFin = req.query.fechafin;
+
+    const getListaMovCajaExcelPromise = cajaRepository.getListaMovimientosCajaExcel(idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin);
+
+    getListaMovCajaExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 
 module.exports = router;
