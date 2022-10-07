@@ -410,6 +410,7 @@ exports.createEmpresaByRuc = function(ruc){
             
                                 if(str1.includes('***OK')){
                                     
+                                    console.log(str1);
                                     let dbName = str1.split(',')[1].replaceAll('*','');
 
                                     let querySelectEmpresa = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? LIMIT 1`;
