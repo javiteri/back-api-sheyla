@@ -75,7 +75,6 @@ router.post('/loginverify', async (req, res, next) => {
 
                     },
                     function(error){
-                        console.log('reject data: ' + error);
                         res.send({
                             'error': error
                         });
@@ -102,5 +101,55 @@ router.post('/loginverify', async (req, res, next) => {
     );
     
 });
+
+router.post('/loginverify2', async (req, res, next) => {
+
+    const {ruc, user, password} = req.body;
+
+    const resultValidate = loginRepository.loginAndValidateEmp(ruc, user, password);    
+
+    resultValidate.then(
+        function(result){
+            
+            if(result.isSuccess && result.existUser){
+                const body = {_id: result.rucEmpresa, username: result.idUsuario};
+
+                const token = jwt.sign({
+                    user: body,
+                }, secretkey/*process.env.SECRECT_KEY_HASH*/, {expiresIn: 43200});//seconds = 12 horas                                
+
+                result["token"] = token;
+                result["expire"] = 43200
+                        
+                res.status(200).send(result);
+                return;
+            }
+
+            res.status(200).send(result);
+        
+        },
+        function(error){
+            res.status(200).send({
+                isSuccess: true,
+                error: 'ocurrio un error, reintente'
+            });
+        }
+    );
+    
+});
+
+router.get('/crearnuevaempresa', async(req, res) => {
+    const rucEmp = req.query.ruc;
+    const crearEmpresaProm = loginRepository.createEmpresaByRuc(rucEmp);
+
+    crearEmpresaProm.then(
+        function(response){
+            res.status(200).send(response);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+})
 
 module.exports = router;

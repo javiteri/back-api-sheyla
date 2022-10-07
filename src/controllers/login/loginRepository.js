@@ -1,6 +1,7 @@
 const poolMysql = require('../../connectiondb/mysqlconnection');
 const poolMysqlBd1 = require('../../connectiondb/mysqlconnectionlogin');
 
+const httpClient = require('http');
 
 exports.loginUser = function(user, password){
     return new Promise((resolve, reject) => {
@@ -87,6 +88,118 @@ exports.loginValidateExistEmpresaRucBd1 = function(ruc){
         }
     });
 
+}
+
+exports.loginAndValidateEmp = function(ruc, username, password){
+    return new Promise((resolve, reject) => {
+        try{
+
+            // HACER UN REQUEST A http://sheyla2.dyndns.info/sheylaweb/VALIDAR_EMPRESA.php?SERIE=1718792656001
+            var options = {
+                host: 'sheyla2.dyndns.info',
+                path: `/sheylaweb/VALIDAR_EMPRESA.php?SERIE=${ruc}`
+            };
+            const callback = function(response){
+                let str = '';
+
+                //another chunk of data has been received, so append it to `str`
+                response.on('data', function (chunk) {
+                    str += chunk;
+                });
+
+                response.on('end', function () {
+
+                    
+                    if(str.includes('NOEXISTE')){
+                        resolve({
+                            isSucess: false,
+                            existEmp: false,
+                            message: 'No existe la empresa'
+                        });
+                        return;
+                    }
+
+                    if(str.includes('***OK')){
+                        // CONSULTAR SI EXISTE EL USUARIO Y CONTRASENA
+
+                        let queryEmpresas = "SELECT * FROM empresas WHERE emp_ruc = ? LIMIT 1";
+                        let query = 'SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1';
+                        
+                        poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
+
+                            if(err){
+                                reject('error en BD2');
+                                return;
+                            }
+
+                            if(!resultEmpresa | resultEmpresa == undefined | resultEmpresa == null | !resultEmpresa.length){
+                                reject(' error, no se encontro la empresa');
+                                return;
+                            }
+
+                            let idEmpresa;
+                            let nombreEmpresa;
+                            Object.keys(resultEmpresa).forEach(function(key) {
+                                idEmpresa = resultEmpresa[key].EMP_ID;
+                                nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
+                            });
+
+                            poolMysql.query(query, [username, password, idEmpresa], function(err, results, fields) {
+
+                                if(err){
+                                    reject('error: ' + err);
+                                    return;
+                                }
+
+                                console.log(username);
+                                console.log(password);
+                                console.log(idEmpresa);
+                                console.log(results);
+                                if(!results | results == undefined | results == null | !results.length){
+                                    resolve({
+                                        isSuccess: true,
+                                        existUser: false
+                                    });
+                                    return;
+                                }
+                                
+                                let idUsuario;
+                                let nombreUsuario;
+                                Object.keys(results).forEach(function(key){
+                                    var row = results[key]
+                                    idUsuario = row.usu_id;
+                                    nombreUsuario = row.usu_nombres;
+                                });
+                                
+                                resolve({
+                                    isSuccess: true,
+                                    existUser: true,
+                                    idUsuario: idUsuario,
+                                    nombreUsuario: nombreUsuario,
+                                    idEmpresa: idEmpresa,
+                                    nombreEmpresa: nombreEmpresa,
+                                    rucEmpresa: ruc,
+                                    redirectToHome: true
+                                })
+                            }
+                        );
+
+
+                        });
+
+                    }
+
+                });
+            }
+
+            httpClient.request(options, callback).end();
+        }catch(exception){
+            reject({
+                isSucess: false,
+                message: 'ocurrio un error en la validacion login'
+            });
+        }
+    });
 }
 
 exports.loginValidateEmpresaAndUser = function(ruc, user, password){
@@ -190,7 +303,6 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                     Object.keys(results).forEach(function(key) {
                         idEmpresa = results[key].EMP_ID;
                         nombreEmpresa = results[key].EMP_NOMBRE;
-                        console.log(results[key].EMP_NOMBRE);
                     });
                     
                     // VALIDATE IF USER EXISTS
@@ -242,3 +354,123 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
     });
     
 }
+
+
+exports.createEmpresaByRuc = function(ruc){
+    return new Promise((resolve, reject) => {
+        try{
+            //PARA NUEVA EMPRESA http://sheyla2.dyndns.info/sheylaweb/CREAR_EMPRESA.php?SERIE=1718792656001
+
+            var options = {
+                host: 'sheyla2.dyndns.info',
+                path: `/sheylaweb/CREAR_EMPRESA.php?SERIE=${ruc}`
+            };
+            const callback = function(response){
+                let str = '';
+
+                //another chunk of data has been received, so append it to `str`
+                response.on('data', function (chunk) {
+                    str += chunk;
+                });
+
+                response.on('end', function () {
+                    if(str.includes('YAEXISTE')){
+                        resolve({
+                            isSucess: true,
+                            existEmp: true,
+                            message: 'la empresa ya existe'
+                        });
+                        return;
+                    }
+
+                    if(str.includes('NUEVAEMPRESAOK')){
+
+                        var options1 = {
+                            host: 'sheyla2.dyndns.info',
+                            path: `/sheylaweb/VALIDAR_EMPRESA.php?SERIE=${ruc}`
+                        };
+                        const callback1 = function(response){
+                            let str1 = '';
+            
+                            //another chunk of data has been received, so append it to `str`
+                            response.on('data', function (chunk) {
+                                str1 += chunk;
+                            });
+            
+                            response.on('end', function () {
+            
+                                if(str1.includes('NOEXISTE')){
+                                    resolve({
+                                        isSucess: false,
+                                        existEmp: false,
+                                        message: 'No existe la empresa'
+                                    });
+                                    return;
+                                }
+            
+                                if(str1.includes('***OK')){
+                                    
+                                    let dbName = str1.split(',')[1].replaceAll('*','');
+
+                                    let querySelectEmpresa = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? LIMIT 1`;
+                                    let queryInsertUserDefaultEmpresa = `INSERT INTO ${dbName}.usuarios (usu_empresa_id, usu_identificacion, usu_nombres, usu_telefonos,usu_direccion, 
+                                                usu_mail, usu_fecha_nacimiento, usu_username, usu_password, usu_permiso_escritura)
+                                                VALUES (?,?,?,?,?,?,?,?,?,?)`;
+                                    poolMysql.query(querySelectEmpresa, [ruc], function(err, results, fields){
+                                                    
+                                                    if(err){
+                                                        reject('error en BD2');
+                                                        return;
+                                                    }
+                        
+                                                    let idEmpresa;
+                                                    Object.keys(results).forEach(function(key) {
+                                                        idEmpresa = results[key].EMP_ID;
+                                                    });
+
+                                                    poolMysql.query(queryInsertUserDefaultEmpresa, 
+                                                        [idEmpresa, '9999999999','Usuario Default','', '', '', '2000-01-01', 'ADMIN', 'ADMIN', 1], 
+                                                        function(err, resultsUser){
+                        
+                                                        if(err){
+                                                            reject('error insertando usuario: ' + err);
+                                                            return;
+                                                        }
+
+                                                        resolve({
+                                                            isSucess: true,
+                                                            isCreateEmp: true,
+                                                            username: 'ADMIN',
+                                                            password: 'ADMIN',
+                                                            rucEmpresa: ruc
+                                                        });
+                        
+                                                    });
+                        
+                                                });         
+                                    
+
+                                }
+            
+                            });
+                        }
+            
+                        httpClient.request(options1, callback1).end();
+                    }
+
+                }).on('error', err =>{
+                    console.log('error request');
+                    console.log(err);
+                });
+            }
+
+            httpClient.request(options, callback).end();
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                message: 'error creando nueva empresa'
+            });
+        }
+    });
+};
