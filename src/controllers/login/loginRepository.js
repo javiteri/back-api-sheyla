@@ -121,7 +121,6 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                                     connection.release();
                                     reject('error en conexion transaction');
                                     return;
-                                    //FAILURE
                                 });
 
                             } else {
@@ -161,7 +160,9 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                                                             isSuccess: true,
                                                             message: 'datos insertados (empresa, usuario)',
                                                             idUsuario: resultsUser.insertId,
+                                                            nombreUsuario: 'Usuario Default',
                                                             idEmpresa: resultsEmpresa.insertId,
+                                                            nombreEmpresa: 'Nueva Empresa',
                                                             rucEmpresa: ruc,
                                                             redirecRegistroEmp: true,
                                                             firstInserted: true
@@ -184,8 +185,12 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                 }else{
                     
                     let idEmpresa;
+                    let nombreEmpresa;
+                    console.log(results);
                     Object.keys(results).forEach(function(key) {
                         idEmpresa = results[key].EMP_ID;
+                        nombreEmpresa = results[key].EMP_NOMBRE;
+                        console.log(results[key].EMP_NOMBRE);
                     });
                     
                     // VALIDATE IF USER EXISTS
@@ -208,8 +213,10 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
 
                     
                         let idUsuario;
+                        let nombreUsuario;
                         Object.keys(resultado).forEach(function(key) {
                             idUsuario = resultado[key].usu_id;
+                            nombreUsuario = resultado[key].usu_nombres
                         });
 
                         //EXISTE EL USUARIO
@@ -217,7 +224,9 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                             isSuccess: true,
                             message: 'ruc y usuario validado correctamente',
                             idUsuario: idUsuario,
+                            nombreUsuario: nombreUsuario,
                             idEmpresa: idEmpresa,
+                            nombreEmpresa: nombreEmpresa,
                             rucEmpresa: ruc,
                             redirectToHome: true
                         });
