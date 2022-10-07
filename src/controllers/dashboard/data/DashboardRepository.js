@@ -3,7 +3,6 @@ const pool = require('../../../connectiondb/mysqlconnection');
 exports.getInfoVentaDiaria = async (idEmpresa, fechaIni,fechaFin) => {
     return new Promise((resolve, reject) => {
 
-        console.log('inside info diairia');
         try{
             let querySelectVentaDiaria = `SELECT SUM(venta_total) AS 'total' FROM ventas WHERE venta_empresa_id= ? AND
                                     venta_fecha_hora BETWEEN ? AND ? AND
@@ -45,7 +44,6 @@ exports.getInfoVentaMensual = async (idEmpresa, fechaIni,fechaFin) => {
                                             venta_anulado=0`
             
             pool.query(querySelectVentaMensual, [idEmpresa, fechaIni,fechaFin], (err, results) => {
-                console.log(results);
                 if(err){
                     reject({
                         isSucess: false,
@@ -181,8 +179,6 @@ exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
                                         venta_fecha_hora BETWEEN ? AND ? AND
                                         venta_anulado=0 GROUP BY ventad_prod_id ORDER BY SUM(venta_total) LIMIT 10`;
             
-                                        console.log(fechaIni);
-                                        console.log(fechaFin);
             pool.query(queryProductosDelMes, [idEmp,fechaIni,fechaFin], (err, results) => {
 
                 if(err){
@@ -193,7 +189,7 @@ exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
                     });
                     return;
                 }
-                console.log(results);
+
                 resolve({
                     isSucess: true,
                     code: 200,
