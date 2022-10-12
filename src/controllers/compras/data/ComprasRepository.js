@@ -607,7 +607,7 @@ function createExcelFileListaCompras(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDo
                     return;
                 }
 
-                const arrayData = Array.from(results);
+            const arrayData = Array.from(results);
 
             const workBook = new excelJS.Workbook(); // Create a new workbook
             const worksheet = workBook.addWorksheet("Lista Compras");

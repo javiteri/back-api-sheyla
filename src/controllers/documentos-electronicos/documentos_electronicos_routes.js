@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+const fs = require('fs');
 const documentosElectronicosRepository = require('./data/DocumentosElectronicosRepository');
 
 router.get('/getlistdocumentoselectronicos', async (req, res) => {
@@ -29,5 +30,27 @@ router.get('/autorizardocumentoelectronico', async (req, res) => {
         }
     );
 });
+
+router.get('/generatepdffromventa', async(req, res) => {
+    const {idEmp,idVentaCompra,identificacion} = req.query;
+    const generatePdfVentaPromise = documentosElectronicosRepository.generateDownloadPdfFromVenta(idEmp,idVentaCompra,identificacion);
+
+    generatePdfVentaPromise.then(
+        function(response){
+            res.download(response['generatePath'],((error) => {
+                if(error){
+                }
+                fs.unlink(response['generatePath'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 
 module.exports = router;
