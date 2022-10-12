@@ -373,8 +373,7 @@ function createExcelFileClientes(idEmp){
                     return;
                 }
                 
-                
-                console.log(results);    
+                  
                 const arrayData = Array.from(results);
 
                 const workBook = new excelJS.Workbook(); // Create a new workbook

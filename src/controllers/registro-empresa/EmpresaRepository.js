@@ -1,4 +1,6 @@
 const poolMysql = require('../../connectiondb/mysqlconnection');
+const jsftp = require('jsftp');
+const fs = require('fs');
 
 exports.getEmpresaByRuc = function (rucEmpresa, idEmpresa){
     return new Promise((resolve, reject) => {
@@ -65,8 +67,44 @@ exports.updateDatosEmpresa = function (datosEmpresa){
 
             const {idEmpresa, ruc, nombreEmpresa, razonSocial, fechaInicio, eslogan, 
                 web, email, telefonos, direccionMatriz, sucursal1, sucursal2, 
-                sucursal3, propietario, comentario  } = datosEmpresa;
+                sucursal3, propietario, comentario, img_base64} = datosEmpresa;
             
+            console.log(ruc);
+            let base64Image = img_base64.split(';base64,').pop();
+
+            let path = `./files/${idEmpresa}`;
+            // save file in dir for send FTP
+            if(!fs.existsSync(`${path}`)){
+                fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                    if (err) {
+                        return console.error(err);
+                    }
+                    fs.writeFile(`${path}/${ruc}.png`, base64Image,{encoding: 'base64'}, function(error){
+                        if(error){
+                            console.log('inside error');
+                            console.log(error);
+                        }
+                        console.log('archivo creado correctamente');
+
+                        sendFilePdfToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
+
+                    });
+                });
+            }else{
+                fs.writeFile(`${path}/${ruc}.png`, base64Image,{encoding: 'base64'}, function(error){
+                    if(error){
+                        console.log('inside error');
+                        console.log(error);
+                        return;
+                    }
+                    console.log('archivo creado correctamente');
+
+                    sendFilePdfToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
+
+                });
+            }
+
+            console.log('inside update datos mysql');
             queryInsertDatosEmpresa = ` UPDATE empresas SET EMP_NOMBRE = ?, EMP_RAZON_SOCIAL = ?, EMP_FECHA_INICIO = ?, EMP_SLOGAN = ?, 
                                             EMP_WEB = ?, EMP_MAIL = ?, EMP_TELEFONOS = ?, EMP_DIRECCION_MATRIZ = ?, EMP_DIRECCION_SUCURSAL1 = ?,
                                             EMP_DIRECCION_SUCURSAL2 = ?, EMP_DIRECCION_SUCURSAL3 = ?, EMP_PROPIETARIO = ?,
@@ -100,5 +138,33 @@ exports.updateDatosEmpresa = function (datosEmpresa){
         }catch(error){
             reject('error actualizando datos empresa: ' + error) ; 
         }
+    });
+}
+
+function sendFilePdfToFtp(pathFile, nombrePdf){
+
+    const FTP = new jsftp({
+        host: "sheyla2.dyndns.info",
+        port: 21, // defaults to 21
+        user: "firmas", // defaults to "anonymous"
+        pass: "m10101418M" // defaults to "@anonymous"
+    });
+    
+    console.log('inside upload file');
+    console.log(pathFile);
+    console.log(nombrePdf);
+
+    FTP.on("error", function(error) {  // If an exception was thrown throughout the FTP connection
+        // Handle the error in here
+        console.log('dentro de que ocurrio un error');
+        console.log(error);
+    });
+
+    FTP.put(pathFile, `logos/${nombrePdf}`, error => {
+        if(error){
+            console.log('error enviando archivo ftp');
+            return;
+        }
+        console.log('archivo subido correctamente');
     });
 }

@@ -1,6 +1,7 @@
 const pool = require('../../../connectiondb/mysqlconnection');
 const fs = require('fs');
 const xmlBuilder = require('xmlbuilder');
+const pdfGenerator = require('../../pdf/PDFGenerator');
 
 
 exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
@@ -12,13 +13,11 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
             let valueCiRucClient = "";
 
             if(nombresci){
-            
                 const containsNumber =  /^[0-9]*$/.test(nombresci);
                 valueCiRucClient = containsNumber ? nombresci : "";
 
                 const containsText =  !containsNumber;
                 valueNombreClient = containsText ? nombresci : "";
-
             }
 
 
@@ -49,7 +48,6 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
                     return;
                 }
 
-                console.log(results);
                 resolve({
                     isSucess: true,
                     data: results
@@ -108,11 +106,9 @@ exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo
                                     generateXmlDocumentoElectronicoVenta(clienteResponse[0],ventaResponse[0],ventaDetalleResponse, datosEmpresa[0]);
                             valorGenerateXmlResponse.then(
                                 function(data){
-                                    console.log('xml generated successfull');
                                     resolve(data);
                                 },
                                 function(error){
-                                    console.log('xml error generated ');
                                     reject(error);
                                 }
                             );
@@ -136,9 +132,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
 
     return new Promise((resolve, reject) => {
         try{
-            console.log('datos cliente');
-            console.log(datosCliente);
-            console.log(datosVenta);
 
             const dateVenta = new Date(datosVenta.venta_fecha_hora);
             const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
@@ -157,9 +150,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
                             
             let claveActivacion = modulo11(digit48);
-            console.log(claveActivacion);
-
-            console.log(datosEmpresa);
             // GENERAR XML CON XMLBUILDER LIBRARY AND SET VALUES FROM DATA IN PARAMETERS 
             let rootElement = xmlBuilder.create('factura').att('id','Comprobante').att('version','2.0.0');
             rootElement.ele('infoTributaria').ele('ambiente','1').up().ele('tipoEmision','1').up()
@@ -248,3 +238,74 @@ function modulo11(clave48Digitos){
 
     return `${clave48Digitos}${digitoVerificador}`;
 }
+
+
+exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClienteProv) => {
+    return new Promise((resolve, reject) => {
+        try{
+
+            const sqlQuerySelectEmp = `SELECT * FROM empresas WHERE emp_id = ? LIMIT 1`;
+            const sqlQuerySelectClienteByIdEmp = `SELECT * FROM clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ? LIMIT 1`;
+            const sqlQuerySelectVentaByIdEmp = `SELECT * FROM ventas WHERE venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
+            const sqlQuerySelectVentaDetallesByIdVenta = `SELECT * FROM ventas_detalles WHERE ventad_venta_id = ? `;
+
+            pool.query(sqlQuerySelectEmp,[idEmp], (err, datosEmpresa) => {
+                if(err){
+                    console.log('error inside empresa request');
+                    return reject(err);
+                }
+
+                pool.query(sqlQuerySelectClienteByIdEmp, [identificacionClienteProv,idEmp], (error, clienteResponse) => {
+                    if(error){
+                        console.log('error inside cliente request');
+                        return reject(error);
+                    }
+                
+                    pool.query(sqlQuerySelectVentaByIdEmp, [idVentaCompra,idEmp], (errorr, ventaResponse) => {
+                        if(errorr){
+                            return reject(errorr);
+                        }
+    
+                        pool.query(sqlQuerySelectVentaDetallesByIdVenta, [idVentaCompra], (erro, ventaDetalleResponse) => {
+                            if(erro){
+                                return reject(erro);
+                            }
+                            // GENERATE PDF WHIT DATA                            
+                            ventaResponse['listVentasDetalles'] = ventaDetalleResponse;
+                            const pathPdfGeneratedProm = pdfGenerator.generatePdfFromVenta(datosEmpresa,clienteResponse,ventaResponse);
+
+                            pathPdfGeneratedProm.then(
+                                function(result){
+                                    resolve({
+                                        isSucess: true,
+                                        message: 'todo Ok',
+                                        generatePath: result.pathFile
+                                    });
+                                },
+                                function(error){
+                                    reject({
+                                        isSucess: false,
+                                        message:  error.message
+                                    });
+                                }
+                            );
+                            
+
+                        });
+
+                    });
+
+                });
+
+            });
+
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                message: 'Ocurrio un error generando el PDF'
+            });
+        }
+
+    });
+};

@@ -158,6 +158,4 @@ router.get('/getlistresumencomprasexcel', async(req, res) => {
 });
 
 
-
-
 module.exports = router;
