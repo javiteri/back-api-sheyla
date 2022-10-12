@@ -159,12 +159,22 @@ function sendFilePdfToFtp(pathFile, nombrePdf){
         console.log('dentro de que ocurrio un error');
         console.log(error);
     });
+    console.log('before put file');
 
-    FTP.put(pathFile, `logos/${nombrePdf}`, error => {
-        if(error){
-            console.log('error enviando archivo ftp');
-            return;
+    fs.readFile(pathFile, function(err, buffer) {
+        if(err) {
+            console.error(err);
         }
-        console.log('archivo subido correctamente');
+        else {
+            FTP.put(buffer, `logos/${nombrePdf}`, error => {
+                if(error){
+                    console.log('error enviando archivo ftp');
+                    console.log(error);
+                    return;
+                }
+                console.log('archivo subido correctamente');
+            });
+        }
     });
+
 }
