@@ -412,8 +412,14 @@ exports.createEmpresaByRuc = function(ruc){
                                 if(str1.includes('***OK')){
                                     
                                     console.log(str1);
-                                    let dbName = str1.split(',')[1].replaceAll('*','');
+                                    //let dbName = str1.split(',')[1].replaceAll('*','');
+                                    let valor = str1.split(',')[1];
+                                    let valor1 = valor.replace('*','');
+                                    let valor2 = valor1.replace('*','');
+                                    let valorFinal = valor2.replace('*','');
 
+                                    let dbName = valorFinal;
+                                    
                                     let querySelectEmpresa = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? LIMIT 1`;
                                     let queryInsertUserDefaultEmpresa = `INSERT INTO ${dbName}.usuarios (usu_empresa_id, usu_identificacion, usu_nombres, usu_telefonos,usu_direccion, 
                                                 usu_mail, usu_fecha_nacimiento, usu_username, usu_password, usu_permiso_escritura)

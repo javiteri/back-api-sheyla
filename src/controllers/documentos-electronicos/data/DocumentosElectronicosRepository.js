@@ -246,8 +246,9 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
 
             const sqlQuerySelectEmp = `SELECT * FROM empresas WHERE emp_id = ? LIMIT 1`;
             const sqlQuerySelectClienteByIdEmp = `SELECT * FROM clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ? LIMIT 1`;
-            const sqlQuerySelectVentaByIdEmp = `SELECT * FROM ventas WHERE venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
-            const sqlQuerySelectVentaDetallesByIdVenta = `SELECT * FROM ventas_detalles WHERE ventad_venta_id = ? `;
+            const sqlQuerySelectVentaByIdEmp = `SELECT ventas.*, usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
+            const sqlQuerySelectVentaDetallesByIdVenta = `SELECT ventas_detalles.*, prod_codigo FROM ventas_detalles, productos WHERE 
+            ventad_prod_id = prod_id AND ventad_venta_id = ? `;
 
             pool.query(sqlQuerySelectEmp,[idEmp], (err, datosEmpresa) => {
                 if(err){

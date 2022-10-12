@@ -1,6 +1,6 @@
 const poolMysql = require('../../connectiondb/mysqlconnection');
-const jsftp = require('jsftp');
 const fs = require('fs');
+const ftp = require("basic-ftp");
 
 exports.getEmpresaByRuc = function (rucEmpresa, idEmpresa){
     return new Promise((resolve, reject) => {
@@ -84,7 +84,6 @@ exports.updateDatosEmpresa = function (datosEmpresa){
                             console.log('inside error');
                             console.log(error);
                         }
-                        console.log('archivo creado correctamente');
 
                         sendFilePdfToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
 
@@ -97,14 +96,12 @@ exports.updateDatosEmpresa = function (datosEmpresa){
                         console.log(error);
                         return;
                     }
-                    console.log('archivo creado correctamente');
 
                     sendFilePdfToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
 
                 });
             }
 
-            console.log('inside update datos mysql');
             queryInsertDatosEmpresa = ` UPDATE empresas SET EMP_NOMBRE = ?, EMP_RAZON_SOCIAL = ?, EMP_FECHA_INICIO = ?, EMP_SLOGAN = ?, 
                                             EMP_WEB = ?, EMP_MAIL = ?, EMP_TELEFONOS = ?, EMP_DIRECCION_MATRIZ = ?, EMP_DIRECCION_SUCURSAL1 = ?,
                                             EMP_DIRECCION_SUCURSAL2 = ?, EMP_DIRECCION_SUCURSAL3 = ?, EMP_PROPIETARIO = ?,
@@ -141,106 +138,76 @@ exports.updateDatosEmpresa = function (datosEmpresa){
     });
 }
 
-function sendFilePdfToFtp(pathFile, nombrePdf){
+async function sendFilePdfToFtp(pathFile, nombrePdf){
+    const client = new ftp.Client()
 
-    const FTP = new jsftp({
-        host: "sheyla2.dyndns.info",
-        port: 21, // defaults to 21
-        user: "firmas", // defaults to "anonymous"
-        pass: "m10101418M" // defaults to "@anonymous"
-    });
-    
-    FTP.on("error", function(error) {
-        console.log('dentro de que ocurrio un error');
-        console.log(error);
-    });
-    console.log('before put file');
+    try {
+        await client.access({
+            host: "sheyla2.dyndns.info",
+            user: "firmas",
+            password: "m10101418M"
+        })
+        const response = await client.uploadFrom(pathFile,`logos/${nombrePdf}` );
+        console.log(response);
+    }catch(exception){
+        console.log(err)
+    }
 
-    fs.readFile(pathFile, function(err, buffer) {
-        if(err) {
-            console.error(err);
-        }
-        else {
-            FTP.put(buffer, `logos/${nombrePdf}`, error => {
-                if(error){
-                    console.log('error enviando archivo ftp');
-                    console.log(error);
-                    return;
-                }
-                console.log('archivo subido correctamente');
-            });
-        }
-    });
+    client.close()
 
 }
 
 
 exports.getImagenLogoByRucEmp = function(rucEmp){
-    return new Promise((resolve, reject) => {
-        try{
+    return new Promise( async (resolve, reject) => {
+      
+        //CONNECT TO FTP SERVER
+        const client = new ftp.Client()
 
-            //CONNECT TO FTP SERVER
-            const FTP = new jsftp({
+        try {
+            await  client.access({
                 host: "sheyla2.dyndns.info",
-                port: 21, // defaults to 21
-                user: "firmas", // defaults to "anonymous"
-                pass: "m10101418M" // defaults to "@anonymous"
-            });
-            
-            FTP.on("error", function(error) {
-                console.log('dentro de que ocurrio un error');
-                console.log(error);
-            });
+                user: "firmas",
+                password: "m10101418M"
+            })
+            let pathRemoteFile = `logos/${rucEmp}.png`
+            let path = `./filesTMP/${rucEmp}`;
 
-            //GENERATE NAME FILE PATH WITH RUC
-            let pathRemoteFile = `logos/${ruc}.png`;
-
-
-            let path = `./filesTMP/${idEmpresa}`;
-            // save file in dir for send FTP
             if(!fs.existsSync(`${path}`)){
-                fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                fs.mkdir(`${path}`,{recursive: true}, async (err) => {
                     if (err) {
                         return console.error(err);
                     }
-                    
-                    FTP.get(pathRemoteFile, `${path}/${ruc}.png`, err => {
-                        if (err) {
-                          return console.error("There was an error retrieving the file.");
-                        }
-                        console.log("File copied successfully!");
 
-                        resolve({
-                            isSucess: true,
-                            message: 'imagen descargada',
-                            path: `${path}/${ruc}.png`
-                        });
-                      });
+                    const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 
-                });
-            }else{
-        
-                FTP.get(pathRemoteFile, `${path}/${ruc}.png`, err => {
-                    if (err) {
-                      return console.error("There was an error retrieving the file.");
-                    }
-                    console.log("File copied successfully!");
+                    client.close();
 
                     resolve({
                         isSucess: true,
                         message: 'imagen descargada',
-                        path: `${path}/${ruc}.png`
+                        path: `${path}/${rucEmp}.png`
                     });
-                    
-                });
 
+                });
+            }else{
+                const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
+                client.close();
+                resolve({
+                    isSucess: true,
+                    message: 'imagen descargada',
+                    path: `${path}/${rucEmp}.png`
+                });
             }
 
         }catch(exception){
+            console.log(exception);
+            client.close();
             reject({
                 isSucess: false,
                 message: 'ocurrio un error obteniendo logo'
             });
+
         }
 
     });
