@@ -150,12 +150,7 @@ function sendFilePdfToFtp(pathFile, nombrePdf){
         pass: "m10101418M" // defaults to "@anonymous"
     });
     
-    console.log('inside upload file');
-    console.log(pathFile);
-    console.log(nombrePdf);
-
-    FTP.on("error", function(error) {  // If an exception was thrown throughout the FTP connection
-        // Handle the error in here
+    FTP.on("error", function(error) {
         console.log('dentro de que ocurrio un error');
         console.log(error);
     });
@@ -178,3 +173,77 @@ function sendFilePdfToFtp(pathFile, nombrePdf){
     });
 
 }
+
+
+exports.getImagenLogoByRucEmp = function(rucEmp){
+    return new Promise((resolve, reject) => {
+        try{
+
+            //CONNECT TO FTP SERVER
+            const FTP = new jsftp({
+                host: "sheyla2.dyndns.info",
+                port: 21, // defaults to 21
+                user: "firmas", // defaults to "anonymous"
+                pass: "m10101418M" // defaults to "@anonymous"
+            });
+            
+            FTP.on("error", function(error) {
+                console.log('dentro de que ocurrio un error');
+                console.log(error);
+            });
+
+            //GENERATE NAME FILE PATH WITH RUC
+            let pathRemoteFile = `logos/${ruc}.png`;
+
+
+            let path = `./filesTMP/${idEmpresa}`;
+            // save file in dir for send FTP
+            if(!fs.existsSync(`${path}`)){
+                fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                    if (err) {
+                        return console.error(err);
+                    }
+                    
+                    FTP.get(pathRemoteFile, `${path}/${ruc}.png`, err => {
+                        if (err) {
+                          return console.error("There was an error retrieving the file.");
+                        }
+                        console.log("File copied successfully!");
+
+                        resolve({
+                            isSucess: true,
+                            message: 'imagen descargada',
+                            path: `${path}/${ruc}.png`
+                        });
+                      });
+
+                });
+            }else{
+        
+                FTP.get(pathRemoteFile, `${path}/${ruc}.png`, err => {
+                    if (err) {
+                      return console.error("There was an error retrieving the file.");
+                    }
+                    console.log("File copied successfully!");
+
+                    resolve({
+                        isSucess: true,
+                        message: 'imagen descargada',
+                        path: `${path}/${ruc}.png`
+                    });
+                    
+                });
+
+            }
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                message: 'ocurrio un error obteniendo logo'
+            });
+        }
+
+    });
+}
+
+

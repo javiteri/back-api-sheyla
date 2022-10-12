@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const empresaRepository = require('./EmpresaRepository');
 
-router.post('/getEmpresaByRuc', function (req, res, next) {
+router.post('/getEmpresaByRuc', async (req, res, next) =>{
 
     const {ruc, idEmpresa} = req.body;
 
@@ -23,7 +23,7 @@ router.post('/getEmpresaByRuc', function (req, res, next) {
 
 });
 
-router.post('/updateempresa', function (req, res, next) {
+router.post('/updateempresa', async (req, res, next) => {
 
     const resultQueryUpdateEmpresa = empresaRepository.updateDatosEmpresa(req.body);
 
@@ -37,6 +37,23 @@ router.post('/updateempresa', function (req, res, next) {
                 isSucess: false,
                 error: error 
             });
+        }
+    );
+});
+
+router.get('/getimagenlogobyrucempresa', async(req, res, next) =>{
+    const getImageLogoByRucEmpresa = empresaRepository.getImagenLogoByRucEmp(req.query.ruc);
+    getImageLogoByRucEmpresa(
+        function(data){
+            res.download(data['path'],((error) => {
+
+                fs.unlink(data['path'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
         }
     );
 });
