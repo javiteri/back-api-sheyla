@@ -171,6 +171,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                                     nombreUsuario = row.usu_nombres;
                                 });
                                 
+                                console.log(nombreEmpresa);
                                 resolve({
                                     isSuccess: true,
                                     existUser: true,

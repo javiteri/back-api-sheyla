@@ -121,6 +121,7 @@ router.post('/loginverify2', async (req, res, next) => {
                 result["token"] = token;
                 result["expire"] = 43200
                         
+                console.log(result);
                 res.status(200).send(result);
                 return;
             }
