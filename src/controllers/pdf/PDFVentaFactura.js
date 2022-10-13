@@ -55,10 +55,10 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta, resolv
 async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta){
 
     let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
-  console.log('sige el proceso');
-    /*if(!pathImagen){
+    console.log('sige el proceso');
+    if(!pathImagen){
         pathImagen = './src/assets/logo_default_sheyla.png';
-    }*/
+    }
 
     let fontNormal = 'Helvetica';
     let fontBold = 'Helvetica-Bold';
