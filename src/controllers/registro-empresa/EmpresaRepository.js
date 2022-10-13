@@ -170,6 +170,7 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
                 user: "firmas",
                 password: "m10101418M"
             })
+
             let pathRemoteFile = `logos/${rucEmp}.png`
             let path = `./filesTMP/${rucEmp}`;
 
@@ -179,29 +180,46 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
                         return console.error(err);
                     }
 
+                    try{
+                        const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
+                        client.close();
+                        console.log('inside');
+                        resolve({
+                            isSucess: true,
+                            message: 'imagen descargada',
+                            path: `${path}/${rucEmp}.png`
+                        });
+
+                    }catch(error){
+                        console.log('error obteniendo archivo imagen ftp');
+                        client.close();
+                        reject({
+                            isSucess: false,
+                            message: 'ocurrio un error obteniendo logo'
+                        });
+                    }
+                });
+            }else{
+
+                try{
                     const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
-
                     client.close();
-
                     resolve({
                         isSucess: true,
                         message: 'imagen descargada',
                         path: `${path}/${rucEmp}.png`
                     });
-
-                });
-            }else{
-                const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
-                client.close();
-                resolve({
-                    isSucess: true,
-                    message: 'imagen descargada',
-                    path: `${path}/${rucEmp}.png`
-                });
+                }catch(error){
+                    console.log('error obteniendo archivo imagen ftp');
+                    client.close();
+                    reject({
+                        isSucess: false,
+                        message: 'ocurrio un error obteniendo logo'
+                    });
+                }
             }
 
         }catch(exception){
-            console.log(exception);
             client.close();
             reject({
                 isSucess: false,

@@ -33,7 +33,7 @@ router.get('/autorizardocumentoelectronico', async (req, res) => {
 
 router.get('/generatepdffromventa', async(req, res) => {
     const {idEmp,idVentaCompra,identificacion} = req.query;
-    const generatePdfVentaPromise = documentosElectronicosRepository.generateDownloadPdfFromVenta(idEmp,idVentaCompra,identificacion);
+    const generatePdfVentaPromise = documentosElectronicosRepository.generateDownloadPdfFromVenta(idEmp,idVentaCompra,identificacion, true);
 
     generatePdfVentaPromise.then(
         function(response){
@@ -51,6 +51,7 @@ router.get('/generatepdffromventa', async(req, res) => {
         }
     );
 });
+
 
 
 module.exports = router;

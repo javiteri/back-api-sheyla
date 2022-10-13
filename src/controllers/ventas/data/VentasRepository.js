@@ -63,14 +63,12 @@ exports.insertVenta = async (datosVenta) => {
 
                             const {prodId, cantidad,iva,nombreProd,
                                 valorUnitario,descuento,valorTotal} = ventaDetalle;
-                            console.log(ventaDetalle);
+                            
                             connection.query(sqlQueryInsertVentaDetalle, [idVentaGenerated,prodId,
                                             cantidad,iva,nombreProd,valorUnitario,
                                             descuento,valorTotal], function(errorr, results){
 
                                 if(errorr){
-                                    console.log('inside before commit');
-                                    console.log(errorr);
                                     connection.rollback(function(){ connection.release()});
                                     reject('error insertando Venta Detalle');
                                     return;
@@ -98,7 +96,8 @@ exports.insertVenta = async (datosVenta) => {
                                             connection.release();
                                             resolve({
                                                 isSuccess: true,
-                                                message: 'Venta insertada correctamente'
+                                                message: 'Venta insertada correctamente',
+                                                ventaid: idVentaGenerated
                                             })
                 
                                         });

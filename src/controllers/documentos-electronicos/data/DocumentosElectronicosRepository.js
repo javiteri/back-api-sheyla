@@ -240,7 +240,7 @@ function modulo11(clave48Digitos){
 }
 
 
-exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClienteProv) => {
+exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClienteProv, isPdfNormal) => {
     return new Promise((resolve, reject) => {
         try{
 
@@ -273,7 +273,8 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
                             }
                             // GENERATE PDF WHIT DATA                            
                             ventaResponse['listVentasDetalles'] = ventaDetalleResponse;
-                            const pathPdfGeneratedProm = pdfGenerator.generatePdfFromVenta(datosEmpresa,clienteResponse,ventaResponse);
+
+                            const pathPdfGeneratedProm = pdfGenerator.generatePdfFromVenta(datosEmpresa,clienteResponse,ventaResponse, isPdfNormal);
 
                             pathPdfGeneratedProm.then(
                                 function(result){

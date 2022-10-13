@@ -16,6 +16,23 @@ router.post('/insertarlist', async (req, res) => {
     );
 });
 
+router.post('/insertarlistconfigfacelec', async (req, res) => {
+
+    const insertListConfigPromise = configRepository.insertConfigsListFacElec(req.body);
+
+    insertListConfigPromise.then(
+        function(result) {
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+
+
+
 router.get('/listConfigsIdEmp', async (req, res) => {
 
     const getListConfigPromise = configRepository.getListConfigsByIdEmp(req.query.idEmp);

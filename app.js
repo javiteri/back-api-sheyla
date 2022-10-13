@@ -4,7 +4,7 @@ var logger = require('morgan');
 var cors = require('cors')
 var path = require('path');
 var createError = require('http-errors');
-const passport = require('passport')
+const passport = require('passport');
 
 require('dotenv').config({path: path.join(__dirname, '.env')});
 require('./src/middlewares/auth/auth');
@@ -19,6 +19,7 @@ const ventasRouter = require('./src/controllers/ventas/ventas_routes');
 const comprasRouter = require('./src/controllers/compras/compras_routes');
 const cajaRouter = require('./src/controllers/caja/caja-routes');
 const configsRouter = require('./src/controllers/configuracion/configs_routes');
+const fileConfigsRouter = require('./src/controllers/configuracion/fileconfig_routes.js');
 const dashboardRoter = require('./src/controllers/dashboard/dashboard_routes');
 const documentosElectronicosRouter = require('./src/controllers/documentos-electronicos/documentos_electronicos_routes');
 
@@ -27,6 +28,7 @@ var app = express();
 app.use(cors())
 
 app.use(logger('dev'));
+app.use('/api/configsfile',passport.authenticate('jwt',{session: false}), fileConfigsRouter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -44,7 +46,7 @@ app.use('/api/usuarios', passport.authenticate('jwt', {session: false}), usuario
 app.use('/api/ventas', passport.authenticate('jwt', {session: false}), ventasRouter);
 app.use('/api/compras', passport.authenticate('jwt',{session: false}), comprasRouter);
 app.use('/api/caja', passport.authenticate('jwt',{session: false}), cajaRouter);
-app.use('/api/configs', passport.authenticate('jwt',{session: false}), configsRouter );
+app.use('/api/configs', passport.authenticate('jwt',{session: false}), configsRouter);
 app.use('/api/dashboard', passport.authenticate('jwt',{session: false}), dashboardRoter );
 app.use('/api/documentos_electronicos', passport.authenticate('jwt',{session: false}), documentosElectronicosRouter);
 
@@ -59,6 +61,7 @@ app.use(function(err, req, res, next) {
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
+  console.log(err);
   console.log('error found route')
   
   // render the error page
