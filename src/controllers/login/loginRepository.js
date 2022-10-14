@@ -151,10 +151,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                                     return;
                                 }
 
-                                console.log(username);
-                                console.log(password);
-                                console.log(idEmpresa);
-                                console.log(results);
+
                                 if(!results | results == undefined | results == null | !results.length){
                                     resolve({
                                         isSuccess: true,
@@ -482,3 +479,177 @@ exports.createEmpresaByRuc = function(ruc){
         }
     });
 };
+
+exports.recoveryPasswordByRucAndEmail = function(ruc, email){
+
+    return new Promise((resolve, reject) => {
+        try{
+            var options = {
+                host: 'sheyla2.dyndns.info',
+                path: `/sheylaweb/VALIDAR_EMPRESA.php?SERIE=${ruc}`
+            };
+            const callback = function(response){
+                let str1 = '';
+        
+                //another chunk of data has been received, so append it to `str`
+                response.on('data', function (chunk) {
+                    str1 += chunk;
+                });
+        
+                response.on('end', function () {
+        
+                    if(str1.includes('NOEXISTE')){
+                        resolve({
+                            isSucess: false,
+                            existEmpresa: false,
+                            message: 'No existe la empresa'
+                        });
+                        return;
+                    }
+        
+                    if(str1.includes('***OK')){
+                        
+                        let valor = str1.split(',')[1];
+                        let valor1 = valor.replace('*','');
+                        let valor2 = valor1.replace('*','');
+                        let valorFinal = valor2.replace('*','');
+        
+                        let dbName = valorFinal.trim();
+
+                        let querySelectEmpresa = ''; 
+                        let params = [];
+                        if(email){
+
+                            querySelectEmpresa = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? AND emp_mail = ? LIMIT 1`;
+                            let queryUser = "SELECT * FROM usuarios WHERE usu_empresa_id = ? AND usu_permiso_escritura = 1 LIMIT 1";
+
+                            params = [ruc,email];
+
+                            poolMysql.query(querySelectEmpresa, params, function(err, results, fields){
+                                if(err){
+                                    reject('error en BD2');
+                                    return;
+                                }
+                                let idEmpresa;
+                                Object.keys(results).forEach(function(key) {
+                                    idEmpresa = results[key].EMP_ID;
+                                });
+    
+                                if(results.length === 0 ){
+                                    resolve({
+                                        isSucess: false,
+                                        existEmpresa: false
+                                    });
+                                    return;
+                                }
+                                
+                                poolMysql.query(queryUser,[idEmpresa],function(error, result){
+                                    if(error){
+                                        reject('Error obteniendo usuarios');
+                                        return;
+                                    }
+                                    console.log('datos usuario');
+                                    console.log(result);
+
+                                    if(!result && result.length === 0 ){
+                                        resolve({
+                                            isSucess: false,
+                                            existEmpresa: false,
+                                            message: 'no se encontro usuario predeterminado para empresa'
+                                        });
+                                        return;
+                                    }
+
+                                    /// SEND EMAIL TO URL FOR RECOVERY PASSWORD
+                                    sendEmailRecoveryAccount(ruc, email,result[0], resolve, reject);
+
+                                });
+                
+                            });
+
+
+                        }else{
+                            querySelectEmpresa = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? LIMIT 1`;
+                            params = [ruc];
+                            
+                            poolMysql.query(querySelectEmpresa, params, function(err, results, fields){
+                                if(err){
+                                    reject('error en BD2');
+                                    return;
+                                }
+
+                                if(!results | results == undefined | results == null | !results.length){
+                                    reject({
+                                        isSucess: false,
+                                        existEmpresa: false
+                                    });
+                                    return;
+                                }
+
+                                
+                                resolve({
+                                    isSucess: true,
+                                    existEmpresa: true
+                                });
+
+                            });
+                        }
+                    }
+        
+                });
+            }
+        
+            httpClient.request(options, callback).end();
+
+        }catch(exception){
+            reject({
+                isSuccess: false,
+                message: 'Ocrrio un error '
+            });
+        }
+    });
+    
+};
+
+async function sendEmailRecoveryAccount(ruc, email,datosUsario,resolve, reject){
+    try{
+        
+        const textMensage = `Hola. <br><br>Los datos de usuario para ingresar a su cuenta son: <br><br> Username: ${datosUsario.usu_username}. 
+        <br>Password: ${datosUsario.usu_password}<br><br>Saludos.`;
+        const path = `/CORREOS_VARIOS/EMAIL_NOTIFICACIONES/EMAIL.php?EMAIL=${email}&ASUNTO=RECUPERAR CUENTA&MENSAJE2=${textMensage}`;
+
+        var options = {
+            host: 'sheyla2.dyndns.info',
+            path: encodeURI(path)
+        };
+
+        const callback = function(response){
+            let str1 = '';
+    
+            //another chunk of data has been received, so append it to `str`
+            response.on('data', function (chunk) {
+                str1 += chunk;
+            });
+    
+            response.on('end', function () {
+    
+                console.log('enviado correctamente el email');
+                resolve({
+                    isSucess: true,
+                    message: 'Correo enviado correctamente'
+                });
+    
+            });
+        }
+
+
+        httpClient.request(options, callback).end();
+
+    }catch(exception){
+        console.log(exception);
+        reject({
+            isSuccess: false,
+            message: 'Error enviando el email URL'
+        });
+    }
+}

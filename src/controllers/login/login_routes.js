@@ -151,6 +151,22 @@ router.get('/crearnuevaempresa', async(req, res) => {
             res.status(400).send(error);
         }
     );
-})
+});
+
+router.get('/recoverypassword', async(req, res) => {
+    const rucEmp = req.query.ruc;
+    const email = req.query.email;
+    const recoveryEmpresaProm = loginRepository.recoveryPasswordByRucAndEmail(rucEmp,email);
+
+    recoveryEmpresaProm.then(
+        function(response){
+            res.status(200).send(response);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 
 module.exports = router;
