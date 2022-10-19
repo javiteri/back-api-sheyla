@@ -168,7 +168,6 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                                     nombreUsuario = row.usu_nombres;
                                 });
                                 
-                                console.log(nombreEmpresa);
                                 resolve({
                                     isSuccess: true,
                                     existUser: true,
@@ -297,7 +296,6 @@ exports.loginValidateEmpresaAndUser = function(ruc, user, password){
                     
                     let idEmpresa;
                     let nombreEmpresa;
-                    console.log(results);
                     Object.keys(results).forEach(function(key) {
                         idEmpresa = results[key].EMP_ID;
                         nombreEmpresa = results[key].EMP_NOMBRE;
@@ -408,7 +406,6 @@ exports.createEmpresaByRuc = function(ruc){
             
                                 if(str1.includes('***OK')){
                                     
-                                    console.log(str1);
                                     //let dbName = str1.split(',')[1].replaceAll('*','');
                                     let valor = str1.split(',')[1];
                                     let valor1 = valor.replace('*','');
@@ -548,8 +545,6 @@ exports.recoveryPasswordByRucAndEmail = function(ruc, email){
                                         reject('Error obteniendo usuarios');
                                         return;
                                     }
-                                    console.log('datos usuario');
-                                    console.log(result);
 
                                     if(!result && result.length === 0 ){
                                         resolve({
@@ -633,7 +628,6 @@ async function sendEmailRecoveryAccount(ruc, email,datosUsario,resolve, reject){
     
             response.on('end', function () {
     
-                console.log('enviado correctamente el email');
                 resolve({
                     isSucess: true,
                     message: 'Correo enviado correctamente'

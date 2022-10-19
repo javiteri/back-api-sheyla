@@ -9,8 +9,6 @@ const secretkey = process.env.SECRECT_KEY_HASH;
 
 router.post('/login', async (req, res, next) => {
 
-        console.log('inside loguin ')
-
         passport.authenticate('login', async (err, user, info) => {
                 try{
                     if(err || !user){
@@ -121,7 +119,6 @@ router.post('/loginverify2', async (req, res, next) => {
                 result["token"] = token;
                 result["expire"] = 43200
                         
-                console.log(result);
                 res.status(200).send(result);
                 return;
             }

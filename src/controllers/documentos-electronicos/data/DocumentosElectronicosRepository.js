@@ -1,8 +1,74 @@
 const pool = require('../../../connectiondb/mysqlconnection');
+const poolEFactra = require('../../../connectiondb/mysqlconnectionlogin');
+
 const fs = require('fs');
 const xmlBuilder = require('xmlbuilder');
 const pdfGenerator = require('../../pdf/PDFGenerator');
 
+const codDoc = [
+    {
+        nombre: 'Factura',
+        codigo: '01',
+    },
+    {
+        nombre: `
+        LIQUIDACIÓN DE COMPRA DE 
+        BIENES Y PRESTACIÓN DE 
+        SERVICIOS`,
+        codigo: '03'
+    },
+    {
+        nombre: 'NOTA DE CRÉDITO',
+        codigo: '04',
+    },
+    {
+        nombre: 'NOTA DE DÉBITO',
+        codigo: '05',
+    },
+    {
+        nombre: 'GUÍA DE REMISIÓN ',
+        codigo: '06',
+    },
+    {
+        nombre: 'COMPROBANTE DE RETENCIÓN',
+        codigo: '07',
+    }
+];
+
+const codFormasPago = [
+    {
+        nombre: 'SIN UTILIZACION DEL SISTEMA FINANCIERO',
+        codigo: '01',
+    },
+    {
+        nombre: `COMPENSACIÓN DE DEUDAS`,
+        codigo: '15'
+    },
+    {
+        nombre: 'TARJETA DE DÉBITO',
+        codigo: '16',
+    },
+    {
+        nombre: 'DINERO ELECTRÓNICO',
+        codigo: '17',
+    },
+    {
+        nombre: 'TARJETA PREPAGO',
+        codigo: '18',
+    },
+    {
+        nombre: 'TARJETA DE CRÉDITO',
+        codigo: '19',
+    },
+    {
+        nombre: 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO',
+        codigo: '20',
+    },
+    {
+        nombre: 'ENDOSO DE TÍTULOS',
+        codigo: '21',
+    }
+];
 
 exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
     return new Promise((resolve, reject) => {
@@ -74,49 +140,95 @@ exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo
             // CON ESOS DATOS GENERAR EL XML Y POR AHORA GUARDARLO EN UNA CARPETA EN EL SERVER
             // OBTENER LOS DATOS DEL EMISOR (LA EMPRESA) QUE ENVIA EL DOCUMENTO ELECTRONICO
 
-
+            const querySelectConfigFactElectr = `SELECT * FROM config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
             const querySelectCliente = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
-            const querySelectVenta = `SELECT * FROM ventas WHERE venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
-            const querySelectVentasDetalles = `SELECT * FROM ventas_detalles WHERE ventad_venta_id = ?`;
+            const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
+            const querySelectVentasDetalles = `SELECT ventas_detalles.* ,productos.prod_codigo, productos.prod_nombre FROM ventas_detalles, productos WHERE 
+            ventad_prod_id = prod_id AND ventad_venta_id = ?`;
             const queryDatosEmpresaById = `SELECT * FROM empresas WHERE emp_id = ?`;
 
-            pool.query(queryDatosEmpresaById,[idEmp], (err, datosEmpresa) => {
-                if(err){
-                    console.log('error inside empresa request');
+            pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%'], (er, datosConfig) => {
+                if(er){
+                    console.log('error obteniendo configs');
                     return reject(err);
                 }
 
-                pool.query(querySelectCliente, [idEmp, identificacion], (error, clienteResponse) => {
-                    if(error){
-                        console.log('error inside cliente request');
-                        return reject(error);
+                pool.query(queryDatosEmpresaById,[idEmp], (err, datosEmpresa) => {
+                    if(err){
+                        console.log('error inside empresa request');
+                        return reject(err);
                     }
-                
-                    pool.query(querySelectVenta, [idEmp, idVentaCompra], (errorr, ventaResponse) => {
-                        if(errorr){
-                            return reject(errorr);
-                        }
     
-                        pool.query(querySelectVentasDetalles, [idVentaCompra], (erro, ventaDetalleResponse) => {
-                            if(erro){
-                                return reject(erro);
+                    pool.query(querySelectCliente, [idEmp, identificacion], (error, clienteResponse) => {
+                        if(error){
+                            console.log('error inside cliente request');
+                            return reject(error);
+                        }
+                    
+                        pool.query(querySelectVenta, [idEmp, idVentaCompra], (errorr, ventaResponse) => {
+                            if(errorr){
+                                console.log(errorr);
+                                return reject(errorr);
                             }
-
-                            const valorGenerateXmlResponse = 
-                                    generateXmlDocumentoElectronicoVenta(clienteResponse[0],ventaResponse[0],ventaDetalleResponse, datosEmpresa[0]);
-                            valorGenerateXmlResponse.then(
-                                function(data){
-                                    resolve(data);
-                                },
-                                function(error){
-                                    reject(error);
+        
+                            pool.query(querySelectVentasDetalles, [idVentaCompra], (erro, ventaDetalleResponse) => {
+                                if(erro){
+                                    return reject(erro);
                                 }
-                            );
+                            
+                                const valorGenerateXmlResponse = 
+                                        generateXmlDocumentoElectronicoVenta(clienteResponse[0],ventaResponse[0],ventaDetalleResponse, 
+                                            datosEmpresa[0],datosConfig);
+                                valorGenerateXmlResponse.then(
+                                    function(data){
+                                        const pathFile = data.pathFile;
+                                        const claveActivacion = data.claveAct;
+
+                                        let ruc = '1718792656001';
+                                        //INSERT XML FILE IN DB BLOB 
+                                        const sqlQuerySelectEmpresa = `SELECT empresa_id FROM empresas WHERE empresa_ruc = ? LIMIT 1`;
+                                        const sqlQueryInsertXmlBlob = `INSERT INTO autorizaciones (auto_id_empresa,auto_clave_acceso, auto_xml) VALUES (?,?,?)`;
+
+                                        poolEFactra.query(sqlQuerySelectEmpresa,[ ruc/*datosEmpresa[0].EMP_RUC*/ ], function(error, results) {
+                                            if(error){
+                                                return reject({isSucess: false, message:'error buscando empresa'});
+                                            }
+
+                                            // READ XML FILE AS STRING
+                                            let stream  = fs.createReadStream(pathFile);
+                                            stream.setEncoding('utf-8');
+                                            let xmlString = '';
+                                            stream.on('data',function(chunk){
+                                                xmlString += chunk;
+                                            });
+                                            stream.on('end', function() {
+                                                //let str = xmlString.replace(/^\s+|\s+$/g, '');
+                                                let str = xmlString.replace(/[\n\r\t]+/g, '');
+                                                poolEFactra.query(sqlQueryInsertXmlBlob,[results[0].empresa_id,claveActivacion, str], function(errores, resultss) {
+                                                    if(errores){
+                                                        console.log(errores);
+                                                        return reject({isSucess: false, message:'error insertando text xml db'});
+                                                    }
+                                                    resolve(data);
+                                                });
+
+                                            })
+
+                                        });
+
+                                    },
+                                    function(error){
+                                        reject(error);
+                                    }
+                                );
+                            });
                         });
                     });
+    
                 });
 
             });
+
         }catch(exception){
             reject({
                 isSucess: false,
@@ -128,56 +240,187 @@ exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo
 
 
 
-function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVentaDetalle,datosEmpresa){
+function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVentaDetalle,datosEmpresa, datosConfig){
 
     return new Promise((resolve, reject) => {
         try{
+            //console.log(datosConfig);
+            let contribuyenteEspecial = '';
+            let obligadoContabilidad = false;
+            let perteneceRegimenRimpe = false;
+            let agenteDeRetencion = '';
 
+            if(datosConfig && datosConfig.length > 0){                
+                datosConfig.forEach((element) => {
+                    
+                    if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
+                        contribuyenteEspecial = element.con_valor;
+                    }
+                    if(element.con_nombre_config == 'FAC_ELECTRONICA_OBLIGADO_LLEVAR_CONTABILIDAD'){
+                        obligadoContabilidad = element.con_valor === '1';
+                    }
+                    if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
+                        agenteDeRetencion = element.con_valor;
+                    }
+                    if(element.con_nombre_config == 'FAC_ELECTRONICA_PERTENECE_REGIMEN_RIMPE'){
+                        perteneceRegimenRimpe = element.con_valor === '1';
+                    }
+                });
+            }
+                    
             const dateVenta = new Date(datosVenta.venta_fecha_hora);
             const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
             const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
             const yearVenta = dateVenta.getFullYear().toString();
     
-            let rucEmpresa = datosEmpresa.EMP_RUC;
-            let tipoComprobanteFactura = '01';
-            let tipoAmbiente = '1';//PRUEBAS
-            let serie = '001001';
+            let rucEmpresa = '1718792656001';//datosEmpresa.EMP_RUC;
+            let tipoComprobanteFactura = getTipoComprobanteVenta(datosVenta.venta_tipo);
+            let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
+            let serie = `${datosVenta.venta_001}${datosVenta.venta_002}`;
             let codigoNumerico = '12174565';
             let secuencial = (datosVenta.venta_numero).toString().padStart(9,'0');
             let tipoEmision = 1;
+            let direccionMatriz = datosEmpresa.EMP_DIRECCION_MATRIZ;
 
             let digit48 = 
             `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
                             
+            let codigoDocmento = getCodigoDocumentoByName(datosVenta.venta_tipo);
             let claveActivacion = modulo11(digit48);
+            let tipoIdentificacionComprador = getTipoIdentificacionComprador(datosCliente.cli_documento_identidad,
+                datosCliente.cli_tipo_documento_identidad);
+
+            let identificacionComprador = (datosCliente.cli_nombres_natural == 'CONSUMIDOR FINAL' ? '9999999999999' : datosCliente.cli_documento_identidad);
+            let showDireccionComprador = ((datosCliente.cli_direccion && datosCliente.cli_direccion.length > 0));
+
+            let totalSinImpuestos = (Number(datosVenta.venta_subtotal_0) + Number(datosVenta.venta_subtotal_12)).toFixed(2);
+            let totalDescuento = 0.00;
+            let valorIva = Number(datosVenta.venta_valor_iva);
+            let valorTotal = Number(datosVenta.venta_total);
+            let codigoFormaPago = getCodigoFormaPago(datosVenta.venta_forma_pago);    
+            
+            try{
+                Array.from(listVentaDetalle).map((valor) => {
+                    if(valor.ventad_descuento && valor.ventad_descuento > 0){
+                        let valorDescuento = 
+                        (Number(valor.ventad_cantidad) * Number(valor.ventad_vu) * valor.ventad_descuento / 100);
+                        
+                        totalDescuento += valorDescuento;
+                    }
+                });
+            }catch(exex){
+                console.log(exex);
+            }
+
             // GENERAR XML CON XMLBUILDER LIBRARY AND SET VALUES FROM DATA IN PARAMETERS 
-            let rootElement = xmlBuilder.create('factura').att('id','Comprobante').att('version','2.0.0');
-            rootElement.ele('infoTributaria').ele('ambiente','1').up().ele('tipoEmision','1').up()
-                                    .ele('razonSocial',datosEmpresa.EMP_RAZON_SOCIAL).up().ele('nombreComercial','Prueba 2').up().ele('ruc','1234545454001').up()
-                                    .ele('claveAcceso',claveActivacion).up().ele('codDoc','01').up()
-                                    .ele('estab',datosVenta.venta_001).up().ele('ptoEmi',datosVenta.venta_002).up().ele('secuencial',secuencial).up().ele('dirMatriz','SALINAS').up();
-            rootElement.ele('infoFactura').ele('fechaEmision','21/03/2022').up().ele('dirEstablecimiento','PAEZ').up()
-                        .ele('contribuyenteEspecial','12345').up().ele('obligadoContabilidad','SI').up().ele('tipoIdentificacionComprador','07').up()
-                        .ele('razonSocialComprador','CONSUMIDOR FINAL').up().ele('identificacionComprador','9999999999999').up()
-                        .ele('direccionComprador','salinas y santiago').up().ele('totalSinImpuestos','50.00').up().ele('totalDescuento','0.00').up()
+            let rootElement = xmlBuilder.create('factura',{
+                encoding: 'UTF-8',
+                standalone: true
+            }).att('id','comprobante').att('version','2.0.0');
+            rootElement = rootElement.ele('infoTributaria').ele('ambiente',tipoAmbiente).up().ele('tipoEmision','1').up()
+                                    .ele('razonSocial',/*datosEmpresa.EMP_RAZON_SOCIAL*/'LEON CASTELO MIGUEL RODRIGO').up(); 
+            //rootElement.ele('nombreComercial','Prueba 2').up()
+            rootElement = rootElement.ele('ruc',rucEmpresa).up()
+                                    .ele('claveAcceso',claveActivacion).up().ele('codDoc',codigoDocmento).up()
+                                    .ele('estab',datosVenta.venta_001).up().ele('ptoEmi',datosVenta.venta_002).up().ele('secuencial',secuencial).up()
+                                    .ele('dirMatriz',direccionMatriz).up();
+
+            if(perteneceRegimenRimpe){
+                //rootElement = rootElement.ele('regimenMicroempresas','CONTRIBUYENTE R&Eacuote;GIMEN MICROEMPRESAS').up();
+                rootElement = rootElement.ele('regimenMicroempresas','CONTRIBUYENTE REGIMEN MICROEMPRESAS').up();
+            }
+            if(agenteDeRetencion && agenteDeRetencion.length > 0){
+                rootElement = rootElement.ele('agenteRetencion', agenteDeRetencion).up();
+            }
+
+            rootElement = rootElement.up();
+
+            let parcialElement1 = rootElement.ele('infoFactura').ele('fechaEmision',`${dayVenta}/${monthVenta}/${yearVenta}`).up()
+            .ele('dirEstablecimiento',direccionMatriz).up();
+
+            if(!(contribuyenteEspecial === '')){
+                parcialElement1.ele('contribuyenteEspecial',contribuyenteEspecial).up();
+            }
+            if(obligadoContabilidad){
+                parcialElement1.ele('obligadoContabilidad','SI').up();
+            }else{
+                parcialElement1.ele('obligadoContabilidad','NO').up();
+            }
+                        
+            parcialElement1.ele('tipoIdentificacionComprador',tipoIdentificacionComprador).up()
+                        .ele('razonSocialComprador',datosCliente.cli_nombres_natural).up().ele('identificacionComprador',identificacionComprador).up()
+                        if(showDireccionComprador){
+                            parcialElement1.ele('direccionComprador',datosCliente.cli_direccion).up()
+                        }
+                        parcialElement1.ele('totalSinImpuestos',totalSinImpuestos).up().ele('totalDescuento',totalDescuento.toFixed(2)).up()
                         .ele('totalConImpuestos').ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','2').up()
-                        .ele('baseImponible','50.00').up().ele('valor','6.00').up().up().up().ele('propina','0.00').up().ele('importeTotal','61.00').up()
-                        .ele('moneda','DOLAR').up().ele('pagos').ele('pago').ele('formaPago','19').up().ele('total','61,00').up().ele('plazo','30').up()
-                        .ele('unidadTiempo','dias').up().up().up().ele('valorRetIva','0.00').up().ele('valorRetRenta','0.00');
+                        .ele('baseImponible',totalSinImpuestos).up().ele('valor',valorIva).up().up().up().ele('propina','0.00').up()
+                        .ele('importeTotal', valorTotal).up()
+                        .ele('moneda','DOLAR').up().ele('pagos').ele('pago').ele('formaPago',codigoFormaPago).up().ele('total',valorTotal).up()
 
             let detallesNode = rootElement.ele('detalles');
 
-            for(let i = 0; i < 1; i++){
-                detallesNode.ele('detalle').ele('codigoPrincipal','001').up().ele('codigoAuxiliar','0011').up().ele('descripcion','BIEN').up()
-                .ele('cantidad','1').up().ele('precioUnitario','50').up().ele('descuento','0').up().ele('precioTotalSinImpuesto','50.00').up()
-                .ele('impuestos').ele('impuesto').ele('codigo','2').up().ele('codigoPorcentaje','2').up().ele('tarifa','12.00').up()
-                .ele('baseImponible','50.00').up().ele('valor','6.00').up().up().up().up();
+            for(let i = 0; i < listVentaDetalle.length; i++){
+
+                let valorTotal = 0.0;
+                let valorDescuentoTmp = 0.0;
+
+                if(listVentaDetalle[i].ventad_descuento && listVentaDetalle[i].ventad_descuento > 0){
+                    valorDescuentoTmp = 
+                    (Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu) * listVentaDetalle[i].ventad_descuento / 100);
+                    
+                    valorTotal = (Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu) - valorDescuentoTmp);
+                }else{
+                    valorTotal = Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu);
+                }
+                
+                let valorIva = 0
+                if(listVentaDetalle[i].ventad_iva == '12.00'){
+                    valorIva = (Number(valorTotal * 12) / 100);
+                }else{
+                    valorIva = 0;
+                }
+
+                detallesNode = detallesNode.ele('detalle').ele('codigoPrincipal',listVentaDetalle[i].prod_codigo).up()
+                .ele('codigoAuxiliar',listVentaDetalle[i].prod_codigo).up().ele('descripcion',listVentaDetalle[i].prod_nombre).up()
+                .ele('cantidad',listVentaDetalle[i].ventad_cantidad).up().ele('precioUnitario',Number(listVentaDetalle[i].ventad_vu).toFixed(2)).up()
+
+                if(listVentaDetalle[i].ventad_descuento && listVentaDetalle[i].ventad_descuento > 0){
+                    detallesNode.ele('descuento',valorDescuentoTmp.toFixed(2)).up()
+                }else{
+                    detallesNode.ele('descuento','0').up()
+                }
+                
+                detallesNode = detallesNode.ele('precioTotalSinImpuesto',valorTotal.toFixed(2)).up()
+                .ele('impuestos').ele('impuesto');
+                
+                detallesNode = detallesNode.ele('codigo','2').up();
+
+                if(listVentaDetalle[i].ventad_iva == '12.00'){
+                    detallesNode = detallesNode.ele('codigoPorcentaje','2').up()
+                }else{
+                    detallesNode = detallesNode.ele('codigoPorcentaje','0').up()
+                }
+
+                if(listVentaDetalle[i].ventad_iva == '12.00'){
+                    detallesNode = detallesNode.ele('tarifa','12.00').up()
+                }else{
+                    detallesNode = detallesNode.ele('tarifa','0').up()
+                }
+                detallesNode = detallesNode.ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up().up();
             }
+         
+            rootElement = rootElement.ele('infoAdicional').ele('campoAdicional',{'nombre':'DIRECCION'},datosCliente.cli_direccion).up()
+            .ele('campoAdicional',{'nombre':'FORMA DE PAGO'},datosVenta.venta_forma_pago).up()
+            .ele('campoAdicional',{'nombre':'RESPONSABLE'},datosVenta.usu_nombres).up()
 
-            rootElement.ele('otrosRubrosTerceros').ele('rubro').ele('concepto','CONCEPTO1').up().ele('total','10').up().up()
-            .ele('rubro').ele('concepto','CONCEPTO2').up().ele('total','12').up().up().ele('rubro').ele('concepto','CONCEPTO3').up().ele('total','5').up().up()
-            .ele('rubro').ele('concepto','CONCEPTO4').up().ele('total','25').up().up().up();
-
+            if(datosCliente.cli_email && datosCliente.cli_email.length > 0 && datosCliente.cli_email !== ' '){
+                rootElement = rootElement.ele('campoAdicional',{'nombre':'EMAIL'},datosCliente.cli_email).up()
+            }
+            if(datosCliente.cli_teleono && datosCliente.cli_teleono.length > 0){
+                rootElement.ele('campoAdicional',{'nombre':'TELEFONOS'},datosCliente.cli_teleono).up();
+            }
+        
             const xmlFinal = rootElement.end({pretty: true});
 
             // SAVE XML FILE IN FOLDER SERVER
@@ -188,23 +431,25 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                         return console.error(err);
                     }
     
-                    fs.writeFileSync(`${path}/FACTURA001.xml`, xmlFinal, function(error){
+                    fs.writeFileSync(`${path}/${datosVenta.venta_tipo}${secuencial}.xml`, xmlFinal, function(error){
                         if(error){
                             console.log('error escribiendo archivo');
                         }
                     })
                 });
             }else{
-                fs.writeFileSync(`${path}/FACTURA001.xml`, xmlFinal, function(error){
+                fs.writeFileSync(`${path}/${datosVenta.venta_tipo}${secuencial}.xml`, xmlFinal, function(error){
                     if(error){
                         console.log('error escribiendo archivo');
                     }
-                })
+                });
             }
 
-            resolve('ok');
+            resolve({
+                pathFile: `${path}/${datosVenta.venta_tipo}${secuencial}.xml`,
+                claveAct: claveActivacion
+            });
         }catch(exception){
-            console.log(exception);
             reject({
                 isSucess: false,
                 error: 'error creando xml documento venta, reintente'
@@ -237,6 +482,57 @@ function modulo11(clave48Digitos){
     }
 
     return `${clave48Digitos}${digitoVerificador}`;
+}
+function getCodigoDocumentoByName(nombreCodigoDoc){
+
+    if(nombreCodigoDoc.includes('Factura')){
+        return '01';
+    }
+
+    if(nombreCodigoDoc.includes('03 Liquidación de compra de Bienes o Prestación de servicios')){
+        return '03';
+    }
+}
+
+function getTipoIdentificacionComprador(identificacion, tipoIdentificacion){
+
+    if(identificacion == '9999999999'){
+        return '07';
+    }
+    if(tipoIdentificacion == 'RUC'){
+        return '04';
+    }
+    if(tipoIdentificacion == 'CI'){
+        return '05';
+    }
+
+}
+
+function getCodigoFormaPago(formaPago){
+
+    if(formaPago == 'Efectivo'){
+        return '01';
+    }
+    if(formaPago == 'TARJETA DE CRÉDITO'){
+        return '19';
+    }
+    if(formaPago == 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO'){
+        return '20';
+    }
+}
+
+function getTipoComprobanteVenta(tipoVenta){
+
+    let codigo = '';
+    
+    codDoc.forEach((element) => {
+        
+        if(element.nombre.includes(tipoVenta)){
+            codigo = element.codigo
+        }
+    });
+
+    return codigo;
 }
 
 
