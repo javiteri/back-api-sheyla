@@ -23,7 +23,6 @@ router.get('/autorizardocumentoelectronico', async (req, res) => {
         identificacion,tipo);
     documentosElectronicosProm.then(
         function(result) {
-            console.log('inside');
             fs.unlink(result.pathFile, function(){
                 console.log("File was deleted") // Callback
                 res.status(200).send(result);

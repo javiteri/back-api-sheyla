@@ -23,7 +23,32 @@ const fileConfigsRouter = require('./src/controllers/configuracion/fileconfig_ro
 const dashboardRoter = require('./src/controllers/dashboard/dashboard_routes');
 const documentosElectronicosRouter = require('./src/controllers/documentos-electronicos/documentos_electronicos_routes');
 
+const Arena = require('bull-arena');
+const Bull = require('bull');
+
+const arenaConfig = Arena({
+  Bull,
+  queues: [
+    {
+      type: 'bull',
+      name: "docelectronicos",
+      hostId: 'Cola de Envios Documentos Electronicos'
+    },
+  ],
+
+},
+{
+  // Make the arena dashboard become available at {my-site.com}/arena.
+  basePath: '/arena',
+
+  // Let express handle the listening.
+  disableListen: true,
+});
+
 var app = express();
+
+// Make arena's resources (js/css deps) available at the base app route
+app.use('/', arenaConfig);
 
 app.use(cors())
 

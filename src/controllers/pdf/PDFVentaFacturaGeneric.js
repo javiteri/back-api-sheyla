@@ -351,14 +351,20 @@ async function getImagenByRucEmp(rucEmp){
                     if (err) {
                         return console.error(err);
                     }
+                    
+                    try{
+                      const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 
-                    const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
+                      client.close();
 
-                    client.close();
+                      console.log('inside imagen');
 
-                    console.log('inside imagen');
-
-                    return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
+                      return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
+                    }catch(errorInside){
+                      console.log('inside error get imagen ftp pdf');
+                      return '';
+                    }
+                    
                 });
             }else{
                 const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);

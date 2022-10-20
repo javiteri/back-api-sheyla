@@ -64,9 +64,7 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
     let fontBold = 'Helvetica-Bold';
     
     if(pathImagen){
-      console.log('pdf imagen');
-      console.log(pathImagen);
-        pdfDoc.image(pathImagen,50,50,{fit: [150, 100],align: 'center', valign: 'center'});
+      pdfDoc.image(pathImagen,50,50,{fit: [150, 100],align: 'center', valign: 'center'});
     }
     
     pdfDoc.fontSize(9);
@@ -378,12 +376,18 @@ async function getImagenByRucEmp(rucEmp){
                         return console.error(err);
                     }
 
-                    const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
+                    try{
+                      const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 
-                    client.close();
+                      client.close();
 
-                    console.log('before imagen');
-                    return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
+                      console.log('before imagen');
+                      return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
+
+                    }catch(errorInside){
+                      console.log('inside error get imagen ftp pdf');
+                      return '';
+                    }
                 });
             }else{
                 const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);

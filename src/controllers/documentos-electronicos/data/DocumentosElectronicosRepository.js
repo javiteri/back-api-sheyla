@@ -5,6 +5,8 @@ const fs = require('fs');
 const xmlBuilder = require('xmlbuilder');
 const pdfGenerator = require('../../pdf/PDFGenerator');
 
+const {docElectronicoQueue} = require('../../../jobs/queue');
+
 const codDoc = [
     {
         nombre: 'Factura',
@@ -177,8 +179,7 @@ exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo
                                 }
                             
                                 const valorGenerateXmlResponse = 
-                                        generateXmlDocumentoElectronicoVenta(clienteResponse[0],ventaResponse[0],ventaDetalleResponse, 
-                                            datosEmpresa[0],datosConfig);
+                                        generateXmlDocumentoElectronicoVenta(clienteResponse[0],ventaResponse[0],ventaDetalleResponse,datosEmpresa[0],datosConfig);
                                 valorGenerateXmlResponse.then(
                                     function(data){
                                         const pathFile = data.pathFile;
@@ -198,17 +199,54 @@ exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo
                                             let stream  = fs.createReadStream(pathFile);
                                             stream.setEncoding('utf-8');
                                             let xmlString = '';
+
                                             stream.on('data',function(chunk){
                                                 xmlString += chunk;
                                             });
+
                                             stream.on('end', function() {
-                                                //let str = xmlString.replace(/^\s+|\s+$/g, '');
                                                 let str = xmlString.replace(/[\n\r\t]+/g, '');
                                                 poolEFactra.query(sqlQueryInsertXmlBlob,[results[0].empresa_id,claveActivacion, str], function(errores, resultss) {
                                                     if(errores){
-                                                        console.log(errores);
-                                                        return reject({isSucess: false, message:'error insertando text xml db'});
+                                                        return reject(
+                                                                {   isSucess: false, 
+                                                                    message: 
+                                                                    (errores.sqlMessage.includes('Duplicate entry')) ? 'ya existe el xml clave acceso' 
+                                                                        : 'error insertando text xml db'
+                                                                }
+                                                            );
                                                     }
+
+                                                    const actualDateHours = new Date(ventaResponse[0].venta_fecha_hora);
+                                                    const dateString = '' + actualDateHours.getFullYear() + '-' + ('0' + (actualDateHours.getMonth()+1)).slice(-2) + 
+                                                                        '-' + ('0' + actualDateHours.getDate()).slice(-2);
+
+                                                    const objSendJob = {
+                                                        claveAct: claveActivacion,
+                                                        empresaId: results[0].empresa_id,
+                                                        rucEmpresa: datosEmpresa[0].EMP_RUC,
+                                                        ciRucCliente: clienteResponse[0].cli_documento_identidad,
+                                                        nombreCliente:  clienteResponse[0].cli_nombres_natural,
+                                                        idVenta: ventaResponse[0].venta_id,
+                                                        tipoDocumento: ventaResponse[0].venta_tipo,
+                                                        documentoNumero: 
+                                                                `${ventaResponse[0].venta_001}-${ventaResponse[0].venta_002}-${ventaResponse[0].venta_numero}`,
+                                                        ventaValorTotal: ventaResponse[0].venta_total,
+                                                        ventaFecha: dateString
+                                                    }
+                                                    // SEND JOB TO QUEUE BULL
+                                                    docElectronicoQueue.add(objSendJob,{
+                                                            //delay: 30000,
+                                                            removeOnComplete: true,
+                                                            removeOnFail: true,
+                                                            attempts: 100,
+                                                            backoff: {
+                                                                type: 'fixed',
+                                                                delay: 10000
+                                                            }
+                                                        }
+                                                    );
+
                                                     resolve(data);
                                                 });
 
