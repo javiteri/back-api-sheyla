@@ -14,6 +14,7 @@ module.exports = (job, done) => {
         let rucCliente = job.data.ciRucCliente;
         let nombreCliente = job.data.nombreCliente;
         let empresaId = job.data.empresaId;
+        
         let ventaNumero = job.data.documentoNumero;
         let ventaTipo = (job.data.tipoDocumento.toString()).toUpperCase();
         let ventaFecha = job.data.ventaFecha;
@@ -110,8 +111,22 @@ module.exports = (job, done) => {
 };
 
 function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
-    ventaValor,claveAcceso, done,resultMensaje,ventaId, job){
+                            ventaValor,claveAcceso, done,resultMensaje,ventaId, job){
 
+    let nombreEmpresa = job.data.nombreEmpresa;
+    let emailCliente = job.data.emailCliente;
+    let nombreCliente = job.data.nombreCliente;
+    let numeroDocumento = job.data.documentoNumero;
+    let paginaWeb = 'https://www.misfacturas.efacturas.net';
+
+    console.log(nombreEmpresa);
+    console.log(emailCliente);
+    console.log(nombreCliente);
+    console.log(numeroDocumento);
+    console.log(paginaWeb);
+    console.log(claveAcceso);
+
+    
     const sqlInsertDocumento = `INSERT INTO documentos (documento_tipo, documento_fecha,documento_numero,
             documento_cliente_id,documento_valor,documento_clave_acceso) VALUES (?,?,?,?,?,?)`;
 
@@ -124,11 +139,18 @@ function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
         updateEstadoVentaDocumentoElectronico('2',resultMensaje[0].auto_mensaje,ventaId).then(
         function(result){
 
+            const actualDateHours = new Date();
+            const dateString = '' + actualDateHours.getFullYear() + '-' + ('0' + (actualDateHours.getMonth()+1)).slice(-2) + 
+                                '-' + ('0' + actualDateHours.getDate()).slice(-2);
+
             //ENVIAR EMAIL AL CLIENTE
             // SE DEBE CREAR UN ARCHIVO PDF Y XML FIRMADO Y ENVIARLO POR FTP
-            /*var options = {
+            console.log('before send email');
+            var options = {
                 host: 'sheyla2.dyndns.info',
-                path: `/sheylaweb/CREAR_EMPRESA.php?SERIE=${ruc}`
+                path: `/CORREOS_VARIOS/MYSQL_MAIL.php?FECHA=${dateString}&FECHAGAR=${dateString}&TIPO=2&EMPRESA=${nombreEmpresa}
+                        &ACCESO=${claveAcceso}&EMAIL=${emailCliente}&CLIENTE=${nombreCliente}&DOCUMENTO=${numeroDocumento}
+                        &WEB=${paginaWeb}&TIME=00:00 `
             };
             const callback = function(response){
                 let str = '';
@@ -139,14 +161,14 @@ function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
                 });
 
                 response.on('end', function () {
-                   
+                   console.log('se envio el email');
                 }).on('error', err =>{
                     console.log('error request');
                     console.log(err);
                 });
             }
 
-            httpClient.request(options, callback).end();*/
+            httpClient.request(options, callback).end();
 
             done(null,job.data);
         },
