@@ -339,6 +339,7 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
             let valueNombreClient = "";
             let valueCiRucClient = "";
 
+            console.log(noDoc);
             if(nombreOrCiRuc){
             
                 const containsNumber =  /^[0-9]*$/.test(nombreOrCiRuc);
@@ -353,10 +354,11 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
                                          venta_anulado as anulado, venta_total AS total,usu_username AS usuario,cli_nombres_natural AS cliente, cli_documento_identidad AS cc_ruc_pasaporte,
                                          venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
                                          FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
-                                         AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
+                                         AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND 
+                                         CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ?
                                          AND  venta_fecha_hora  BETWEEN ? AND ? ORDER BY venta_id DESC`;
             pool.query(queryGetListaVentas, 
-                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
+                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc+"%", 
                 fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
 
                 if(error){
@@ -400,11 +402,12 @@ exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fe
             const queryGetListaResumenVentas = `SELECT venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
             cli_nombres_natural AS cliente,cli_documento_identidad AS cc_ruc_pasaporte,venta_forma_pago AS forma_pago,venta_subtotal_12 AS subtotalIva,
             venta_subtotal_0 AS subtotalCero, venta_valor_iva AS valorIva,venta_total AS total FROM ventas,clientes,usuarios WHERE venta_empresa_id=? 
-            AND venta_usu_id=usu_id AND venta_cliente_id=cli_id AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
+            AND venta_usu_id=usu_id AND venta_cliente_id=cli_id AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND 
+            CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ?
             AND venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 `;
 
             pool.query(queryGetListaResumenVentas, 
-                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc,
+                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc+"%",
                 fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
 
                 if(error){

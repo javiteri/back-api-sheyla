@@ -109,7 +109,6 @@ exports.loginAndValidateEmp = function(ruc, username, password){
 
                 response.on('end', function () {
 
-                    
                     if(str.includes('NOEXISTE')){
                         resolve({
                             isSucess: false,
@@ -122,64 +121,102 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                     if(str.includes('***OK')){
                         // CONSULTAR SI EXISTE EL USUARIO Y CONTRASENA
 
-                        let queryEmpresas = "SELECT * FROM empresas WHERE emp_ruc = ? LIMIT 1";
-                        let query = 'SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1';
-                        
-                        poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
+                        let queryNumDocAndLicenceDays = `SELECT empresa_web_plan_enviados as emitidos,empresa_fecha_fin_facturacion as finfactura FROM
+                            efactura_web.empresas,efactura_factura.empresas WHERE efactura_web.empresas.EMP_RUC
+                            = efactura_factura.empresas.EMPRESA_RUC AND
+                            efactura_web.empresas.EMP_RUC= ?`;
+            
+                        poolMysqlBd1.query(queryNumDocAndLicenceDays, [ruc], (err, results) => {
 
                             if(err){
-                                reject('error en BD2');
-                                return;
-                            }
-
-                            if(!resultEmpresa | resultEmpresa == undefined | resultEmpresa == null | !resultEmpresa.length){
-                                reject(' error, no se encontro la empresa');
-                                return;
-                            }
-
-                            let idEmpresa;
-                            let nombreEmpresa;
-                            Object.keys(resultEmpresa).forEach(function(key) {
-                                idEmpresa = resultEmpresa[key].EMP_ID;
-                                nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
-                            });
-
-                            poolMysql.query(query, [username, password, idEmpresa], function(err, results, fields) {
-
-                                if(err){
-                                    reject('error: ' + err);
-                                    return;
-                                }
-
-
-                                if(!results | results == undefined | results == null | !results.length){
-                                    resolve({
-                                        isSuccess: true,
-                                        existUser: false
-                                    });
-                                    return;
-                                }
-                                
-                                let idUsuario;
-                                let nombreUsuario;
-                                Object.keys(results).forEach(function(key){
-                                    var row = results[key]
-                                    idUsuario = row.usu_id;
-                                    nombreUsuario = row.usu_nombres;
+                                reject({
+                                    isSucess: false,
+                                    code: 400,
+                                    messageError: err
                                 });
-                                
+                                return;
+                            }
+                            
+                            const dateActual = new Date();
+                            const dateInit = new Date(results[0].finfactura);
+
+                            let time = dateInit.getTime() - dateActual.getTime(); 
+                            let days = time / (1000 * 3600 * 24); //Diference in Days
+
+                            let diasLicenciaValue = Number(days).toFixed(0);
+
+                            /*if(diasLicenciaValue <= 0){
                                 resolve({
                                     isSuccess: true,
-                                    existUser: true,
-                                    idUsuario: idUsuario,
-                                    nombreUsuario: nombreUsuario,
-                                    idEmpresa: idEmpresa,
-                                    nombreEmpresa: nombreEmpresa,
-                                    rucEmpresa: ruc,
-                                    redirectToHome: true
-                                })
-                            }
-                        );
+                                    code: 400,
+                                    sinLicencia: true,
+                                    mensage: 'dias de licencia expirados'
+                                });
+                                return;
+                            }*/
+
+                            let queryEmpresas = "SELECT * FROM empresas WHERE emp_ruc = ? LIMIT 1";
+                            let query = 'SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1';
+                            
+                            poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
+    
+                                if(err){
+                                    reject('error en BD2');
+                                    return;
+                                }
+    
+                                if(!resultEmpresa | resultEmpresa == undefined | resultEmpresa == null | !resultEmpresa.length){
+                                    reject(' error, no se encontro la empresa');
+                                    return;
+                                }
+    
+                                let idEmpresa;
+                                let nombreEmpresa;
+                                Object.keys(resultEmpresa).forEach(function(key) {
+                                    idEmpresa = resultEmpresa[key].EMP_ID;
+                                    nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
+                                });
+    
+                                poolMysql.query(query, [username, password, idEmpresa], function(err, results, fields) {
+    
+                                    if(err){
+                                        reject('error: ' + err);
+                                        return;
+                                    }
+    
+    
+                                    if(!results | results == undefined | results == null | !results.length){
+                                        resolve({
+                                            isSuccess: true,
+                                            existUser: false
+                                        });
+                                        return;
+                                    }
+                                    
+                                    let idUsuario;
+                                    let nombreUsuario;
+                                    Object.keys(results).forEach(function(key){
+                                        var row = results[key]
+                                        idUsuario = row.usu_id;
+                                        nombreUsuario = row.usu_nombres;
+                                    });
+                                    
+                                    resolve({
+                                        isSuccess: true,
+                                        existUser: true,
+                                        idUsuario: idUsuario,
+                                        nombreUsuario: nombreUsuario,
+                                        idEmpresa: idEmpresa,
+                                        nombreEmpresa: nombreEmpresa,
+                                        rucEmpresa: ruc,
+                                        redirectToHome: true
+                                    })
+                                }
+                            );
+    
+    
+                            });
+
 
 
                         });

@@ -28,7 +28,7 @@ module.exports = (job, done) => {
                 return done(new Error(error));
             }
 
-            if(resultMensaje && (resultMensaje[0].auto_mensaje === null || resultMensaje[0].auto_mensaje === undefined)){
+            if(resultMensaje[0] && (resultMensaje[0].auto_mensaje === null || resultMensaje[0].auto_mensaje === undefined)){
                 console.log('inside aun sin respuesta');
                 return done(new Error('Aun sin Respuesta'));
             }
@@ -148,9 +148,9 @@ function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
             console.log('before send email');
             var options = {
                 host: 'sheyla2.dyndns.info',
-                path: `/CORREOS_VARIOS/MYSQL_MAIL.php?FECHA=${dateString}&FECHAGAR=${dateString}&TIPO=2&EMPRESA=${nombreEmpresa}
-                        &ACCESO=${claveAcceso}&EMAIL=${emailCliente}&CLIENTE=${nombreCliente}&DOCUMENTO=${numeroDocumento}
-                        &WEB=${paginaWeb}&TIME=00:00 `
+                path: encodeURI(`/CORREOS_VARIOS/MYSQL_MAIL.php?FECHA=${dateString}&FECHAGAR=${dateString}&TIPO=2&EMPRESA=${nombreEmpresa}
+                &ACCESO=${claveAcceso}&EMAIL=${emailCliente}&CLIENTE=${nombreCliente}&DOCUMENTO=${numeroDocumento}
+                &WEB=${paginaWeb}&TIME=00:00 `) 
             };
             const callback = function(response){
                 let str = '';
@@ -162,6 +162,7 @@ function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
 
                 response.on('end', function () {
                    console.log('se envio el email');
+                   console.log(str);
                 }).on('error', err =>{
                     console.log('error request');
                     console.log(err);
@@ -192,6 +193,10 @@ function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, done,data
                     console.log('error insertando en estado venta');
                     reject(errorUp);
                 }
+                console.log('documento autorizado correctamente');
+                console.log('generando archivo pdf y xml');
+                console.log('subiendo archivo pdf y xml');
+                console.log('enviando email');
                 //done(null,job.data);
                 resolve('ok');
             });

@@ -55,6 +55,26 @@ router.get('/generatepdffromventa', async(req, res) => {
     );
 });
 
+router.get('/getlistdocumentoselectronicosexcel', async(req, res) => {
+    
+    const getListDocElectronicosExcelPromise = documentosElectronicosRepository.getListDocElectronicosExcel(req.query);;
+
+    getListDocElectronicosExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            console.log('error');
+            console.log(error);
+            res.status(400).send(error);
+        }
+    );
+})
 
 
 module.exports = router;

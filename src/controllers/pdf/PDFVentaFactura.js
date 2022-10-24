@@ -1,6 +1,8 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const ftp = require("basic-ftp");
+const sharedFunctions = require('../../util/sharedfunctions');
+
 
 exports.generatePdfFromVentaFactura = (datosEmpresa, datosCliente, datosVenta, resolve, reject) => {
 
@@ -55,7 +57,6 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta, resolv
 async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta){
 
     let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
-    console.log('sige el proceso');
     if(!pathImagen){
         pathImagen = './src/assets/logo_default_sheyla.png';
     }
@@ -75,8 +76,6 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
     pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: SI`, 20, 240,{width: 250});
     pdfDoc.text(`Agente de Retención Resolucion No. 1`, 20, 260,{width: 250});
 
-    console.log(pdfDoc.x);
-    console.log(pdfDoc.y);
     pdfDoc.rect(pdfDoc.x - 10,170 - 5,250,pdfDoc.y - 145).stroke();
 
     pdfDoc.text(`RUC: ${datosEmpresa[0]['EMP_RUC']}`, 280, 60,{width: 250});
@@ -89,10 +88,11 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
     const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
     const yearVenta = dateVenta.getFullYear().toString();
 
-    let rucEmpresa = datosEmpresa[0].EMP_RUC;
-    let tipoComprobanteFactura = '01';
-    let tipoAmbiente = '1';//PRUEBAS
-    let serie = '001001';
+    //let rucEmpresa = datosEmpresa[0].EMP_RUC;
+    let rucEmpresa = '1718792656001'
+    let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta[0].venta_tipo); //getTipoComprobanteVenta(datosVenta[0].venta_tipo);//'01';
+    let tipoAmbiente = '2';//PRODUCCION
+    let serie = `${datosVenta[0]['venta_001']}${datosVenta[0]['venta_002']}`;
     let codigoNumerico = '12174565';
     let secuencial = (datosVenta[0].venta_numero).toString().padStart(9,'0');
     let tipoEmision = 1;
@@ -101,6 +101,8 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
     `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
     pdfDoc.text(`${digit48}`, 280, 130);
 
+    //let claveActivacion = modulo11(digit48);
+    let claveActivacion = sharedFunctions.modulo11(digit48);
 
     pdfDoc.text(`FECHA Y HORA DE AUTORIZACION`, 280, 150);
     pdfDoc.text(`2022-10-08T12:26:21-05:00`, 280, 160);
@@ -109,10 +111,7 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
     pdfDoc.text(`CLAVE DE ACCESO`, 280, 220);
     pdfDoc.font('./src/assets/font/LibreBarcode39-Regular.ttf')
         .fontSize(28).text(`${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${secuencial}`, 280, 230);
-    pdfDoc.font(fontNormal).fontSize(9).text(`${digit48}`, 280, 250);
-
-    console.log(pdfDoc.x);
-    console.log(pdfDoc.y);
+    pdfDoc.font(fontNormal).fontSize(9).text(`${claveActivacion}`, 280, 250);
 
     pdfDoc.rect(pdfDoc.x - 10,50,300,pdfDoc.y - 20).stroke();
 
@@ -122,8 +121,6 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
     pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20, 340);
     pdfDoc.text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, 360);
 
-    console.log(pdfDoc.x);
-    console.log(pdfDoc.y);
     pdfDoc.rect(pdfDoc.x - 10, 320 - 10, 560, 80).stroke();
 }
 
@@ -131,7 +128,6 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     let i;
   let invoiceTableTop = 420;
 
-  console.log(datosVenta);
   doc.font("Helvetica-Bold");
  
   generateTableRow(
@@ -162,10 +158,8 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
         position = invoiceTableTop + (index + 1) * 30;
         index++;
         doc.addPage();
-        console.log('inside new page');
     }
 
-    console.log(position);
     generateTableRow(
         doc,
         position,
@@ -188,7 +182,6 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
 
 
   const subtotalPosition = invoiceTableTop + (index + 1) * 30;
-  console.log(subtotalPosition);
   generateTableRow(
     doc,
     subtotalPosition,
@@ -266,7 +259,6 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
 async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     let fontNormal = 'Helvetica';
     let fontBold = 'Helvetica-Bold';
-    console.log(datosCliente);
     pdfDoc.fontSize(9);
     
     let ypositionzero = yposition + 20;
@@ -355,7 +347,6 @@ function formatCurrency(cents) {
 }
 
 
-
 async function getImagenByRucEmp(rucEmp){
 
         //CONNECT TO FTP SERVER
@@ -381,11 +372,9 @@ async function getImagenByRucEmp(rucEmp){
 
                       client.close();
 
-                      console.log('before imagen');
                       return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
 
                     }catch(errorInside){
-                      console.log('inside error get imagen ftp pdf');
                       return '';
                     }
                 });
@@ -393,15 +382,52 @@ async function getImagenByRucEmp(rucEmp){
                 const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 
                 client.close();
-                console.log('before imagen');
                 return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
             }
 
         }catch(exception){
-            console.log('inside error');
-            console.log(exception);
             client.close();
             return '';
         }
 
 }
+
+
+/*function getTipoComprobanteVenta(tipoVenta){
+
+  let codigo = '';
+  
+  codDoc.forEach((element) => {
+      
+      if(element.nombre.includes(tipoVenta)){
+          codigo = element.codigo
+      }
+  });
+
+  return codigo;
+}*/
+
+/*function modulo11(clave48Digitos){
+  let suma = 0;
+  let factor = 7;
+
+  const arrayDigits = Array.from(clave48Digitos);
+
+  arrayDigits.forEach(element => {
+
+      suma = suma + Number(element) * factor;
+
+      factor = factor - 1;
+      if(factor == 1) factor = 7;
+  });
+
+  let digitoVerificador = (suma % 11);
+  digitoVerificador = 11 - digitoVerificador;
+  if(digitoVerificador == 11){
+      digitoVerificador = 0;
+  }else if(digitoVerificador == 10){
+      digitoVerificador = 1;
+  }
+
+  return `${clave48Digitos}${digitoVerificador}`;
+}*/

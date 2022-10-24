@@ -179,7 +179,7 @@ exports.getListComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni
                                             AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ?
                                             AND  compra_fecha_hora  BETWEEN ? AND ? `;
             pool.query(queryGetListaVentas, 
-                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
+                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc+"%", 
             fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
 
                 if(error){
@@ -227,7 +227,7 @@ exports.getListResumenComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, f
             AND compra_fecha_hora BETWEEN ? AND ? `;
 
             pool.query(queryGetListaResumenVentas, 
-                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc,
+                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc+"%",
                 fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
 
                 if(error){

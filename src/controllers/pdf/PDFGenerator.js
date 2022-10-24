@@ -15,13 +15,6 @@ exports.generatePdfFromVenta = (datosEmpresa, datosCliente, datosVenta, isPdfNor
           }else{
 
             pdfVentaFacturaGeneric.generatePdfFromVentaFacturaGeneric(datosEmpresa, datosCliente, datosVenta, resolve, reject);
-            
-            /*if(datosVenta[0].venta_tipo == 'Factura'){
-              //pdfVentaFactura.generatePdfFromVentaFactura(datosEmpresa, datosCliente, datosVenta, resolve, reject);
-            }else{
-              pdfVentaFacturaGeneric.generatePdfFromVentaFacturaGeneric(datosEmpresa, datosCliente, datosVenta, resolve, reject);
-            }*/
-
           }
 
         }catch(exception){

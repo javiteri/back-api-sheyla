@@ -133,7 +133,6 @@ router.get('/searchClienteByIdEmp', async (req, res) => {
 
 router.get('/getlistclientesexcel', async(req, res) => {
     
-    
     const getListClientesExcelPromise = clienteRepository.getListClientesExcel(req.query.idEmp);
 
     getListClientesExcelPromise.then(

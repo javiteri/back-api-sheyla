@@ -1,9 +1,11 @@
 const pool = require('../../../connectiondb/mysqlconnection');
 const poolEFactra = require('../../../connectiondb/mysqlconnectionlogin');
-
+const excelJS = require("exceljs");
 const fs = require('fs');
 const xmlBuilder = require('xmlbuilder');
 const pdfGenerator = require('../../pdf/PDFGenerator');
+const sharedFunctions = require('../../../util/sharedfunctions');
+
 
 const {docElectronicoQueue} = require('../../../jobs/queue');
 
@@ -93,7 +95,7 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
             venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo LIKE ?
             AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_fecha_hora BETWEEN ? AND ?
-            AND venta_numero LIKE ? AND venta_anulado=0 
+            AND CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ? AND venta_anulado=0 
             UNION ALL 
             SELECT compra_tipo,compra_id,compra_fecha_hora,compra_numero, compra_total AS total, pro_nombre_natural, pro_documento_identidad AS identificacion,
             compra_forma_pago , compra_electronica_estado 
@@ -102,8 +104,8 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
             AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ? `;
 
             pool.query(sqlQueryDocumentosElectronicos, [idEmp,"%"+tipo,"%"+valueNombreClient+"%",
-            "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc,    idEmp,"%"+tipo,fechaIni,fechaFin,"%"+valueNombreClient+"%",
-            "%"+valueCiRucClient+"%","%"+nodoc], function(error, results) {
+            "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc+"%", idEmp,"%"+tipo,fechaIni,fechaFin,"%"+valueNombreClient+"%",
+            "%"+valueCiRucClient+"%","%"+nodoc+"%"], function(error, results) {
 
                 if(error){
                     console.log(error);
@@ -132,7 +134,7 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
     });
 }
 
-
+//------------------------------------------------------------------------------------------------------------------------
 exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo) => {
     return new Promise(async (resolve,reject) => {
         try{
@@ -278,8 +280,6 @@ exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo
     });
 };
 
-
-
 function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVentaDetalle,datosEmpresa, datosConfig){
 
     return new Promise((resolve, reject) => {
@@ -314,7 +314,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             const yearVenta = dateVenta.getFullYear().toString();
     
             let rucEmpresa = '1718792656001';//datosEmpresa.EMP_RUC;
-            let tipoComprobanteFactura = getTipoComprobanteVenta(datosVenta.venta_tipo);
+            let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta.venta_tipo);
             let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
             let serie = `${datosVenta.venta_001}${datosVenta.venta_002}`;
             let codigoNumerico = '12174565';
@@ -326,7 +326,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
                             
             let codigoDocmento = getCodigoDocumentoByName(datosVenta.venta_tipo);
-            let claveActivacion = modulo11(digit48);
+            let claveActivacion = sharedFunctions.modulo11(digit48);//modulo11(digit48);
             let tipoIdentificacionComprador = getTipoIdentificacionComprador(datosCliente.cli_documento_identidad,
                 datosCliente.cli_tipo_documento_identidad);
 
@@ -499,30 +499,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
 
 }
 
-function modulo11(clave48Digitos){
-    let suma = 0;
-    let factor = 7;
 
-    const arrayDigits = Array.from(clave48Digitos);
-
-    arrayDigits.forEach(element => {
-
-        suma = suma + Number(element) * factor;
-
-        factor = factor - 1;
-        if(factor == 1) factor = 7;
-    });
-
-    let digitoVerificador = (suma % 11);
-    digitoVerificador = 11 - digitoVerificador;
-    if(digitoVerificador == 11){
-        digitoVerificador = 0;
-    }else if(digitoVerificador == 10){
-        digitoVerificador = 1;
-    }
-
-    return `${clave48Digitos}${digitoVerificador}`;
-}
 function getCodigoDocumentoByName(nombreCodigoDoc){
 
     if(nombreCodigoDoc.includes('Factura')){
@@ -561,19 +538,187 @@ function getCodigoFormaPago(formaPago){
     }
 }
 
-function getTipoComprobanteVenta(tipoVenta){
+//-------------------------------------------------------------------------------------------------------------------------------------
 
-    let codigo = '';
-    
-    codDoc.forEach((element) => {
-        
-        if(element.nombre.includes(tipoVenta)){
-            codigo = element.codigo
+
+exports.getListDocElectronicosExcel = async (datosFiltro) => {
+    return new Promise((resolve, reject) => {
+        try{
+
+            const promiseGetListDocs = createExcelDocumentosElectronicos(datosFiltro);
+            promiseGetListDocs.then(
+                function(documentos){
+                    resolve(documentos);
+                },
+                function(error){
+                    return reject(error);
+                }
+            );
+
+        }catch(exception){
+            reject('error creando excel');
         }
     });
-
-    return codigo;
 }
+
+function createExcelDocumentosElectronicos(datosFiltro){
+    return new Promise((resolve, reject) => {
+        try{
+
+            const {idEmp, fechaIni, fechaFin, tipo, nodoc,nombresci} = datosFiltro;
+
+            let valueNombreClient = "";
+            let valueCiRucClient = "";
+
+            if(nombresci){
+                const containsNumber =  /^[0-9]*$/.test(nombresci);
+                valueCiRucClient = containsNumber ? nombresci : "";
+
+                const containsText =  !containsNumber;
+                valueNombreClient = containsText ? nombresci : "";
+            }
+
+            const sqlQueryDocumentosElectronicos = `SELECT VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, venta_001,venta_002,venta_numero, 
+            CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
+            venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo LIKE ?
+            AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_fecha_hora BETWEEN ? AND ?
+            AND CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ? AND venta_anulado=0 
+            UNION ALL 
+            SELECT compra_tipo,compra_id,compra_fecha_hora,compra_numero,compra_numero,compra_numero,compra_numero, compra_total AS total, pro_nombre_natural, pro_documento_identidad AS identificacion,
+            compra_forma_pago , compra_electronica_estado 
+            FROM compras,proveedores  WHERE compra_empresa_id = ? AND compra_proveedor_id=pro_id AND compra_tipo LIKE ?
+            AND compra_fecha_hora  BETWEEN ? AND ?
+            AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ? `;
+
+            pool.query(sqlQueryDocumentosElectronicos, [idEmp,"%"+tipo,"%"+valueNombreClient+"%",
+            "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc+"%", idEmp,"%"+tipo,fechaIni,fechaFin,"%"+valueNombreClient+"%",
+            "%"+valueCiRucClient+"%","%"+nodoc+"%"], function(error, results) {
+
+                if(error){
+                    console.log(error);
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        message: 'Ocurrio un error al consultar la lista de documentos electronicos'
+                    });
+
+                    return;
+                }
+
+                const arrayData = Array.from(results);
+
+                const workBook = new excelJS.Workbook(); // Create a new workbook
+                const worksheet = workBook.addWorksheet("Lista Documentos Electronicos");
+                const path = `./files/${idEmp}`;
+
+                worksheet.columns = [
+                    {header: 'Fecha', key:'fecha', width: 20},
+                    {header: 'No. Factura', key:'numerofactura',width: 30},
+                    {header: 'Cliente', key:'cliente',width: 50},
+                    {header: 'CI/RUC', key:'identificacion',width: 20},
+                    {header: 'Forma de Pago', key:'formapago',width: 30},
+                    {header: 'Estado', key:'estado',width: 30},
+                    {header: 'Clave de Acceso', key:'claveacceso',width: 50}
+                ];
+            
+                
+                arrayData.forEach(valor => {
+
+                    const now = new Date(valor.fecha);
+                    const dayVenta = now.getDate().toString().padStart(2,'0');
+                    const monthVenta = (now.getMonth() + 1).toString().padStart(2,'0');
+                    const yearVenta = now.getFullYear().toString();
+
+                    let dateString = `${dayVenta}/${monthVenta}/${yearVenta}`;
+                    let rucEmpresa = '1718792656001';//datosEmpresa.EMP_RUC;
+                    let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(valor.VENTA_TIPO); //getTipoComprobanteVenta(valor.VENTA_TIPO);
+                    let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
+                    let serie = `${valor.venta_001}${valor.venta_002}`;
+                    let codigoNumerico = '12174565';
+                    let secuencial = (valor.venta_numero).padStart(9,'0');
+                    let tipoEmision = 1;
+                                                           
+                    let digit48 = `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
+                                                
+                    //let claveAcceso = modulo11(digit48);
+                    let claveAcceso = sharedFunctions.modulo11(digit48);
+
+                    let valorInsert = {
+                        fecha: dateString,
+                        numerofactura: valor.numeroFactura,
+                        cliente: valor.cliente,
+                        identificacion: valor.identificacion,
+                        formapago: valor.formaPago,
+                        estado: valor.estado,
+                        claveacceso: claveAcceso,
+                    }
+                    worksheet.addRow(valorInsert);
+                });
+
+                // Making first line in excel
+                worksheet.getRow(1).eachCell((cell) => {
+                    cell.font = {bold: true},
+                    cell.border = {
+                        top: {style:'thin'},
+                        left: {style:'thin'},
+                        bottom: {style:'thin'},
+                        right: {style:'thin'}
+                    }
+                });
+
+                try{
+
+                    const nameFile = `/${Date.now()}_doc_electronicos.xlsx`;
+            
+                    if(!fs.existsSync(`${path}`)){
+                        fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                            if (err) {
+                                return console.error(err);
+                            }
+            
+                            workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            
+                                resolve({
+                                    isSucess: true,
+                                    message: 'archivo creado correctamente',
+                                    pathFile: `${path}${nameFile}`
+                                });
+
+                            });
+                        });
+                    }else{
+                        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+                        });
+                    }
+            
+                }catch(error){
+                    console.log(`exception`);
+                    console.log(error);
+            
+                    reject({
+                        isSucess: false,
+                        error: 'error creando archivo, reintente'
+                    });
+                }
+
+            });
+
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo, reintente'
+            });
+        }
+    });
+}
+
 
 
 exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClienteProv, isPdfNormal) => {
@@ -647,3 +792,5 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
 
     });
 };
+
+
