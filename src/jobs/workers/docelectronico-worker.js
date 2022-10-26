@@ -43,7 +43,6 @@ module.exports = (job, done) => {
 
             // SI EL CODIGO ES DE ERROR (2) GUARDAR ESTADO EN LA TABLA VENTA
             if(valorAutoEstado == 2){
-                console.log('estado de error, actualizando venta estado');
                 updateEstadoVentaDocumentoElectronico('1',resultMensaje[0].auto_mensaje,ventaId).then(
                     function(result){
                         console.log('todo ok insertando estado venta error');
@@ -123,7 +122,6 @@ function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, done,data
             mysql.query(queryUpdateVentaEstado,[estado,mensaje,ventaId], function(errorUp, resultUpdateVentaEstado){
 
                 if(errorUp){
-                    console.log(errorUp);
                     console.log('error insertando en estado venta');
                     reject(errorUp);
                 }
@@ -141,7 +139,6 @@ function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, done,data
 function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
                             ventaValor,claveAcceso, done,resultMensaje,ventaId, job){
 
-    
     const sqlInsertDocumento = `INSERT INTO documentos (documento_tipo, documento_fecha,documento_numero,
             documento_cliente_id,documento_valor,documento_clave_acceso) VALUES (?,?,?,?,?,?)`;
 
@@ -167,8 +164,6 @@ function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
 function createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso, done, jobData){
 
     try{
-        console.log('job data');
-        console.log(jobData);
         //get string xml tabla autorizaciones
         const sqlGetXmlAutorizedString = `SELECT auto_xml_autorizado FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
         mysqlEFactura.query(sqlGetXmlAutorizedString, [claveAcceso], async function(error, results){
@@ -177,7 +172,7 @@ function createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso, done, jobData){
             }            
 
             // UPLOAD FILES TO FTP SERVER
-            await createXMLSendFTP(results[0].auto_xml_autorizado);
+            await createXMLSendFTP(results[0].auto_xml_autorizado, claveAcceso);
             await createPDFSendFTP(jobData);
             
             sendEmailToClient(claveAcceso, jobData, done);
@@ -193,8 +188,6 @@ async function createPDFSendFTP(jobData){
     console.log('inside send pdf ride ftp');
     const promiseCreatePDF = await documentosElectronicosRepository.generateDownloadPdfFromVenta(jobData.empresaIdLocal, jobData.idVenta,jobData.ciRucCliente,true);
 
-    console.log('result await generate pdf');
-    console.log(promiseCreatePDF);
     if(promiseCreatePDF.isSucess && promiseCreatePDF.generatePath){
 
         const client = new ftp.Client()
@@ -204,9 +197,8 @@ async function createPDFSendFTP(jobData){
                 user: "sheylawebride",
                 password: "m10101417M2"
             })
-            console.log('upload pdf');
-            const response = await client.uploadFrom(promiseCreatePDF.generatePath,`${jobData.claveAct}.pdf`);
-            console.log(response);
+            await client.uploadFrom(promiseCreatePDF.generatePath,`${jobData.claveAct}.pdf`);
+            
             fs.unlink(promiseCreatePDF.generatePath, function(){
                 console.log(`PDF was eliminated ${promiseCreatePDF.generatePath}`) // Callback
             });
@@ -225,23 +217,18 @@ async function createXMLSendFTP(stringXmlAutorizado, claveAcceso){
     console.log('inside send xml ftp');    
 
     const client = new ftp.Client();
-    
     try {
-        //const readable = Readable.from(stringXmlAutorizado);
         await client.access({
                 host: "sheyla2.dyndns.info",
                 user: "sheylawebxml",
                 password: "m10101417M2"
         })
+
         let s = new Readable();
         s.push(stringXmlAutorizado);
         s.push(null);
-        console.log('readable');
-        console.log(s);
-        const response = await client.uploadFrom(s,`${claveAcceso}.xml`);
-        
-        console.log('response ftp send xml');
-        console.log(response);
+
+        await client.uploadFrom(s,`${claveAcceso}.xml`);
     }catch(exception){
         console.log(exception)
     }
@@ -249,7 +236,6 @@ async function createXMLSendFTP(stringXmlAutorizado, claveAcceso){
     client.close()
 
 }
-
 
 function sendEmailToClient(claveAcceso, jobData, done){
 
@@ -293,15 +279,11 @@ function sendEmailToClient(claveAcceso, jobData, done){
 
         response.on('end', function () {
            console.log('se envio el email');
-           console.log(str);
-
            //SEND EMAIL TO CLIENT
            done(null,jobData);
 
         }).on('error', err =>{
-            console.log('error request');
-            console.log(err);
-
+            console.log('error enviando email');
             //SEND EMAIL TO CLIENT
             done(null,jobData);
         });
