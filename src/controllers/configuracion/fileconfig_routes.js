@@ -4,6 +4,7 @@ const configRepository = require('./data/ConfigRepository');
 const multer  = require('multer');
 const upload = multer({ dest: 'uploads/' }).single('file');
 const ftp = require('basic-ftp');
+const fs = require('fs');
 
 router.post('/insertfilefirmaelec',async (req, res) => {
 
@@ -21,6 +22,10 @@ router.post('/insertfilefirmaelec',async (req, res) => {
             let ruc = req.body.ruc;
             let claveFirma = req.body.claveFirma;
 
+            console.log('ruc firma');
+            console.log(ruc);
+            console.log(dateString);
+            console.log(claveFirma);
             let path = './uploads';
             const response = await sendFileFirmaToFtp(`${path}/${req.file.filename}`, `${ruc}${dateString}.p12`);
             
@@ -28,6 +33,12 @@ router.post('/insertfilefirmaelec',async (req, res) => {
                 // TODO OK SE DEBE GUARDAR LA RUTA DE LA FIRMA FTP EN LA BASE DE DATOS CON NOMBRE DE ARCHIVO Y TODO   
 
                 let defaultPath = 'D:\\xampp\\htdocs\\firmas_electronicas\\';
+                
+                //ELIMINAR ARCHIVO P12
+                fs.unlink(`${path}/${req.file.filename}`, function(){
+                    console.log("File was deleted") // Callback
+                    //res.status(200).send(result);
+                });
 
                 configRepository.insertFileNameFirmaElec(claveFirma,ruc,`${defaultPath}${ruc}${dateString}.p12`).then(
                     function(result){
@@ -57,14 +68,6 @@ router.post('/insertfilefirmaelec',async (req, res) => {
                 res.json('ok');
             }
         }
-
-    
-        // SEND FILE TO FTP
-        // DELETE FILE FROM UPLOADS DIR
-        
-
-
-        //res.send(req.file);
     });
 
 });
@@ -79,7 +82,7 @@ async function sendFileFirmaToFtp(pathFileFirmaUpload, nombreFirmaFile){
             user: "firmas",
             password: "m10101418M"
         })
-        const response = await client.uploadFrom(pathFileFirmaUpload,`logos/${nombreFirmaFile}` );
+        const response = await client.uploadFrom(pathFileFirmaUpload,`/logos/${nombreFirmaFile}` );
         
         return response;
     }catch(exception){

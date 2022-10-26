@@ -244,29 +244,19 @@ function sendEmailToClient(claveAcceso, jobData, done){
     let nombreCliente = jobData.nombreCliente;
     let numeroDocumento = jobData.documentoNumero;
     let paginaWeb = 'https://www.misfacturas.efacturas.net';
-
-    console.log(nombreEmpresa);
-    console.log(emailCliente);
-    console.log(nombreCliente);
-    console.log(numeroDocumento);
-    console.log(paginaWeb);
-    console.log(claveAcceso);
+    let tipoDocumento = jobData.tipoDocumento;
 
     // SEND EMAIL
-    console.log('eviar email aqui');
-    console.log(emailCliente);
-
     const actualDateHours = new Date();
     const dateString = '' + actualDateHours.getFullYear() + '-' + ('0' + (actualDateHours.getMonth()+1)).slice(-2) + 
                         '-' + ('0' + actualDateHours.getDate()).slice(-2);
 
     //ENVIAR EMAIL AL CLIENTE
     // SE DEBE CREAR UN ARCHIVO PDF Y XML FIRMADO Y ENVIARLO POR FTP
-    console.log('before send email');
     var options = {
         host: 'sheyla2.dyndns.info',
         path: encodeURI(`/CORREOS_VARIOS/MYSQL_MAIL.php?FECHA=${dateString}&FECHAGAR=${dateString}&TIPO=2&EMPRESA=${nombreEmpresa}
-        &ACCESO=${claveAcceso}&EMAIL=${emailCliente}&CLIENTE=${nombreCliente}&DOCUMENTO=${numeroDocumento}
+        &ACCESO=${claveAcceso}&EMAIL=${emailCliente}&CLIENTE=${nombreCliente}&DOCUMENTO=${tipoDocumento} ${numeroDocumento}
         &WEB=${paginaWeb}&TIME=00:00 `) 
     };
     const callback = function(response){

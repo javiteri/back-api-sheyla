@@ -30,9 +30,6 @@ router.post('/insertarlistconfigfacelec', async (req, res) => {
     );
 });
 
-
-
-
 router.get('/listConfigsIdEmp', async (req, res) => {
 
     const getListConfigPromise = configRepository.getListConfigsByIdEmp(req.query.idEmp);

@@ -16,6 +16,19 @@ router.get('/getlistdocumentoselectronicos', async (req, res) => {
     );
 });
 
+router.get('/getlistdocumentoselectronicosnoautorizados', async (req, res) => {
+
+    const documentosElectronicosProm = documentosElectronicosRepository.getDocumentosElectronicosByIdEmpNoAutorizados(req.query);
+    documentosElectronicosProm.then(
+        function(result) {
+            res.status(200).send(result);
+        },
+        function(error) {
+            res.status(400).send(error);
+        }
+    );
+});
+
 router.get('/autorizardocumentoelectronico', async (req, res) => {
 
     const {idEmp, idVentaCompra,identificacion,tipo} = req.query;
@@ -57,7 +70,7 @@ router.get('/generatepdffromventa', async(req, res) => {
 
 router.get('/getlistdocumentoselectronicosexcel', async(req, res) => {
     
-    const getListDocElectronicosExcelPromise = documentosElectronicosRepository.getListDocElectronicosExcel(req.query);;
+    const getListDocElectronicosExcelPromise = documentosElectronicosRepository.getListDocElectronicosExcel(req.query);
 
     getListDocElectronicosExcelPromise.then(
         function (clientes){
@@ -75,6 +88,21 @@ router.get('/getlistdocumentoselectronicosexcel', async(req, res) => {
         }
     );
 })
+
+router.post('/autorizarlistdocumentosbyid', async (req, res) => {
+    const sendListDocElectronicosProm = documentosElectronicosRepository.autorizarListDocumentos(req.body);
+
+    sendListDocElectronicosProm.then(
+        function (result){
+            res.status(200).send(result);
+        },
+        function(error){
+            console.log('error');
+            console.log(error);
+            res.status(400).send(error);
+        }
+    );
+});
 
 
 module.exports = router;
