@@ -20,7 +20,7 @@ router.get('/autorizardocumentoelectronico', async (req, res) => {
 
     const {idEmp, idVentaCompra,identificacion,tipo} = req.query;
     const documentosElectronicosProm = documentosElectronicosRepository.atorizarDocumentoElectronico(idEmp, idVentaCompra,
-        identificacion,tipo);
+                                                                                                        identificacion,tipo);
     documentosElectronicosProm.then(
         function(result) {
             fs.unlink(result.pathFile, function(){

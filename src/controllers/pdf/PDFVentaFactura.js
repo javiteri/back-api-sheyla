@@ -4,12 +4,11 @@ const ftp = require("basic-ftp");
 const sharedFunctions = require('../../util/sharedfunctions');
 
 
-exports.generatePdfFromVentaFactura = (datosEmpresa, datosCliente, datosVenta, resolve, reject) => {
-
+exports.generatePdfFromVentaFactura = (datosEmpresa,datosCliente,datosVenta,datosConfig,
+                                        resolve, reject) => {
     try{
         //GENERATE PDF FROM VENTA
         const path = `./files/pdf`;
-
         let doc = new PDFDocument({margin: 50, size: 'A4'});
         
         if(!fs.existsSync(`${path}`)){
@@ -17,11 +16,10 @@ exports.generatePdfFromVentaFactura = (datosEmpresa, datosCliente, datosVenta, r
                 if (err) {
                     return console.error(err);
                 }
-                generatePDF(doc,datosEmpresa,datosCliente,datosVenta, resolve, reject);
+                generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, resolve, reject);
             });
         }else{
-            generatePDF(doc,datosEmpresa,datosCliente,datosVenta, resolve, reject);
-            
+            generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, resolve, reject);       
         }
 
     }catch(exception){
@@ -36,12 +34,12 @@ exports.generatePdfFromVentaFactura = (datosEmpresa, datosCliente, datosVenta, r
 }
 
 
-async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta, resolve, reject){
+async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosConfig, resolve, reject){
     const path = `./files/pdf`;
     const nameFile = `/${Date.now()}_pdf_venta.pdf`;
 
-    await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta);
-    await generateInvoiceTable(pdfDoc,datosVenta, datosCliente);//generateInvoiceTable(pdfDoc, datos, datosVenta)
+    await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig);
+    await generateInvoiceTable(pdfDoc,datosVenta, datosCliente);
    // await generateFooterTable(pdfDoc,datosCliente, datosVenta);
 
     let stream = fs.createWriteStream(`${path}${nameFile}`);
@@ -54,7 +52,45 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta, resolv
     pdfDoc.end();
 }
 
-async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta){
+async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig){
+
+  let fechaAutorizacion = ''
+  let isAutorizado = false;
+  if(datosVenta[0].venta_electronica_observacion.includes('AUTORIZADO')){
+    try{
+      isAutorizado = true;
+      fechaAutorizacion = (datosVenta[0].venta_electronica_observacion.split(' - '))[2]
+    }catch(exception){
+      isAutorizado = false;
+      fechaAutorizacion = '';
+    }
+
+    console.log(datosVenta[0].venta_electronica_observacion.split(' - '));
+  }
+
+    //console.log(datosConfig);
+    let contribuyenteEspecial = '';
+    let obligadoContabilidad = false;
+    let perteneceRegimenRimpe = false;
+    let agenteDeRetencion = '';
+
+    if(datosConfig && datosConfig.length > 0){
+        datosConfig.forEach((element) => {
+            
+            if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
+                contribuyenteEspecial = element.con_valor;
+            }
+            if(element.con_nombre_config == 'FAC_ELECTRONICA_OBLIGADO_LLEVAR_CONTABILIDAD'){
+                obligadoContabilidad = element.con_valor === '1';
+            }
+            if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
+              agenteDeRetencion = element.con_valor;
+            }
+            if(element.con_nombre_config == 'FAC_ELECTRONICA_PERTENECE_REGIMEN_RIMPE'){
+                perteneceRegimenRimpe = element.con_valor === '1';
+            }
+        });
+    }
 
     let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
     if(!pathImagen){
@@ -72,11 +108,26 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
     pdfDoc.font(fontBold).text(datosEmpresa[0]['EMP_RAZON_SOCIAL'], 20, 170, {width: 250});
     pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 190,{width: 250});
     pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, 20, 210,{width: 250});
-    pdfDoc.text(`Contribuyente Especial Nro: NO ESPECIAL`, 20, 230,{width: 250});
-    pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: SI`, 20, 240,{width: 250});
-    pdfDoc.text(`Agente de Retención Resolucion No. 1`, 20, 260,{width: 250});
 
-    pdfDoc.rect(pdfDoc.x - 10,170 - 5,250,pdfDoc.y - 145).stroke();
+    if(!(contribuyenteEspecial === '')){
+      pdfDoc.text(`Contribuyente Especial Nro: ${contribuyenteEspecial}`, 20, 230,{width: 250});
+    }
+
+    if(obligadoContabilidad){
+      pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: SI`, 20, 240,{width: 250});
+    }else{
+      pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: NO`, 20, 240,{width: 250});
+    }
+
+    if(perteneceRegimenRimpe){
+      pdfDoc.text(`CONTRIBUYENTE RÉGIMEN MICROEMPRESAS`, 20, 260,{width: 250});
+    }
+
+    if(agenteDeRetencion && agenteDeRetencion.length > 0){
+      pdfDoc.text(`Agente de Retención Resolucion No. ${agenteDeRetencion}`, 20, 270,{width: 250});
+    }
+
+    pdfDoc.rect(pdfDoc.x - 10,170 - 5,250,pdfDoc.y - 150).stroke();
 
     pdfDoc.text(`RUC: ${datosEmpresa[0]['EMP_RUC']}`, 280, 60,{width: 250});
     pdfDoc.font(fontBold).text(`FACTURA`, 280, 80);
@@ -90,7 +141,7 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
 
     //let rucEmpresa = datosEmpresa[0].EMP_RUC;
     let rucEmpresa = '1718792656001'
-    let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta[0].venta_tipo); //getTipoComprobanteVenta(datosVenta[0].venta_tipo);//'01';
+    let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta[0].venta_tipo);
     let tipoAmbiente = '2';//PRODUCCION
     let serie = `${datosVenta[0]['venta_001']}${datosVenta[0]['venta_002']}`;
     let codigoNumerico = '12174565';
@@ -99,13 +150,17 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
 
     let digit48 = 
     `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
-    pdfDoc.text(`${digit48}`, 280, 130);
 
     //let claveActivacion = modulo11(digit48);
     let claveActivacion = sharedFunctions.modulo11(digit48);
 
-    pdfDoc.text(`FECHA Y HORA DE AUTORIZACION`, 280, 150);
-    pdfDoc.text(`2022-10-08T12:26:21-05:00`, 280, 160);
+    pdfDoc.text(`${claveActivacion}`, 280, 130);
+
+    if(isAutorizado){
+      pdfDoc.text(`FECHA Y HORA DE AUTORIZACION`, 280, 150);
+      pdfDoc.text(`${fechaAutorizacion}`, 280, 160);
+    }
+
     pdfDoc.text(`AMBIENTE: PRODUCCION`, 280, 180);
     pdfDoc.text(`EMISION: NORMAL`, 280, 200);
     pdfDoc.text(`CLAVE DE ACCESO`, 280, 220);
@@ -125,7 +180,7 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
 }
 
 async function generateInvoiceTable(doc, datosVenta, datosCliente){
-    let i;
+  let i;
   let invoiceTableTop = 420;
 
   doc.font("Helvetica-Bold");
@@ -178,8 +233,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     index = 0
     invoiceTableTop = 5;
     doc.addPage();
-}
-
+  }
 
   const subtotalPosition = invoiceTableTop + (index + 1) * 30;
   generateTableRow(
@@ -251,7 +305,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
   );
 
   doc.font("Helvetica");
-
+  
   generateFooterTable(doc, datosCliente, datosVenta, subtotalPosition);
 
 };
@@ -276,8 +330,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     let yposition6 = yposition5 + 10;
     pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
 
-    pdfDoc.rect(pdfDoc.x - 10,yposition + 15,250, 100).stroke();
-
+    pdfDoc.rect(pdfDoc.x - 10,yposition + 15,280, 100).stroke();
 
     pdfDoc.lineCap('butt')
     .moveTo(200, yposition6 + 50)
@@ -288,12 +341,16 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     row(pdfDoc, yposition6 + 70);
 
     textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 60);
+    textInRowFirstValor(pdfDoc,'Valor', yposition6 + 60);
+    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total), yposition6 + 80)
+    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosVenta[0].venta_forma_pago),yposition6 + 80);
+    
     //textInRowFirst(pdfDoc, yposition6 + 60);
 }
 
 function row(doc, heigth) {
     doc.lineJoin('miter')
-      .rect(10, heigth, 250, 20)
+      .rect(10, heigth, 280, 20)
       .stroke()
     return doc
 }
@@ -310,7 +367,45 @@ function textInRowFirst(doc, text, heigth) {
   });
   return doc
 }
+function textInRowFirstValor(doc, text, heigth) {
+  doc.y = heigth;
+  doc.x = 200;
+  doc.fillColor('black')
+  doc.text(text, {
+    paragraphGap: 5,
+    indent: 5,
+    align: 'justify',
+    columns: 1,
+  });
+  return doc
+}
 
+function textInRowFirstValorTotal(doc, text, heigth) {
+  doc.fontSize(8);
+  doc.y = heigth;
+  doc.x = 220;
+  doc.fillColor('black')
+  doc.text(text, {
+    paragraphGap: 5,
+    indent: 5,
+    align: 'justify',
+    columns: 1,
+  });
+  return doc
+}
+
+function textInRowValorFormaPago(doc, text, heigth) {
+  doc.y = heigth;
+  doc.x = 10;
+  doc.fillColor('black')
+  doc.text(text, {
+    paragraphGap: 5,
+    indent: 5,
+    align: 'justify',
+    columns: 1,
+  });
+  return doc
+}
 
 function generateTableRow(
     doc,
@@ -331,7 +426,6 @@ function generateTableRow(
 
 }
 
-
 function generateHr(doc, y) {
     doc
       .strokeColor("#aaaaaa")
@@ -340,12 +434,10 @@ function generateHr(doc, y) {
       .lineTo(550, y)
       .stroke();
 }
-
-  
+ 
 function formatCurrency(cents) {
-    return "$" + (cents / 100).toFixed(2);
+  return "$" + Number((cents)).toFixed(2);
 }
-
 
 async function getImagenByRucEmp(rucEmp){
 
@@ -391,43 +483,3 @@ async function getImagenByRucEmp(rucEmp){
         }
 
 }
-
-
-/*function getTipoComprobanteVenta(tipoVenta){
-
-  let codigo = '';
-  
-  codDoc.forEach((element) => {
-      
-      if(element.nombre.includes(tipoVenta)){
-          codigo = element.codigo
-      }
-  });
-
-  return codigo;
-}*/
-
-/*function modulo11(clave48Digitos){
-  let suma = 0;
-  let factor = 7;
-
-  const arrayDigits = Array.from(clave48Digitos);
-
-  arrayDigits.forEach(element => {
-
-      suma = suma + Number(element) * factor;
-
-      factor = factor - 1;
-      if(factor == 1) factor = 7;
-  });
-
-  let digitoVerificador = (suma % 11);
-  digitoVerificador = 11 - digitoVerificador;
-  if(digitoVerificador == 11){
-      digitoVerificador = 0;
-  }else if(digitoVerificador == 10){
-      digitoVerificador = 1;
-  }
-
-  return `${clave48Digitos}${digitoVerificador}`;
-}*/

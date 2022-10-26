@@ -148,7 +148,6 @@ async function sendFilePdfToFtp(pathFile, nombrePdf){
             password: "m10101418M"
         })
         const response = await client.uploadFrom(pathFile,`logos/${nombrePdf}` );
-        console.log(response);
     }catch(exception){
         console.log(err)
     }

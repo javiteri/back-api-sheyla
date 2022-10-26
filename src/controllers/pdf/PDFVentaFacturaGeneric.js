@@ -2,7 +2,8 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const ftp = require("basic-ftp");
 
-exports.generatePdfFromVentaFacturaGeneric = (datosEmpresa, datosCliente, datosVenta, resolve, reject) => {
+exports.generatePdfFromVentaFacturaGeneric = (datosEmpresa, datosCliente, datosVenta,datosConfig,
+                                               resolve, reject) => {
 
     try{
         //GENERATE PDF FROM VENTA
@@ -15,10 +16,10 @@ exports.generatePdfFromVentaFacturaGeneric = (datosEmpresa, datosCliente, datosV
                 if (err) {
                     return console.error(err);
                 }
-                generatePDF(doc,datosEmpresa,datosCliente,datosVenta, resolve, reject);
+                generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, resolve, reject);
             });
         }else{
-            generatePDF(doc,datosEmpresa,datosCliente,datosVenta, resolve, reject);
+            generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, resolve, reject);
         }
 
     }catch(exception){
@@ -33,11 +34,11 @@ exports.generatePdfFromVentaFacturaGeneric = (datosEmpresa, datosCliente, datosV
 }
 
 
-async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta, resolve, reject){
+async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosConfig, resolve, reject){
     const path = `./files/pdf`;
     const nameFile = `/${Date.now()}_pdf_venta.pdf`;
 
-    await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta);
+    await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig);
     await generateInvoiceTable(pdfDoc,datosVenta, datosCliente);//generateInvoiceTable(pdfDoc, datos, datosVenta)
    // await generateFooterTable(pdfDoc,datosCliente, datosVenta);
 
@@ -51,7 +52,7 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta, resolv
     pdfDoc.end();
 }
 
-async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta){
+async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,datosConfig){
 
     let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
   
@@ -61,9 +62,6 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
 
     let fontNormal = 'Helvetica';
     let fontBold = 'Helvetica-Bold';
-    
-    console.log('path image');
-    console.log(pathImagen);
 
     if(pathImagen){
         pdfDoc.image(pathImagen,200,50,{fit: [150, 100],align: 'center', valign: 'center'});
@@ -90,9 +88,9 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
     const yearVenta = dateVenta.getFullYear().toString();
 
     let rucEmpresa = datosEmpresa[0].EMP_RUC;
-    let tipoComprobanteFactura = '01';
-    let tipoAmbiente = '1';//PRUEBAS
-    let serie = '001001';
+    let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta[0].venta_tipo);;
+    let tipoAmbiente = '2';//PRUEBAS
+    let serie = `${datosVenta[0]['venta_001']}${datosVenta[0]['venta_002']}`;;
     let codigoNumerico = '12174565';
     let secuencial = (datosVenta[0].venta_numero).toString().padStart(9,'0');
     let tipoEmision = 1;
@@ -100,8 +98,6 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta)
     let digit48 = 
     `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
     pdfDoc.text(`${digit48}`, 280, 230);
-
-    //pdfDoc.rect(pdfDoc.x - 10,50,300,pdfDoc.y - 20).stroke();
 
     pdfDoc.rect(pdfDoc.x - 10,170 - 5,300,pdfDoc.y - 145).stroke();
 
@@ -260,7 +256,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     let yposition6 = yposition5 + 10;
     pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
 
-    pdfDoc.rect(pdfDoc.x - 10,yposition + 15,250, 100).stroke();
+    //pdfDoc.rect(pdfDoc.x - 10,yposition + 15,500, 100).stroke();
 
 
     pdfDoc.lineCap('butt')
@@ -272,6 +268,10 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     row(pdfDoc, yposition6 + 70);
 
     textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 60);
+    textInRowFirstValor(pdfDoc,'Valor', yposition6 + 60);
+    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total), yposition6 + 80)
+    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosVenta[0].venta_forma_pago),yposition6 + 80);
+
     //textInRowFirst(pdfDoc, yposition6 + 60);
 }
 
@@ -295,6 +295,45 @@ function textInRowFirst(doc, text, heigth) {
   return doc
 }
 
+function textInRowFirstValor(doc, text, heigth) {
+  doc.y = heigth;
+  doc.x = 200;
+  doc.fillColor('black')
+  doc.text(text, {
+    paragraphGap: 5,
+    indent: 5,
+    align: 'justify',
+    columns: 1,
+  });
+  return doc
+}
+
+function textInRowFirstValorTotal(doc, text, heigth) {
+  doc.fontSize(8);
+  doc.y = heigth;
+  doc.x = 220;
+  doc.fillColor('black')
+  doc.text(text, {
+    paragraphGap: 5,
+    indent: 5,
+    align: 'justify',
+    columns: 1,
+  });
+  return doc
+}
+
+function textInRowValorFormaPago(doc, text, heigth) {
+  doc.y = heigth;
+  doc.x = 10;
+  doc.fillColor('black')
+  doc.text(text, {
+    paragraphGap: 5,
+    indent: 5,
+    align: 'justify',
+    columns: 1,
+  });
+  return doc
+}
 
 function generateTableRow(
     doc,
@@ -315,7 +354,6 @@ function generateTableRow(
 
 }
 
-
 function generateHr(doc, y) {
     doc
       .strokeColor("#aaaaaa")
@@ -325,12 +363,9 @@ function generateHr(doc, y) {
       .stroke();
 }
 
-  
 function formatCurrency(cents) {
     return "$" + (cents / 100).toFixed(2);
 }
-
-
 
 async function getImagenByRucEmp(rucEmp){
 

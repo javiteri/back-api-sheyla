@@ -1,27 +1,28 @@
 const pdfVentaFactura = require('./PDFVentaFactura');
 const pdfVentaFacturaGeneric = require('./PDFVentaFacturaGeneric');
 
-exports.generatePdfFromVenta = (datosEmpresa, datosCliente, datosVenta, isPdfNormal) => {
+exports.generatePdfFromVenta = (datosEmpresa, datosCliente, 
+                                datosVenta, isPdfNormal, datosConfig) => {
 
     return new Promise((resolve, reject) => {
-        try{
-          
+        try{   
           if(isPdfNormal){
-            if(datosVenta[0].venta_tipo == 'Factura'){
-              pdfVentaFactura.generatePdfFromVentaFactura(datosEmpresa, datosCliente, datosVenta, resolve, reject);
+            if(datosVenta[0].venta_tipo == 'Factura' || datosVenta[0].venta_tipo == 'FACTURA'){
+              pdfVentaFactura.generatePdfFromVentaFactura(datosEmpresa, datosCliente, datosVenta,datosConfig, 
+                                                          resolve, reject);
             }else{
-              pdfVentaFacturaGeneric.generatePdfFromVentaFacturaGeneric(datosEmpresa, datosCliente, datosVenta, resolve, reject);
+              pdfVentaFacturaGeneric.generatePdfFromVentaFacturaGeneric(datosEmpresa, datosCliente, datosVenta,datosConfig,
+                                                                           resolve, reject);
             }
           }else{
-
-            pdfVentaFacturaGeneric.generatePdfFromVentaFacturaGeneric(datosEmpresa, datosCliente, datosVenta, resolve, reject);
+            pdfVentaFacturaGeneric.generatePdfFromVentaFacturaGeneric(datosEmpresa, datosCliente, 
+                                                                      datosVenta,datosConfig, resolve, reject);
           }
-
         }catch(exception){
             reject(
                 {
-                    error: true,
-                    message: 'error creando directorio: ' + exception
+                  error: true,
+                  message: 'error creando directorio: ' + exception
                 }
             );
         }

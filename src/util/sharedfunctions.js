@@ -28,7 +28,43 @@ const codDoc = [
     }
   ];
 
-exports.modulo11 = async (clave48Digitos) =>{
+const codFormasPago = [
+    {
+        nombre: 'SIN UTILIZACION DEL SISTEMA FINANCIERO',
+        codigo: '01',
+    },
+    {
+        nombre: `COMPENSACIÓN DE DEUDAS`,
+        codigo: '15'
+    },
+    {
+        nombre: 'TARJETA DE DÉBITO',
+        codigo: '16',
+    },
+    {
+        nombre: 'DINERO ELECTRÓNICO',
+        codigo: '17',
+    },
+    {
+        nombre: 'TARJETA PREPAGO',
+        codigo: '18',
+    },
+    {
+        nombre: 'TARJETA DE CRÉDITO',
+        codigo: '19',
+    },
+    {
+        nombre: 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO',
+        codigo: '20',
+    },
+    {
+        nombre: 'ENDOSO DE TÍTULOS',
+        codigo: '21',
+    }
+];
+
+
+exports.modulo11 = (clave48Digitos) =>{
     let suma = 0;
     let factor = 7;
   
@@ -53,15 +89,23 @@ exports.modulo11 = async (clave48Digitos) =>{
     return `${clave48Digitos}${digitoVerificador}`;
 }
 
-exports.getTipoComprobanteVenta = async(tipoVenta) => {
+exports.getTipoComprobanteVenta = (tipoVenta) => {
     let codigo = '';
   
     codDoc.forEach((element) => {
-        
-        if(element.nombre.includes(tipoVenta)){
+        if(element.nombre.toUpperCase().includes(tipoVenta.toUpperCase())){
+            console.log('inside codigo');
             codigo = element.codigo
         }
     });
 
     return codigo;
+}
+
+exports.getFormaDePagoRide = (formaPago) => {
+    if(formaPago == 'Efectivo' || formaPago == 'EFECTIVO' || formaPago == 'Credito'|| formaPago == 'CREDITO'){
+        return 'SIN UTILIZACION DEL SISTEMA FINANCIERO';
+    }else{
+        return 'OTROS CON UTILIZACION SISTEMA FINANCIERO';
+    }
 }

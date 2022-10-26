@@ -39,40 +39,7 @@ const codDoc = [
     }
 ];
 
-const codFormasPago = [
-    {
-        nombre: 'SIN UTILIZACION DEL SISTEMA FINANCIERO',
-        codigo: '01',
-    },
-    {
-        nombre: `COMPENSACIÓN DE DEUDAS`,
-        codigo: '15'
-    },
-    {
-        nombre: 'TARJETA DE DÉBITO',
-        codigo: '16',
-    },
-    {
-        nombre: 'DINERO ELECTRÓNICO',
-        codigo: '17',
-    },
-    {
-        nombre: 'TARJETA PREPAGO',
-        codigo: '18',
-    },
-    {
-        nombre: 'TARJETA DE CRÉDITO',
-        codigo: '19',
-    },
-    {
-        nombre: 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO',
-        codigo: '20',
-    },
-    {
-        nombre: 'ENDOSO DE TÍTULOS',
-        codigo: '21',
-    }
-];
+
 
 exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
     return new Promise((resolve, reject) => {
@@ -143,7 +110,6 @@ exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo
             // - DATOS DE LA VENTA - DATOS DETALLE DE LA VENTA O COMPRA
             // CON ESOS DATOS GENERAR EL XML Y POR AHORA GUARDARLO EN UNA CARPETA EN EL SERVER
             // OBTENER LOS DATOS DEL EMISOR (LA EMPRESA) QUE ENVIA EL DOCUMENTO ELECTRONICO
-
             const querySelectConfigFactElectr = `SELECT * FROM config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
             const querySelectCliente = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
             const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
@@ -226,6 +192,7 @@ exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo
                                                     const objSendJob = {
                                                         claveAct: claveActivacion,
                                                         empresaId: results[0].empresa_id,
+                                                        empresaIdLocal: datosEmpresa[0].EMP_ID,
                                                         rucEmpresa: datosEmpresa[0].EMP_RUC,
                                                         nombreEmpresa: datosEmpresa[0].EMP_NOMBRE,
                                                         ciRucCliente: clienteResponse[0].cli_documento_identidad,
@@ -290,7 +257,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             let perteneceRegimenRimpe = false;
             let agenteDeRetencion = '';
 
-            if(datosConfig && datosConfig.length > 0){                
+            if(datosConfig && datosConfig.length > 0){
                 datosConfig.forEach((element) => {
                     
                     if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
@@ -326,7 +293,8 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
                             
             let codigoDocmento = getCodigoDocumentoByName(datosVenta.venta_tipo);
-            let claveActivacion = sharedFunctions.modulo11(digit48);//modulo11(digit48);
+            let claveActivacion = sharedFunctions.modulo11(digit48);
+ 
             let tipoIdentificacionComprador = getTipoIdentificacionComprador(datosCliente.cli_documento_identidad,
                 datosCliente.cli_tipo_documento_identidad);
 
@@ -363,10 +331,9 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             rootElement = rootElement.ele('ruc',rucEmpresa).up()
                                     .ele('claveAcceso',claveActivacion).up().ele('codDoc',codigoDocmento).up()
                                     .ele('estab',datosVenta.venta_001).up().ele('ptoEmi',datosVenta.venta_002).up().ele('secuencial',secuencial).up()
-                                    .ele('dirMatriz',direccionMatriz).up();
+                                   .ele('dirMatriz',direccionMatriz).up();
 
             if(perteneceRegimenRimpe){
-                //rootElement = rootElement.ele('regimenMicroempresas','CONTRIBUYENTE R&Eacuote;GIMEN MICROEMPRESAS').up();
                 rootElement = rootElement.ele('regimenMicroempresas','CONTRIBUYENTE REGIMEN MICROEMPRESAS').up();
             }
             if(agenteDeRetencion && agenteDeRetencion.length > 0){
@@ -502,7 +469,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
 
 function getCodigoDocumentoByName(nombreCodigoDoc){
 
-    if(nombreCodigoDoc.includes('Factura')){
+    if(nombreCodigoDoc.includes('Factura') || nombreCodigoDoc.includes('FACTURA')){
         return '01';
     }
 
@@ -527,15 +494,17 @@ function getTipoIdentificacionComprador(identificacion, tipoIdentificacion){
 
 function getCodigoFormaPago(formaPago){
 
-    if(formaPago == 'Efectivo'){
+    if(formaPago.toUpperCase() == 'EFECTIVO' || formaPago.toUpperCase() == 'CREDITO'){
         return '01';
+    }else{
+        return '20'
     }
-    if(formaPago == 'TARJETA DE CRÉDITO'){
+    /*if(formaPago == 'TARJETA DE CRÉDITO'){
         return '19';
     }
     if(formaPago == 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO'){
         return '20';
-    }
+    }*/
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------
@@ -720,68 +689,74 @@ function createExcelDocumentosElectronicos(datosFiltro){
 }
 
 
-
 exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClienteProv, isPdfNormal) => {
     return new Promise((resolve, reject) => {
         try{
 
+            const querySelectConfigFactElectr = `SELECT * FROM config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
             const sqlQuerySelectEmp = `SELECT * FROM empresas WHERE emp_id = ? LIMIT 1`;
             const sqlQuerySelectClienteByIdEmp = `SELECT * FROM clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ? LIMIT 1`;
             const sqlQuerySelectVentaByIdEmp = `SELECT ventas.*, usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
             const sqlQuerySelectVentaDetallesByIdVenta = `SELECT ventas_detalles.*, prod_codigo FROM ventas_detalles, productos WHERE 
-            ventad_prod_id = prod_id AND ventad_venta_id = ? `;
-
-            pool.query(sqlQuerySelectEmp,[idEmp], (err, datosEmpresa) => {
-                if(err){
-                    console.log('error inside empresa request');
-                    return reject(err);
+                                                            ventad_prod_id = prod_id AND ventad_venta_id = ? `;
+            pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%'], (er, datosConfig) => {
+                if(er){
+                    console.log('error obteniendo configs');
+                    return reject(er);
                 }
 
-                pool.query(sqlQuerySelectClienteByIdEmp, [identificacionClienteProv,idEmp], (error, clienteResponse) => {
-                    if(error){
-                        console.log('error inside cliente request');
-                        return reject(error);
+                pool.query(sqlQuerySelectEmp,[idEmp], (err, datosEmpresa) => {
+                    if(err){
+                        console.log('error inside empresa request');
+                        return reject(err);
                     }
-                
-                    pool.query(sqlQuerySelectVentaByIdEmp, [idVentaCompra,idEmp], (errorr, ventaResponse) => {
-                        if(errorr){
-                            return reject(errorr);
-                        }
     
-                        pool.query(sqlQuerySelectVentaDetallesByIdVenta, [idVentaCompra], (erro, ventaDetalleResponse) => {
-                            if(erro){
-                                return reject(erro);
+                    pool.query(sqlQuerySelectClienteByIdEmp, [identificacionClienteProv,idEmp], (error, clienteResponse) => {
+                        if(error){
+                            console.log('error inside cliente request');
+                            return reject(error);
+                        }
+                    
+                        pool.query(sqlQuerySelectVentaByIdEmp, [idVentaCompra,idEmp], (errorr, ventaResponse) => {
+                            if(errorr){
+                                return reject(errorr);
                             }
-                            // GENERATE PDF WHIT DATA                            
-                            ventaResponse['listVentasDetalles'] = ventaDetalleResponse;
-
-                            const pathPdfGeneratedProm = pdfGenerator.generatePdfFromVenta(datosEmpresa,clienteResponse,ventaResponse, isPdfNormal);
-
-                            pathPdfGeneratedProm.then(
-                                function(result){
-                                    resolve({
-                                        isSucess: true,
-                                        message: 'todo Ok',
-                                        generatePath: result.pathFile
-                                    });
-                                },
-                                function(error){
-                                    reject({
-                                        isSucess: false,
-                                        message:  error.message
-                                    });
+        
+                            pool.query(sqlQuerySelectVentaDetallesByIdVenta, [idVentaCompra], (erro, ventaDetalleResponse) => {
+                                if(erro){
+                                    return reject(erro);
                                 }
-                            );
-                            
-
+                                // GENERATE PDF WHIT DATA                            
+                                ventaResponse['listVentasDetalles'] = ventaDetalleResponse;
+    
+                                const pathPdfGeneratedProm = pdfGenerator.generatePdfFromVenta(datosEmpresa,clienteResponse,
+                                                                                                ventaResponse, isPdfNormal, datosConfig);
+    
+                                pathPdfGeneratedProm.then(
+                                    function(result){
+                                        resolve({
+                                            isSucess: true,
+                                            message: 'todo Ok',
+                                            generatePath: result.pathFile
+                                        });
+                                    },
+                                    function(error){
+                                        reject({
+                                            isSucess: false,
+                                            message:  error.message
+                                        });
+                                    }
+                                );
+                                
+                            });
+    
                         });
-
+    
                     });
-
+    
                 });
 
             });
-
 
         }catch(exception){
             reject({
