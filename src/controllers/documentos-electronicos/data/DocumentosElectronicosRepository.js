@@ -600,7 +600,7 @@ function createExcelDocumentosElectronicos(datosFiltro){
     return new Promise((resolve, reject) => {
         try{
 
-            const {idEmp, fechaIni, fechaFin, tipo, nodoc,nombresci} = datosFiltro;
+            const {idEmp, fechaIni, fechaFin, tipo, nodoc,nombresci, rucEmp} = datosFiltro;
 
             let valueNombreClient = "";
             let valueCiRucClient = "";
@@ -665,7 +665,7 @@ function createExcelDocumentosElectronicos(datosFiltro){
                     const yearVenta = now.getFullYear().toString();
 
                     let dateString = `${dayVenta}/${monthVenta}/${yearVenta}`;
-                    let rucEmpresa = datosEmpresa.EMP_RUC;
+                    let rucEmpresa = rucEmp;
                     let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(valor.VENTA_TIPO); //getTipoComprobanteVenta(valor.VENTA_TIPO);
                     let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
                     let serie = `${valor.venta_001}${valor.venta_002}`;
