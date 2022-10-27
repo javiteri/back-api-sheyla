@@ -12,6 +12,7 @@ router.post('/insertfilefirmaelec',async (req, res) => {
         if(error){
             console.log(error);
             console.log('ocurrio un error en multer');
+            return;
         }
 
         if(req.file){
@@ -83,12 +84,15 @@ async function sendFileFirmaToFtp(pathFileFirmaUpload, nombreFirmaFile){
             password: "m10101418M"
         })
         const response = await client.uploadFrom(pathFileFirmaUpload,`/logos/${nombreFirmaFile}` );
-        
+        console.log('response clave firma');
+        console.log(response);
+        client.close();
+
         return response;
     }catch(exception){
-        client.close()
+        console.log('error subiendo firma electronica');
+        client.close();
     }
-
 }
 
 module.exports = router;

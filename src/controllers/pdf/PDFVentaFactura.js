@@ -139,8 +139,8 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
     const yearVenta = dateVenta.getFullYear().toString();
 
-    //let rucEmpresa = datosEmpresa[0].EMP_RUC;
-    let rucEmpresa = '1718792656001'
+    let rucEmpresa = datosEmpresa[0].EMP_RUC;
+    //let rucEmpresa = '1718792656001'
     let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta[0].venta_tipo);
     let tipoAmbiente = '2';//PRODUCCION
     let serie = `${datosVenta[0]['venta_001']}${datosVenta[0]['venta_002']}`;

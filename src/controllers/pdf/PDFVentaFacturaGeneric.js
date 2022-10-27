@@ -54,6 +54,30 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosCo
 
 async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,datosConfig){
 
+    //console.log(datosConfig);
+    let contribuyenteEspecial = '';
+    let obligadoContabilidad = false;
+    let perteneceRegimenRimpe = false;
+    let agenteDeRetencion = '';
+
+    if(datosConfig && datosConfig.length > 0){
+        datosConfig.forEach((element) => {
+            
+            if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
+                contribuyenteEspecial = element.con_valor;
+            }
+            if(element.con_nombre_config == 'FAC_ELECTRONICA_OBLIGADO_LLEVAR_CONTABILIDAD'){
+                obligadoContabilidad = element.con_valor === '1';
+            }
+            if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
+              agenteDeRetencion = element.con_valor;
+            }
+            if(element.con_nombre_config == 'FAC_ELECTRONICA_PERTENECE_REGIMEN_RIMPE'){
+                perteneceRegimenRimpe = element.con_valor === '1';
+            }
+        });
+    }
+
     let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
   
     if(!pathImagen){
@@ -71,9 +95,25 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
     pdfDoc.font(fontBold).text(datosEmpresa[0]['EMP_RAZON_SOCIAL'], 20, 170, {width: 250});
     pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 190,{width: 250});
     pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, 20, 210,{width: 250});
-    pdfDoc.text(`Contribuyente Especial Nro: NO ESPECIAL`, 20, 230,{width: 250});
-    pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: SI`, 20, 240,{width: 250});
-    pdfDoc.text(`Agente de Retención Resolucion No. 1`, 20, 260,{width: 250});
+
+    if(!(contribuyenteEspecial === '')){
+      pdfDoc.text(`Contribuyente Especial Nro: ${contribuyenteEspecial}`, 20, 230,{width: 250});
+    }
+
+    if(obligadoContabilidad){
+      pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: SI`, 20, 240,{width: 250});
+    }else{
+      pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: NO`, 20, 240,{width: 250});
+    }
+
+    if(perteneceRegimenRimpe){
+      pdfDoc.text(`CONTRIBUYENTE RÉGIMEN MICROEMPRESAS`, 20, 260,{width: 250});
+    }
+
+    if(agenteDeRetencion && agenteDeRetencion.length > 0){
+      pdfDoc.text(`Agente de Retención Resolucion No. ${agenteDeRetencion}`, 20, 270,{width: 250});
+    }
+
 
     pdfDoc.rect(pdfDoc.x - 10,170 - 5,250,pdfDoc.y - 145).stroke();
 
@@ -89,7 +129,7 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
 
     let rucEmpresa = datosEmpresa[0].EMP_RUC;
     let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta[0].venta_tipo);;
-    let tipoAmbiente = '2';//PRUEBAS
+    let tipoAmbiente = '2';//PRODUCCION
     let serie = `${datosVenta[0]['venta_001']}${datosVenta[0]['venta_002']}`;;
     let codigoNumerico = '12174565';
     let secuencial = (datosVenta[0].venta_numero).toString().padStart(9,'0');

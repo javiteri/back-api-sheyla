@@ -334,3 +334,32 @@ exports.insertFileNameFirmaElec = async(claveFirma,rucEmpresa, nombreFirma) => {
         }
     });
 }
+
+exports.getConfigsFirmaElecNameAndPassword = async(ruc) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const querySelectDatosFirma = `SELECT EMPRESA_RUTA_FIRMA, EMPRESA_CLAVE_FIRMA FROM empresas WHERE EMPRESA_RUC = ? `;
+            poolMysqlBd1.query(querySelectDatosFirma, [ruc], function(error, results){
+                if(error){
+                    reject({
+                        isSuccess: false,
+                        mensaje: 'error obteniedo datos de firma electronica'
+                    });
+                    return;
+                }
+
+                console.log(results);
+                resolve({
+                    isSuccess: true,
+                    data: results[0]
+                });
+            });
+
+        }catch(exception){
+            reject({
+                isSuccess: false,
+                mensaje: 'error al obtener datos firma electronica'
+            });
+        }
+    });
+}

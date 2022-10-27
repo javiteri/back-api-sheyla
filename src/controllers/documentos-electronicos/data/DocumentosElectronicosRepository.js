@@ -227,12 +227,12 @@ function prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,
                                 const pathFile = data.pathFile;
                                 const claveActivacion = data.claveAct;
 
-                                let ruc = '1718792656001';
+                                //let ruc = '1718792656001';
                                 //INSERT XML FILE IN DB BLOB 
                                 const sqlQuerySelectEmpresa = `SELECT empresa_id FROM empresas WHERE empresa_ruc = ? LIMIT 1`;
                                 const sqlQueryInsertXmlBlob = `INSERT INTO autorizaciones (auto_id_empresa,auto_clave_acceso, auto_xml) VALUES (?,?,?)`;
 
-                                poolEFactra.query(sqlQuerySelectEmpresa,[ ruc/*datosEmpresa[0].EMP_RUC*/ ], function(error, results) {
+                                poolEFactra.query(sqlQuerySelectEmpresa,[datosEmpresa[0].EMP_RUC], function(error, results) {
                                     if(error){
                                         return reject({isSucess: false, message:'error buscando empresa'});
                                     }
@@ -346,7 +346,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
             const yearVenta = dateVenta.getFullYear().toString();
     
-            let rucEmpresa = '1718792656001';//datosEmpresa.EMP_RUC;
+            let rucEmpresa = datosEmpresa.EMP_RUC;//'1718792656001';
             let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta.venta_tipo);
             let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
             let serie = `${datosVenta.venta_001}${datosVenta.venta_002}`;
@@ -665,7 +665,7 @@ function createExcelDocumentosElectronicos(datosFiltro){
                     const yearVenta = now.getFullYear().toString();
 
                     let dateString = `${dayVenta}/${monthVenta}/${yearVenta}`;
-                    let rucEmpresa = '1718792656001';//datosEmpresa.EMP_RUC;
+                    let rucEmpresa = datosEmpresa.EMP_RUC;
                     let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(valor.VENTA_TIPO); //getTipoComprobanteVenta(valor.VENTA_TIPO);
                     let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
                     let serie = `${valor.venta_001}${valor.venta_002}`;
@@ -883,12 +883,12 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                 const pathFile = data.pathFile;
                                 const claveActivacion = data.claveAct;
 
-                                let ruc = '1718792656001';
+                                //let ruc = '1718792656001';
                                 //INSERT XML FILE IN DB BLOB 
                                 const sqlQuerySelectEmpresa = `SELECT empresa_id FROM empresas WHERE empresa_ruc = ? LIMIT 1`;
                                 const sqlQueryInsertXmlBlob = `INSERT INTO autorizaciones (auto_id_empresa,auto_clave_acceso, auto_xml) VALUES (?,?,?)`;
 
-                                poolEFactra.query(sqlQuerySelectEmpresa,[ ruc/*datosEmpresa[0].EMP_RUC*/ ], function(error, results) {
+                                poolEFactra.query(sqlQuerySelectEmpresa,[datosEmpresa[0].EMP_RUC], function(error, results) {
                                     if(error){
                                         return;
                                     }

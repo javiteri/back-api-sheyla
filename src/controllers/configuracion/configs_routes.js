@@ -58,5 +58,19 @@ router.get('/getConfigByIdEmp', async (req, res) => {
     );
 });
 
+router.get('/getConfigFirmaNameAndClaveByRuc', async (req, res) => {
+
+    const getListConfigFirmaElectronicaPromise = configRepository.getConfigsFirmaElecNameAndPassword(req.query.ruc);
+
+    getListConfigFirmaElectronicaPromise.then(
+        function(result) {
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 
 module.exports = router;
