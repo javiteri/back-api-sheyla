@@ -71,7 +71,7 @@ exports.modulo11 = (clave48Digitos) =>{
     const arrayDigits = Array.from(clave48Digitos);
   
     arrayDigits.forEach(element => {
-  
+
         suma = suma + Number(element) * factor;
   
         factor = factor - 1;

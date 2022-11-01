@@ -5,7 +5,7 @@ const router = express.Router()
 const cookie = require('cookie')
 
 const loginRepository = require('./loginRepository')
-const secretkey = process.env.SECRECT_KEY_HASH;
+const secretkey = process.env.SECRET_KEY_HASH;
 
 router.post('/login', async (req, res, next) => {
 
