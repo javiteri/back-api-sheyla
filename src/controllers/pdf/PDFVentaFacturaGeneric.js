@@ -1,6 +1,7 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const ftp = require("basic-ftp");
+const sharedFunctions = require('../../util/sharedfunctions');
 
 exports.generatePdfFromVentaFacturaGeneric = (datosEmpresa, datosCliente, datosVenta,datosConfig,
                                                resolve, reject) => {
@@ -38,6 +39,8 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosCo
     const path = `./files/pdf`;
     const nameFile = `/${Date.now()}_pdf_venta.pdf`;
 
+    console.log('inside generic pdf');
+
     await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig);
     await generateInvoiceTable(pdfDoc,datosVenta, datosCliente);//generateInvoiceTable(pdfDoc, datos, datosVenta)
    // await generateFooterTable(pdfDoc,datosCliente, datosVenta);
@@ -54,7 +57,6 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosCo
 
 async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,datosConfig){
 
-    //console.log(datosConfig);
     let contribuyenteEspecial = '';
     let obligadoContabilidad = false;
     let perteneceRegimenRimpe = false;
@@ -96,9 +98,9 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
     pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 190,{width: 250});
     pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, 20, 210,{width: 250});
 
-    if(!(contribuyenteEspecial === '')){
+    /*if(!(contribuyenteEspecial === '')){
       pdfDoc.text(`Contribuyente Especial Nro: ${contribuyenteEspecial}`, 20, 230,{width: 250});
-    }
+    }*/
 
     if(obligadoContabilidad){
       pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: SI`, 20, 240,{width: 250});
@@ -106,27 +108,23 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
       pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: NO`, 20, 240,{width: 250});
     }
 
-    if(perteneceRegimenRimpe){
+    /*if(perteneceRegimenRimpe){
       pdfDoc.text(`CONTRIBUYENTE RÉGIMEN MICROEMPRESAS`, 20, 260,{width: 250});
     }
 
     if(agenteDeRetencion && agenteDeRetencion.length > 0){
       pdfDoc.text(`Agente de Retención Resolucion No. ${agenteDeRetencion}`, 20, 270,{width: 250});
-    }
+    }*/
 
 
     pdfDoc.rect(pdfDoc.x - 10,170 - 5,250,pdfDoc.y - 145).stroke();
 
     pdfDoc.text(`RUC: ${datosEmpresa[0]['EMP_RUC']}`, 280, 170,{width: 250});
-    pdfDoc.font(fontBold).text(`FACTURA`, 280, 185);
+    pdfDoc.font(fontBold).text(datosVenta[0]['venta_tipo'], 280, 185);
     pdfDoc.font(fontNormal).text(`NO:${datosVenta[0]['venta_001']}-${datosVenta[0]['venta_002']}-${datosVenta[0]['venta_numero']}`, 280, 200);
 
-    pdfDoc.text(`NUMERO DE AUTORIZACION`, 280, 215);
-    const dateVenta = new Date(datosVenta[0].venta_fecha_hora);
-    const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
-    const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
-    const yearVenta = dateVenta.getFullYear().toString();
-
+    /*pdfDoc.text(`NUMERO DE AUTORIZACION`, 280, 215);
+    
     let rucEmpresa = datosEmpresa[0].EMP_RUC;
     let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta[0].venta_tipo);;
     let tipoAmbiente = '2';//PRODUCCION
@@ -137,7 +135,12 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
 
     let digit48 = 
     `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
-    pdfDoc.text(`${digit48}`, 280, 230);
+    pdfDoc.text(`${digit48}`, 280, 230);*/
+
+    const dateVenta = new Date(datosVenta[0].venta_fecha_hora);
+    const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
+    const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
+    const yearVenta = dateVenta.getFullYear().toString();
 
     pdfDoc.rect(pdfDoc.x - 10,170 - 5,300,pdfDoc.y - 145).stroke();
 
@@ -149,10 +152,9 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
 }
 
 async function generateInvoiceTable(doc, datosVenta, datosCliente){
-    let i;
+  let i;
   let invoiceTableTop = 420;
 
-  console.log(datosVenta);
   doc.font("Helvetica-Bold");
  
   generateTableRow(
@@ -183,10 +185,8 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
         position = invoiceTableTop + (index + 1) * 30;
         index++;
         doc.addPage();
-        console.log('inside new page');
     }
 
-    console.log(position);
     generateTableRow(
         doc,
         position,
@@ -209,7 +209,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
 
 
   const subtotalPosition = invoiceTableTop + (index + 1) * 30;
-  console.log(subtotalPosition);
+  
   generateTableRow(
     doc,
     subtotalPosition,
@@ -278,7 +278,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
 async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     let fontNormal = 'Helvetica';
     let fontBold = 'Helvetica-Bold';
-    console.log(datosCliente);
+
     pdfDoc.fontSize(9);
     
     let ypositionzero = yposition + 20;
@@ -404,7 +404,8 @@ function generateHr(doc, y) {
 }
 
 function formatCurrency(cents) {
-    return "$" + (cents / 100).toFixed(2);
+    //return "$" + (cents / 100).toFixed(2);
+    return "$" + Number((cents)).toFixed(2);
 }
 
 async function getImagenByRucEmp(rucEmp){
@@ -432,8 +433,6 @@ async function getImagenByRucEmp(rucEmp){
 
                       client.close();
 
-                      console.log('inside imagen');
-
                       return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
                     }catch(errorInside){
                       console.log('inside error get imagen ftp pdf');
@@ -444,18 +443,16 @@ async function getImagenByRucEmp(rucEmp){
             }else{
                 const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 
-                console.log('inside imagen');
-
                 client.close();
                 return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
             }
 
         }catch(exception){
-            console.log('inside error');
-            console.log(exception);
             client.close();
             return '';
         }
+
+        client.close();
 
 }
 
