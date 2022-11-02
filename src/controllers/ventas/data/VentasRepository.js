@@ -594,7 +594,7 @@ exports.getDataByIdVenta = async (idVenta, idEmp, ruc) => {
                             let codigoNumerico = '12174565';
                             let secuencial = (sendResult.numero).toString().padStart(9,'0');
                             let tipoEmision = 1;
-
+                             
                             let digit48 = 
                             `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
 
