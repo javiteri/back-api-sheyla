@@ -109,7 +109,7 @@ router.get('/getNextNumeroSecuencialByIdEmp', async(req,res,next) => {
 
 router.get('/getDataByIdVenta',async(req,res,next) => {
     const getDataByIdVentaPromise = 
-            ventasRepository.getDataByIdVenta(req.query.id, req.query.idEmp);
+            ventasRepository.getDataByIdVenta(req.query.id, req.query.idEmp, req.query.ruc);
     getDataByIdVentaPromise.then(
         function(results){
             res.status(200).send(results);

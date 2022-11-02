@@ -1,7 +1,7 @@
 const pool = require('../../../connectiondb/mysqlconnection');
 const excelJS = require("exceljs");
-
 const fs = require('fs');
+const sharedFunctions = require('../../../util/sharedfunctions');
 
 
 exports.insertVenta = async (datosVenta) => {
@@ -537,7 +537,7 @@ exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002) =
     });
 }
 
-exports.getDataByIdVenta = async (idVenta, idEmp) => {
+exports.getDataByIdVenta = async (idVenta, idEmp, ruc) => {
     return new Promise((resolve, reject) => {
         try{
 
@@ -579,7 +579,32 @@ exports.getDataByIdVenta = async (idVenta, idEmp) => {
     
                         let sendResult = results[0];
                         sendResult['data'] = resultss;
-    
+
+                        try{
+                            //GET NUMERO AUTORIZACION
+                            const dateVenta = new Date(sendResult.fechaHora);
+                            const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
+                            const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
+                            const yearVenta = dateVenta.getFullYear().toString();
+                            
+                            let rucEmpresa = ruc;
+                            let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(sendResult.documento);
+                            let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
+                            let serie = `${sendResult.venta001}${sendResult.venta002}`;
+                            let codigoNumerico = '12174565';
+                            let secuencial = (sendResult.numero).toString().padStart(9,'0');
+                            let tipoEmision = 1;
+
+                            let digit48 = 
+                            `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
+
+                            let claveActivacion = sharedFunctions.modulo11(digit48);
+
+                            sendResult['numeroautorizacion'] = claveActivacion;
+                        }catch(exception){
+                            sendResult['numeroautorizacion'] = '';
+                        }
+
                         resolve({
                             isSucess: true,
                             code: 200,
