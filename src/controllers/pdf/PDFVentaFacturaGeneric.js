@@ -423,23 +423,23 @@ async function getImagenByRucEmp(rucEmp){
             let path = `./filesTMP/${rucEmp}`;
             
             if(!fs.existsSync(`${path}`)){
-                fs.mkdir(`${path}`,{recursive: true}, async (err) => {
-                    if (err) {
-                        return console.error(err);
-                    }
-                    
-                    try{
-                      const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
+              fs.mkdirSync(`${path}`,{recursive: true});
+              if(fs.existsSync(`${path}`)){
+                console.log('dir created');
 
-                      client.close();
+                try{
+                  const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 
-                      return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
-                    }catch(errorInside){
-                      console.log('inside error get imagen ftp pdf');
-                      return '';
-                    }
-                    
-                });
+                  client.close();
+
+                  return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
+
+                }catch(errorInside){
+                  return '';
+                }
+
+              }
+
             }else{
                 const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 

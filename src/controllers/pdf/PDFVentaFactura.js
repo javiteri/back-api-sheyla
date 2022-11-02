@@ -1,6 +1,7 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const ftp = require("basic-ftp");
+const util = require('util')
 const sharedFunctions = require('../../util/sharedfunctions');
 
 
@@ -93,6 +94,8 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     }
 
     let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
+    console.log('path imagen');
+    console.log(pathImagen);
     if(!pathImagen){
         pathImagen = './src/assets/logo_default_sheyla.png';
     }
@@ -103,7 +106,13 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     if(pathImagen){
       pdfDoc.image(pathImagen,50,50,{fit: [150, 100],align: 'center', valign: 'center'});
     }
-    
+    if(pathImagen.includes('filesTMP')){
+      fs.unlink(pathImagen, function(){
+        console.log('imagen, eliminada');
+      });
+
+    }
+
     pdfDoc.fontSize(9);
     pdfDoc.font(fontBold).text(datosEmpresa[0]['EMP_RAZON_SOCIAL'], 20, 170, {width: 250});
     pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 190,{width: 250});
@@ -442,34 +451,38 @@ function formatCurrency(cents) {
 async function getImagenByRucEmp(rucEmp){
 
         //CONNECT TO FTP SERVER
-        const client = new ftp.Client()
+        const client = new ftp.Client();
 
         try {
+            
             await  client.access({
                 host: "sheyla2.dyndns.info",
                 user: "firmas",
                 password: "m10101418M"
             })
+            
             let pathRemoteFile = `logos/${rucEmp}.png`
             let path = `./filesTMP/${rucEmp}`;
             
             if(!fs.existsSync(`${path}`)){
-                fs.mkdir(`${path}`,{recursive: true}, async (err) => {
-                    if (err) {
-                        return console.error(err);
-                    }
+              
+              fs.mkdirSync(`${path}`,{recursive: true});
+              if(fs.existsSync(`${path}`)){
+                console.log('dir created');
 
-                    try{
-                      const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
+                try{
+                  const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 
-                      client.close();
+                  client.close();
 
-                      return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
+                  return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
 
-                    }catch(errorInside){
-                      return '';
-                    }
-                });
+                }catch(errorInside){
+                  return '';
+                }
+
+              }
+
             }else{
                 const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 
