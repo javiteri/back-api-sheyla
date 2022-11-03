@@ -180,6 +180,7 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
                     }
 
                     try{
+                        
                         const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
                         client.close();
                         console.log('inside');
@@ -192,6 +193,7 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
                     }catch(error){
                         console.log('error obteniendo archivo imagen ftp');
                         client.close();
+                        console.log(error);
                         reject({
                             isSucess: false,
                             message: 'ocurrio un error obteniendo logo'
