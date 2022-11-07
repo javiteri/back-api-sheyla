@@ -114,7 +114,7 @@ router.post('/loginverify2', async (req, res, next) => {
 
                 const token = jwt.sign({
                     user: body,
-                }, secretkey/*process.env.SECRECT_KEY_HASH*/, {expiresIn: 43200});//seconds = 12 horas                                
+                }, secretkey, {expiresIn: 43200});//seconds = 12 horas                                
 
                 result["token"] = token;
                 result["expire"] = 43200

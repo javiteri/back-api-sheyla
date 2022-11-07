@@ -107,6 +107,22 @@ router.get('/getNextNumeroSecuencialByIdEmp', async(req,res,next) => {
     );
 });
 
+router.get('/getNoPuntoVentaByIdUsr', async(req,res,next) => {
+    const {idEmp, tipoDoc, idUsuario} = req.query;
+    console.log(req.query);
+    const nextSecuencialProm = 
+            ventasRepository.getNoPuntoVentaSecuencialByIdusuarioAndEmp(idEmp,tipoDoc,idUsuario);
+    nextSecuencialProm.then(
+        function(results){
+            res.status(200).send(results);
+        },
+        function(error){
+            res.status(200).send(error);
+        }
+    );
+});
+
+
 router.get('/getDataByIdVenta',async(req,res,next) => {
     const getDataByIdVentaPromise = 
             ventasRepository.getDataByIdVenta(req.query.id, req.query.idEmp, req.query.ruc);

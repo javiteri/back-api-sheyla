@@ -511,7 +511,7 @@ exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002) =
                                         AND venta_empresa_id = ?`;
             pool.query(queryNextSecencial, [fac001,fac002,tipoDoc,idEmp], function(error, results){
                 if(error){
-                    console.log('error consltando sigiente secuencial');
+                    console.log('error consultando siguiente secuencial');
                     reject({
                         isSucess: false,
                         code: 400,
@@ -536,6 +536,78 @@ exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002) =
         }
     });
 }
+
+exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsuario) => {
+    return new Promise((resolve, reject) => {
+        try{
+
+            const querySelectVenta1And2 = `SELECT CAST(venta_001 AS UNSIGNED ) AS valoruno,CAST(venta_002 AS UNSIGNED) AS valordos 
+                                            FROM ventas WHERE venta_tipo = ?  AND venta_empresa_id = ? AND  venta_usu_id = ? ORDER BY venta_id DESC LIMIT 1`;
+            const querySelectNextSecuencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) AS numero FROM ventas WHERE CAST(venta_001 AS UNSIGNED) = ?
+                                                AND CAST(venta_002 AS UNSIGNED) = ? AND venta_empresa_id = ?`;
+
+            pool.query(querySelectVenta1And2, [tipoDoc,idEmp,idUsuario], function(error, results) {
+                if(error){
+                    console.log('error consultando punto de venta y comprobante');
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ocurrio un error'
+                    });
+                    return;
+                }
+
+                if(results.length <= 0){
+                    resolve({
+                        isSucess: true,
+                        valor001: 1,
+                        valor002: 1,
+                        secuencial: 1
+                    });
+                    return;
+                }
+
+                valor001 = results[0].valoruno;
+                valor002 = results[0].valordos;
+
+                if((valor001 != null && valor001 > 0) && (valor002 != null && valor002 > 0)){
+
+                    pool.query(querySelectNextSecuencial, [valor001,valor002,idEmp], function(errorr, resultss) {
+                        if(errorr){
+                            reject({
+                                isSucess: false,
+                                code: 400,
+                                messageError: 'ocurrio un error'
+                            });
+                            return;
+                        }
+
+                        resolve({
+                            isSucess: true,
+                            valor001: valor001,
+                            valor002: valor002,
+                            secuencial: (resultss[0].numero + 1)
+                        });
+                    });
+
+                }else{
+                    resolve({
+                        isSucess: true,
+                        valor001: 1,
+                        valor002: 1,
+                        secuencial: 1
+                    });
+                }
+
+            });
+
+        }catch(exception){
+            console.log('exception');
+            reject('error obteniendo datos punto de venta y secuencial');
+        }
+    });
+}
+
 
 exports.getDataByIdVenta = async (idVenta, idEmp, ruc) => {
     return new Promise((resolve, reject) => {

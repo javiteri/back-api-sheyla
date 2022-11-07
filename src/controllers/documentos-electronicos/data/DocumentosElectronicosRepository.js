@@ -80,13 +80,13 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
             }
 
 
-            const sqlQueryDocumentosElectronicos = `SELECT VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
+            const sqlQueryDocumentosElectronicos = `SELECT venta_electronica_observacion,VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
             venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo LIKE ?
             AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_fecha_hora BETWEEN ? AND ?
             AND CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ? AND venta_anulado=0 
             UNION ALL 
-            SELECT compra_tipo,compra_id,compra_fecha_hora,compra_numero, compra_total AS total, pro_nombre_natural, pro_documento_identidad AS identificacion,
+            SELECT compra_electronica_observacion,compra_tipo,compra_id,compra_fecha_hora,compra_numero, compra_total AS total, pro_nombre_natural, pro_documento_identidad AS identificacion,
             compra_forma_pago , compra_electronica_estado 
             FROM compras,proveedores  WHERE compra_empresa_id = ? AND compra_proveedor_id=pro_id AND compra_tipo LIKE ?
             AND compra_fecha_hora  BETWEEN ? AND ?
