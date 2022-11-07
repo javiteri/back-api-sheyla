@@ -145,7 +145,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
 
                             let diasLicenciaValue = Number(days).toFixed(0);
 
-                            /*if(diasLicenciaValue <= 0){
+                            if(diasLicenciaValue <= 0){
                                 resolve({
                                     isSuccess: true,
                                     code: 400,
@@ -153,7 +153,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                                     mensage: 'dias de licencia expirados'
                                 });
                                 return;
-                            }*/
+                            }
 
                             let queryEmpresas = "SELECT * FROM empresas WHERE emp_ruc = ? LIMIT 1";
                             let query = 'SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1';
