@@ -165,5 +165,19 @@ router.get('/recoverypassword', async(req, res) => {
     );
 });
 
+router.get('/verifyExistAdminByRucEmp', async(req, res) => {
+
+    const resultValidate = loginRepository.validateDefaultUserByRuc(req.query.ruc);
+
+    resultValidate.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(300).send(result);
+        }
+    );
+});
+
 
 module.exports = router;

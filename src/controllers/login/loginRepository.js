@@ -94,139 +94,116 @@ exports.loginAndValidateEmp = function(ruc, username, password){
     return new Promise((resolve, reject) => {
         try{
 
-            // HACER UN REQUEST A http://sheyla2.dyndns.info/sheylaweb/VALIDAR_EMPRESA.php?SERIE=1718792656001
-            var options = {
-                host: 'sheyla2.dyndns.info',
-                path: `/sheylaweb/VALIDAR_EMPRESA.php?SERIE=${ruc}`
-            };
-            const callback = function(response){
-                let str = '';
-
-                //another chunk of data has been received, so append it to `str`
-                response.on('data', function (chunk) {
-                    str += chunk;
-                });
-
-                response.on('end', function () {
-
-                    if(str.includes('NOEXISTE')){
-                        resolve({
-                            isSucess: false,
-                            existEmp: false,
-                            message: 'No existe la empresa'
-                        });
+            getNameBdByRuc(ruc).then(
+                function(result){
+                    if(!result.existEmp){
+                        resolve(result);
                         return;
                     }
+                    // CONSULTAR SI EXISTE EL USUARIO Y CONTRASENA
+                    let queryNumDocAndLicenceDays = `SELECT empresa_web_plan_enviados as emitidos,empresa_fecha_fin_facturacion as finfactura FROM
+                        efactura_web.empresas,efactura_factura.empresas WHERE efactura_web.empresas.EMP_RUC
+                        = efactura_factura.empresas.EMPRESA_RUC AND
+                        efactura_web.empresas.EMP_RUC= ?`;
+    
+                    poolMysqlBd1.query(queryNumDocAndLicenceDays, [ruc], (err, results) => {
 
-                    if(str.includes('***OK')){
-                        // CONSULTAR SI EXISTE EL USUARIO Y CONTRASENA
+                        if(err){
+                            reject({
+                                isSucess: false,
+                                code: 400,
+                                messageError: err
+                            });
+                            return;
+                        }
+                        
+                        const dateActual = new Date();
+                        const dateInit = new Date(results[0].finfactura);
 
-                        let queryNumDocAndLicenceDays = `SELECT empresa_web_plan_enviados as emitidos,empresa_fecha_fin_facturacion as finfactura FROM
-                            efactura_web.empresas,efactura_factura.empresas WHERE efactura_web.empresas.EMP_RUC
-                            = efactura_factura.empresas.EMPRESA_RUC AND
-                            efactura_web.empresas.EMP_RUC= ?`;
-            
-                        poolMysqlBd1.query(queryNumDocAndLicenceDays, [ruc], (err, results) => {
+                        let time = dateInit.getTime() - dateActual.getTime(); 
+                        let days = time / (1000 * 3600 * 24); //Diference in Days
+
+                        let diasLicenciaValue = Number(days).toFixed(0);
+
+                        if(diasLicenciaValue <= 0){
+                            resolve({
+                                isSuccess: true,
+                                code: 400,
+                                sinLicencia: true,
+                                mensage: 'dias de licencia expirados'
+                            });
+                            return;
+                        }
+
+                        let queryEmpresas = "SELECT * FROM empresas WHERE emp_ruc = ? LIMIT 1";
+                        let query = 'SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1';
+                        
+                        poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
 
                             if(err){
-                                reject({
-                                    isSucess: false,
-                                    code: 400,
-                                    messageError: err
-                                });
-                                return;
-                            }
-                            
-                            const dateActual = new Date();
-                            const dateInit = new Date(results[0].finfactura);
-
-                            let time = dateInit.getTime() - dateActual.getTime(); 
-                            let days = time / (1000 * 3600 * 24); //Diference in Days
-
-                            let diasLicenciaValue = Number(days).toFixed(0);
-
-                            if(diasLicenciaValue <= 0){
-                                resolve({
-                                    isSuccess: true,
-                                    code: 400,
-                                    sinLicencia: true,
-                                    mensage: 'dias de licencia expirados'
-                                });
+                                reject('error en BD2');
                                 return;
                             }
 
-                            let queryEmpresas = "SELECT * FROM empresas WHERE emp_ruc = ? LIMIT 1";
-                            let query = 'SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1';
-                            
-                            poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
-    
-                                if(err){
-                                    reject('error en BD2');
-                                    return;
-                                }
-    
-                                if(!resultEmpresa | resultEmpresa == undefined | resultEmpresa == null | !resultEmpresa.length){
-                                    reject(' error, no se encontro la empresa');
-                                    return;
-                                }
-    
-                                let idEmpresa;
-                                let nombreEmpresa;
-                                Object.keys(resultEmpresa).forEach(function(key) {
-                                    idEmpresa = resultEmpresa[key].EMP_ID;
-                                    nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
-                                });
-    
-                                poolMysql.query(query, [username, password, idEmpresa], function(err, results, fields) {
-    
-                                    if(err){
-                                        reject('error: ' + err);
-                                        return;
-                                    }
-    
-    
-                                    if(!results | results == undefined | results == null | !results.length){
-                                        resolve({
-                                            isSuccess: true,
-                                            existUser: false
-                                        });
-                                        return;
-                                    }
-                                    
-                                    let idUsuario;
-                                    let nombreUsuario;
-                                    Object.keys(results).forEach(function(key){
-                                        var row = results[key]
-                                        idUsuario = row.usu_id;
-                                        nombreUsuario = row.usu_nombres;
-                                    });
-                                    
-                                    resolve({
-                                        isSuccess: true,
-                                        existUser: true,
-                                        idUsuario: idUsuario,
-                                        nombreUsuario: nombreUsuario,
-                                        idEmpresa: idEmpresa,
-                                        nombreEmpresa: nombreEmpresa,
-                                        rucEmpresa: ruc,
-                                        redirectToHome: true
-                                    })
-                                }
-                            );
-    
-    
+                            if(!resultEmpresa | resultEmpresa == undefined | resultEmpresa == null | !resultEmpresa.length){
+                                reject(' error, no se encontro la empresa');
+                                return;
+                            }
+
+                            let idEmpresa;
+                            let nombreEmpresa;
+                            Object.keys(resultEmpresa).forEach(function(key) {
+                                idEmpresa = resultEmpresa[key].EMP_ID;
+                                nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
                             });
 
+                            poolMysql.query(query, [username, password, idEmpresa], function(err, results, fields) {
+
+                                if(err){
+                                    reject('error: ' + err);
+                                    return;
+                                }
+
+
+                                if(!results | results == undefined | results == null | !results.length){
+                                    resolve({
+                                        isSuccess: true,
+                                        existUser: false
+                                    });
+                                    return;
+                                }
+                                
+                                let idUsuario;
+                                let nombreUsuario;
+                                Object.keys(results).forEach(function(key){
+                                    var row = results[key]
+                                    idUsuario = row.usu_id;
+                                    nombreUsuario = row.usu_nombres;
+                                });
+                                
+                                resolve({
+                                    isSuccess: true,
+                                    existUser: true,
+                                    idUsuario: idUsuario,
+                                    nombreUsuario: nombreUsuario,
+                                    idEmpresa: idEmpresa,
+                                    nombreEmpresa: nombreEmpresa,
+                                    rucEmpresa: ruc,
+                                    redirectToHome: true
+                                })
+                            }
+                        );
 
 
                         });
 
-                    }
-
-                });
-            }
-
-            httpClient.request(options, callback).end();
+                    });
+                },
+                function(error){
+                    reject(error);
+                }
+            );
+            
         }catch(exception){
             reject({
                 isSucess: false,
@@ -684,3 +661,129 @@ async function sendEmailRecoveryAccount(ruc, email,datosUsario,resolve, reject){
         });
     }
 }
+
+function getNameBdByRuc(ruc){
+    return new Promise((resolve, reject) => {
+        try{
+
+            // HACER UN REQUEST A http://sheyla2.dyndns.info/sheylaweb/VALIDAR_EMPRESA.php?SERIE=1718792656001
+            var options = {
+                host: 'sheyla2.dyndns.info',
+                path: `/sheylaweb/VALIDAR_EMPRESA.php?SERIE=${ruc}`
+            };
+
+            const callback = function(response){
+                let str = '';
+
+                //another chunk of data has been received, so append it to `str`
+                response.on('data', function (chunk) {
+                    str += chunk;
+                });
+
+                response.on('end', function () {
+
+                    if(str.includes('NOEXISTE')){
+                        resolve({
+                            isSucess: false,
+                            existEmp: false,
+                            message: 'No existe la empresa'
+                        });
+                        return;
+                    }
+
+                    if(str.includes('***OK')){
+                        resolve({
+                            isSucess: true,
+                            existEmp: true,
+                            value: str
+                        });
+                        return;
+                    }
+
+                });
+            }
+
+            httpClient.request(options, callback).end();
+
+        }catch(exception){
+           reject({
+                isSucess: false,
+                message: 'inside error requuest http service'
+            });
+        }
+    });
+}
+
+exports.validateDefaultUserByRuc = function(ruc){
+    return new Promise((resolve, reject) => {
+        try{
+            getNameBdByRuc(ruc).then(
+                function(result){
+                    if(!result.existEmp){
+                        resolve(result);
+                        return;
+                    }
+
+                    // OBTENER EL VALOR DEL NOMBRE DE LA EMPRESA Y CONSULTAR SI EXISTE EL USUARIO DEFAUULT
+                    console.log('existe el usuario default');
+                    console.log(result);
+                    let nombreBd = result.value.replaceAll("*"," ").split(",")[1];
+                    
+                    let queryEmpresas = `SELECT * FROM ${nombreBd}.empresas WHERE emp_ruc = ? LIMIT 1`;
+                    let query = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_username = "ADMIN" AND usu_password = "ADMIN" AND usu_empresa_id = ? LIMIT 1`;
+                        
+                    poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
+                        console.log('inside datos empresa query');
+                        if(err){
+                            reject('error en BD2');
+                            return;
+                        }
+
+                        if(!resultEmpresa | resultEmpresa == undefined | resultEmpresa == null | !resultEmpresa.length){
+                            reject(' error, no se encontro la empresa');
+                            return;
+                        }
+
+                        let idEmpresa;
+                        let nombreEmpresa;
+                        Object.keys(resultEmpresa).forEach(function(key) {
+                                idEmpresa = resultEmpresa[key].EMP_ID;
+                                nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
+                        });
+
+                        poolMysql.query(query, [idEmpresa], function(err, results, fields) {
+                                if(err){
+                                    reject('error: ' + err);
+                                    return;
+                                }
+
+                                if(!results | results == undefined | results == null | !results.length){
+                                    resolve({
+                                        isSuccess: true,
+                                        existDefaultUser: false
+                                    });
+                                    return;
+                                }
+                                
+                                resolve({
+                                    isSuccess: true,
+                                    existDefaultUser: true
+                                })
+
+                            }
+                        );
+                    });
+                },
+                function(error){
+                    reject(error);
+                }
+            );
+        }catch(exception){
+            reject({
+                isSucess: false,
+                message: 'error validando ruc usuario default'
+            });
+        }
+    });
+}
+

@@ -46,9 +46,8 @@ exports.autorizarListDocumentos = async(listDoc) => {
             // Y ENVIARLOS EN UN FOR PARA SU VALIDACION
             for(const documento of listDoc){
                 const {idEmp, id,identificacion,VENTA_TIPO} = documento;
-                console.log('before send');
+
                 prepareAndSendDocumentoElectronicoAsync(idEmp, id,identificacion,VENTA_TIPO);
-                console.log('after send');
             }
             resolve({
                 isSucess: true,
@@ -362,7 +361,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             let claveActivacion = sharedFunctions.modulo11(digit48);
  
             let tipoIdentificacionComprador = getTipoIdentificacionComprador(datosCliente.cli_documento_identidad,
-                datosCliente.cli_tipo_documento_identidad);
+                                                                                datosCliente.cli_tipo_documento_identidad);
 
             let identificacionComprador = (datosCliente.cli_nombres_natural == 'CONSUMIDOR FINAL' ? '9999999999999' : datosCliente.cli_documento_identidad);
             let showDireccionComprador = ((datosCliente.cli_direccion && datosCliente.cli_direccion.length > 0));
@@ -392,7 +391,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                 standalone: true
             }).att('id','comprobante').att('version','2.0.0');
             rootElement = rootElement.ele('infoTributaria').ele('ambiente',tipoAmbiente).up().ele('tipoEmision','1').up()
-                                    .ele('razonSocial',/*datosEmpresa.EMP_RAZON_SOCIAL*/'LEON CASTELO MIGUEL RODRIGO').up(); 
+                                    .ele('razonSocial',datosEmpresa.EMP_RAZON_SOCIAL).up(); 
             //rootElement.ele('nombreComercial','Prueba 2').up()
             rootElement = rootElement.ele('ruc',rucEmpresa).up()
                                     .ele('claveAcceso',claveActivacion).up().ele('codDoc',codigoDocmento).up()
@@ -849,7 +848,6 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
             ventad_prod_id = prod_id AND ventad_venta_id = ?`;
     const queryDatosEmpresaById = `SELECT * FROM empresas WHERE emp_id = ?`;
 
-    console.log('send to quee');
     pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%'], (er, datosConfig) => {
         if(er){
             console.log('error obteniendo configs');
@@ -877,7 +875,8 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                         }
                             
                         const valorGenerateXmlResponse = 
-                                        generateXmlDocumentoElectronicoVenta(clienteResponse[0],ventaResponse[0],ventaDetalleResponse,datosEmpresa[0],datosConfig);
+                                        generateXmlDocumentoElectronicoVenta(clienteResponse[0],ventaResponse[0],ventaDetalleResponse,
+                                                                                datosEmpresa[0],datosConfig);
                         valorGenerateXmlResponse.then(
                             function(data){
                                 const pathFile = data.pathFile;
