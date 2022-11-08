@@ -725,16 +725,15 @@ exports.validateDefaultUserByRuc = function(ruc){
                     }
 
                     // OBTENER EL VALOR DEL NOMBRE DE LA EMPRESA Y CONSULTAR SI EXISTE EL USUARIO DEFAUULT
-                    console.log('existe el usuario default');
-                    console.log(result);
-                    let nombreBd = result.value.replaceAll("*"," ").split(",")[1];
+                    
+                    let nombreBd = (result.value.trim().replace(/\*/g," ")).split(",")[1];
                     
                     let queryEmpresas = `SELECT * FROM ${nombreBd}.empresas WHERE emp_ruc = ? LIMIT 1`;
                     let query = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_username = "ADMIN" AND usu_password = "ADMIN" AND usu_empresa_id = ? LIMIT 1`;
                         
                     poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
-                        console.log('inside datos empresa query');
                         if(err){
+                            console.log(error);
                             reject('error en BD2');
                             return;
                         }
@@ -779,6 +778,7 @@ exports.validateDefaultUserByRuc = function(ruc){
                 }
             );
         }catch(exception){
+            console.log(exception);
             reject({
                 isSucess: false,
                 message: 'error validando ruc usuario default'
