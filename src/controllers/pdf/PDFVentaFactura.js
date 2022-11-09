@@ -20,7 +20,7 @@ exports.generatePdfFromVentaFactura = (datosEmpresa,datosCliente,datosVenta,dato
                 generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, resolve, reject);
             });
         }else{
-            generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, resolve, reject);       
+            generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, resolve, reject);
         }
 
     }catch(exception){

@@ -60,7 +60,7 @@ exports.getEmpresaByRuc = function (rucEmpresa, idEmpresa){
     })
 }
 
-exports.updateDatosEmpresa = function (datosEmpresa){
+exports.updateDatosEmpresa = async function (datosEmpresa){
 
     return new Promise((resolve, reject) => {
         try{
@@ -130,7 +130,7 @@ exports.updateDatosEmpresa = function (datosEmpresa){
 
                                 resolve(updateDatosEmpresaResponse);
 
-                            });
+            });
 
         }catch(error){
             reject('error actualizando datos empresa: ' + error) ; 
@@ -153,9 +153,14 @@ async function sendFilePdfToFtp(pathFile, nombrePdf){
     }
 
     client.close()
+    deleteImageFileByPath(pathFile);
 
 }
 
+function deleteImageFileByPath(pathImageLogo){
+    fs.unlink(pathImageLogo, function(){
+    });
+}
 
 exports.getImagenLogoByRucEmp = function(rucEmp){
     return new Promise( async (resolve, reject) => {

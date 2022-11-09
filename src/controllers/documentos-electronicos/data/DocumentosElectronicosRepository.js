@@ -503,24 +503,39 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                         return console.error(err);
                     }
     
-                    fs.writeFileSync(`${path}/${datosVenta.venta_tipo}${secuencial}.xml`, xmlFinal, function(error){
+                    fs.writeFile(`${path}/${datosVenta.venta_tipo}${secuencial}.xml`, xmlFinal, function(error){
                         if(error){
-                            console.log('error escribiendo archivo');
+                            reject({
+                                isSucess: false,
+                                error: 'error creando xml documento venta, reintente'
+                            });
+                            return;
                         }
+
+                        resolve({
+                            pathFile: `${path}/${datosVenta.venta_tipo}${secuencial}.xml`,
+                            claveAct: claveActivacion
+                        });
+                        
                     })
                 });
             }else{
-                fs.writeFileSync(`${path}/${datosVenta.venta_tipo}${secuencial}.xml`, xmlFinal, function(error){
+                fs.writeFile(`${path}/${datosVenta.venta_tipo}${secuencial}.xml`, xmlFinal, function(error){
                     if(error){
-                        console.log('error escribiendo archivo');
+                        reject({
+                            isSucess: false,
+                            error: 'error creando xml documento venta, reintente'
+                        });
+                        return;
                     }
+
+                    resolve({
+                        pathFile: `${path}/${datosVenta.venta_tipo}${secuencial}.xml`,
+                        claveAct: claveActivacion
+                    });
                 });
             }
 
-            resolve({
-                pathFile: `${path}/${datosVenta.venta_tipo}${secuencial}.xml`,
-                claveAct: claveActivacion
-            });
         }catch(exception){
             reject({
                 isSucess: false,
