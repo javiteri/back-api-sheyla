@@ -125,7 +125,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
 
                         let diasLicenciaValue = Number(days).toFixed(0);
 
-                        if(diasLicenciaValue <= 0){
+                        if(diasLicenciaValue <= 0){ 
                             resolve({
                                 isSuccess: true,
                                 code: 400,
