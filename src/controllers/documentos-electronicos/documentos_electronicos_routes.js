@@ -97,8 +97,6 @@ router.post('/autorizarlistdocumentosbyid', async (req, res) => {
             res.status(200).send(result);
         },
         function(error){
-            console.log('error');
-            console.log(error);
             res.status(400).send(error);
         }
     );

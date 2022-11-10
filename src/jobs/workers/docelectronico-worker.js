@@ -31,11 +31,13 @@ module.exports = (job, done) => {
                 return done(new Error(error));
             }
 
-            if(resultMensaje[0] && (resultMensaje[0].auto_mensaje === null || resultMensaje[0].auto_mensaje === undefined)){
+            if(resultMensaje[0] && (resultMensaje[0].auto_mensaje === null || resultMensaje[0].auto_mensaje === undefined 
+                        || resultMensaje[0].auto_estado == 0)){
                 console.log('inside aun sin respuesta');
                 return done(new Error('Aun sin Respuesta'));
             }
 
+            
             // si el mensje indica qe fue atorizado significa que todo salio bien caso contrario 
             // caso contrario guardar un estado dew error y el mensaje que tenga 
             //let valorMensaje = resultMensaje[0].auto_mensaje;

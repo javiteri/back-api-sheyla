@@ -94,7 +94,6 @@ exports.getTipoComprobanteVenta = (tipoVenta) => {
   
     codDoc.forEach((element) => {
         if(element.nombre.toUpperCase().includes(tipoVenta.toUpperCase())){
-            console.log('inside codigo');
             codigo = element.codigo
         }
     });

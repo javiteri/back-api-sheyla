@@ -45,9 +45,13 @@ exports.autorizarListDocumentos = async(listDoc) => {
             // GET LISTA DE DOCUMENTOS 
             // Y ENVIARLOS EN UN FOR PARA SU VALIDACION
             for(const documento of listDoc){
-                const {idEmp, id,identificacion,VENTA_TIPO} = documento;
-
-                prepareAndSendDocumentoElectronicoAsync(idEmp, id,identificacion,VENTA_TIPO);
+                const {idEmp, id,identificacion,VENTA_TIPO, estado} = documento;
+                if(estado == 0){
+                    //prepareAndSendDocumentoElectronicoAsync(idEmp, id,identificacion,VENTA_TIPO);
+                }else{
+                    queryStateDocumentoElectronicoError(idEmp, id,identificacion,VENTA_TIPO)
+                }
+                //prepareAndSendDocumentoElectronicoAsync(idEmp, id,identificacion,VENTA_TIPO);
             }
             resolve({
                 isSucess: true,
@@ -195,7 +199,6 @@ function prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,
 
     pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%'], (er, datosConfig) => {
         if(er){
-            console.log('error obteniendo configs');
             return reject(err);
         }
 
@@ -950,7 +953,6 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                                 ventaFecha: dateString
                                             }
 
-                                            console.log('send to quee');
                                             // SEND JOB TO QUEUE BULL
                                             docElectronicoQueue.add(objSendJob,{
                                                 //delay: 30000,
@@ -987,3 +989,157 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
     });
 }
 
+
+async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identificacion, tipo){
+    const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
+    const queryDatosEmpresaById = `SELECT * FROM empresas WHERE emp_id = ?`;
+    const queryUpdateFacAutorizacion = `UPDATE autorizaciones SET auto_estado = 0, auto_mensaje = '' WHERE auto_clave_acceso = ?`;
+    const querySelectCliente = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
+
+    pool.query(queryDatosEmpresaById,[idEmp], (err, empResponse) => {
+        if(err){
+            return;
+        }
+        pool.query(querySelectCliente, [idEmp, identificacion], (errorCliente, clienteResponse) => {
+            if(errorCliente){
+                return reject(errorCliente);
+            }
+
+            const datosCliente = clienteResponse[0];
+            const datosEmpresa = empResponse[0];
+
+            pool.query(querySelectVenta, [idEmp, idVentaCompra], (errorr, ventaResponse) => {
+                if(errorr){
+                    return;
+                }
+                const datosVenta = ventaResponse[0];
+
+                const dateVenta = new Date(datosVenta.venta_fecha_hora);
+                const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
+                const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
+                const yearVenta = dateVenta.getFullYear().toString();
+
+                let rucEmpresa = datosEmpresa.EMP_RUC;
+                let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta.venta_tipo);
+                let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
+                let serie = `${datosVenta.venta_001}${datosVenta.venta_002}`;
+                let codigoNumerico = '12174565';
+                let secuencial = (datosVenta.venta_numero).toString().padStart(9,'0');
+                let tipoEmision = 1;
+        
+                let digit48 = 
+                `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
+                
+                let claveActivacion = sharedFunctions.modulo11(digit48);
+        
+                //query in table Autorizaciones for state with clave
+                const sqlQuerySelectAutoFacState = `SELECT auto_estado, auto_mensaje,auto_id_empresa FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
+                
+                poolEFactra.query(sqlQuerySelectAutoFacState,[claveActivacion], function(error, results) {
+                    if(error){
+                        return;
+                    }
+                    if(results.length <= 0){
+                        // no existe en la tabla autorizaciones
+                        //enviar otra vez el xml al servicio
+                        return;
+                    }else{
+                        // SE OBTENIENE ELE STADO DE LA FACTRUA EN LA TABLA AUTORIZACION
+                        // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
+                        const queryUpdateVentaEstado = `UPDATE ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
+                        if(results[0].auto_estado == 2){
+                            poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion], function(errorUpdate, resultsUpdate){
+                                if(errorUpdate){
+                                    return;
+                                }
+                                //updateEstadoVentaDocumentoElectronico(0, 'En Espera...',idVentaCompra );
+
+                                pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra], function(errorUp, resultUpdateVentaEstado){
+                    
+                                    if(errorUp){
+                                        console.log('error insertando en estado venta');
+                                        return;
+                                        //reject(errorUp);
+                                    }
+
+                                    const dateString = '' + dateVenta.getFullYear() + '-' + ('0' + (dateVenta.getMonth()+1)).slice(-2) + 
+                                                                        '-' + ('0' + dateVenta.getDate()).slice(-2);
+
+                                    const objSendJob = {
+                                        claveAct: claveActivacion,
+                                        empresaId: results[0].auto_id_empresa,
+                                        empresaIdLocal: datosEmpresa.EMP_ID,
+                                        rucEmpresa: datosEmpresa.EMP_RUC,
+                                        nombreEmpresa: datosEmpresa.EMP_NOMBRE,
+                                        ciRucCliente: datosCliente.cli_documento_identidad,
+                                        emailCliente: datosCliente.cli_email,
+                                        nombreCliente:  datosCliente.cli_nombres_natural,
+                                        idVenta: datosVenta.venta_id,
+                                        tipoDocumento: datosVenta.venta_tipo,
+                                        documentoNumero: 
+                                                        `${datosVenta.venta_001}-${datosVenta.venta_002}-${datosVenta.venta_numero}`,
+                                        ventaValorTotal: datosVenta.venta_total,
+                                        ventaFecha: dateString
+                                    }
+                                            // SEND JOB TO QUEUE BULL
+                                    docElectronicoQueue.add(objSendJob,{
+                                        //delay: 30000,
+                                        removeOnComplete: true,
+                                        removeOnFail: true,
+                                        attempts: 100,
+                                        backoff: {
+                                            type: 'fixed',
+                                            delay: 60000
+                                        }
+                                    });
+
+                                    //resolve('ok');
+                                });
+
+                            });
+                        }else if(results[0].auto_estado == 1){
+                            // YA SE AUTORIZO EL DOCUMENTO DEBO ACTUALIZAR ESE ESTADO EN LA VENTA
+                            pool.query(queryUpdateVentaEstado,[2,results[0].auto_mensaje,idVentaCompra], function(errorUp, resultUpdateVentaEstado){
+                    
+                                if(errorUp){
+                                    console.log('error insertando en estado venta');
+                                    return;
+                                    //reject(errorUp);
+                                }
+
+                            });
+                        }
+
+                    }
+
+                });
+            });
+        });
+
+    });
+   
+}
+
+
+function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId){
+
+    return new Promise((resolve, reject) => {
+        try{
+            const queryUpdateVentaEstado = `UPDATE ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
+
+            mysql.query(queryUpdateVentaEstado,[estado,mensaje,ventaId], function(errorUp, resultUpdateVentaEstado){
+
+                if(errorUp){
+                    console.log('error insertando en estado venta');
+                    reject(errorUp);
+                }
+                console.log('update inside venta');
+                resolve('ok');
+            });
+
+        }catch(exception){
+            reject('error actalizando estado venta');
+        }
+    });
+
+}
