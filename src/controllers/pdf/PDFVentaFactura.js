@@ -112,8 +112,10 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
 
     pdfDoc.fontSize(9);
     pdfDoc.font(fontBold).text(datosEmpresa[0]['EMP_RAZON_SOCIAL'], 20, 170, {width: 250});
-    pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 190,{width: 250});
-    pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, 20, 210,{width: 250});
+    //pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 190,{width: 250});
+    pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, {width: 250});
+    //pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, 20, 210,{width: 250});
+    pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, {width: 250});
 
     if(!(contribuyenteEspecial === '')){
       pdfDoc.text(`Contribuyente Especial Nro: ${contribuyenteEspecial}`, 20, 230,{width: 250});
@@ -136,8 +138,9 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     pdfDoc.rect(pdfDoc.x - 10,170 - 5,250,pdfDoc.y - 150).stroke();
 
     pdfDoc.text(`RUC: ${datosEmpresa[0]['EMP_RUC']}`, 280, 60,{width: 250});
-    pdfDoc.font(fontBold).text(`FACTURA`, 280, 80);
-    pdfDoc.font(fontNormal).text(`NO:${datosVenta[0]['venta_001']}-${datosVenta[0]['venta_002']}-${datosVenta[0]['venta_numero']}`, 280, 95);
+    pdfDoc.font(fontBold).text(`FACTURA No.`, 280, 80);
+    let secuencial = (datosVenta[0].venta_numero).toString().padStart(9,'0');
+    pdfDoc.font(fontNormal).text(`${datosVenta[0]['venta_001']}-${datosVenta[0]['venta_002']}-${secuencial}`, 280, 95);
 
     pdfDoc.text(`NUMERO DE AUTORIZACION`, 280, 120);
     const dateVenta = new Date(datosVenta[0].venta_fecha_hora);
@@ -151,7 +154,6 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     let tipoAmbiente = '2';//PRODUCCION
     let serie = `${datosVenta[0]['venta_001']}${datosVenta[0]['venta_002']}`;
     let codigoNumerico = '12174565';
-    let secuencial = (datosVenta[0].venta_numero).toString().padStart(9,'0');
     let tipoEmision = 1;
 
     let digit48 = 
@@ -324,17 +326,22 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     let ypositionzero = yposition + 20;
     pdfDoc.font(fontBold).text('Informacion Adicional', 20, ypositionzero , {width: 250});
     let yposition1 = ypositionzero + 10;
-    pdfDoc.font(fontNormal).text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, yposition1 , {width: 250});
+    //pdfDoc.font(fontNormal).text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, yposition1 , {width: 250});
+    pdfDoc.font(fontNormal).text(`Direccion: ${datosCliente[0]['cli_direccion']}`, {width: 250});
     let yposition2 = yposition1 + 20;
     pdfDoc.text(`FORMA PAGO: ${datosVenta[0]['venta_forma_pago']}`, 20, yposition2 , {width: 250});
     let yposition3 = yposition2 + 10;
-    pdfDoc.text(`RESPONSABLE: ${datosVenta[0]['usu_nombres']}`, 20, yposition3 , {width: 250});
+    //pdfDoc.text(`RESPONSABLE: ${datosVenta[0]['usu_nombres']}`, 20, yposition3 , {width: 250});
+    pdfDoc.text(`RESPONSABLE: ${datosVenta[0]['usu_nombres']}`, {width: 250});
     let yposition4 = yposition3 + 10;
-    pdfDoc.text(`EMAIL: ${datosCliente[0]['cli_email']}`, 20, yposition4, {width: 250});
+    //pdfDoc.text(`EMAIL: ${datosCliente[0]['cli_email']}`, 20, yposition4, {width: 250});
+    pdfDoc.text(`EMAIL: ${datosCliente[0]['cli_email']}`, {width: 250});
     let yposition5 = yposition4 + 10;
-    pdfDoc.text(`TELEFONO: ${datosCliente[0]['cli_teleono']}`, 20, yposition5 , {width: 250});
+    //pdfDoc.text(`TELEFONO: ${datosCliente[0]['cli_teleono']}`, 20, yposition5 , {width: 250});
+    pdfDoc.text(`TELEFONO: ${datosCliente[0]['cli_teleono']}`, {width: 250});
     let yposition6 = yposition5 + 10;
-    pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
+    //pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
+    pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, {width: 250});
 
     pdfDoc.rect(pdfDoc.x - 10,yposition + 15,280, 100).stroke();
 

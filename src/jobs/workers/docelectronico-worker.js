@@ -27,7 +27,6 @@ module.exports = (job, done) => {
 
         mysqlEFactura.query(sqlQueryAutoMessage, [claveAcceso], function(error, resultMensaje) {
             if(error){
-                console.log('error consultando mensaje');
                 return done(new Error(error));
             }
 
@@ -50,9 +49,8 @@ module.exports = (job, done) => {
                         done(null,job.data);
                     },
                     function(error){
-                        console.log('error insertando estado venta');
-                        console.log(error);
-                        return done(new Error('error insertando estado venta'));
+                        done(null,job.data);
+                        //return done(new Error('error insertando estado venta'));
                     }
                 );
             }else{
@@ -65,7 +63,8 @@ module.exports = (job, done) => {
                             done(null,job.data);
                         },
                         function(error){
-                            return done(new Error('error insertando estado venta'));
+                            done(null,job.data);
+                            //return done(new Error('error insertando estado venta'));
                         }
                     );
                     
@@ -157,7 +156,8 @@ function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
             //done(null,job.data);
         },
         function(error){
-            return done(new Error('error insertando estado venta'));
+            //return done(new Error('error insertando estado venta'));
+            done(null,job.data);
         });
 
     });
@@ -170,7 +170,6 @@ function createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso, done, jobData){
         const sqlGetXmlAutorizedString = `SELECT auto_xml_autorizado FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
         mysqlEFactura.query(sqlGetXmlAutorizedString, [claveAcceso], async function(error, results){
             if(error){
-                console.log(error);
                 done();
             }            
 
@@ -216,7 +215,6 @@ async function createPDFSendFTP(jobData){
 }
 
 async function createXMLSendFTP(stringXmlAutorizado, claveAcceso){
-    console.log('inside send xml ftp');    
 
     const client = new ftp.Client();
     try {
@@ -312,8 +310,7 @@ function sendEmailToClient(claveAcceso, jobData, done){
                 done(null,jobData);
             }
         })
-
-     
+   
     }else{
         done(null,jobData);
     }

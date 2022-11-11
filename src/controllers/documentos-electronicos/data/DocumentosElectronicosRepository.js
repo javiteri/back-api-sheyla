@@ -289,7 +289,6 @@ function prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,
                                                 ventaFecha: dateString
                                             }
                                             // SEND JOB TO QUEUE BULL
-                                            console.log('before send to qeue');
                                             docElectronicoQueue.add(objSendJob,{
                                                 //delay: 30000,
                                                 removeOnComplete: true,
@@ -432,46 +431,75 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                         
             parcialElement1.ele('tipoIdentificacionComprador',tipoIdentificacionComprador).up()
                         .ele('razonSocialComprador',datosCliente.cli_nombres_natural).up().ele('identificacionComprador',identificacionComprador).up()
-                        if(showDireccionComprador){
+            if(showDireccionComprador){
                             parcialElement1.ele('direccionComprador',datosCliente.cli_direccion).up()
-                        }
-                        let totalImpuestosEle = parcialElement1.ele('totalSinImpuestos',totalSinImpuestos).up().ele('totalDescuento',totalDescuento.toFixed(2)).up()
+            }
+            let totalImpuestosEle = parcialElement1.ele('totalSinImpuestos',totalSinImpuestos).up().ele('totalDescuento',totalDescuento.toFixed(2)).up()
                         .ele('totalConImpuestos')
+            
+            let baseImponibleIva12 = 0.0;
+            let valorIva12BI = 0.0;
+            let baseImponibleIva0 = 0.0;
+            
+            for(let i = 0; i < listVentaDetalle.length; i++){
+                    let valorTotal = 0.0;
+                    let valorDescuentoTmp = 0.0;
+
+                    if(listVentaDetalle[i].ventad_descuento && listVentaDetalle[i].ventad_descuento > 0){
+                        valorDescuentoTmp = 
+                        (Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu) * listVentaDetalle[i].ventad_descuento / 100);
                         
-                        for(let i = 0; i < listVentaDetalle.length; i++){
-
-                            let valorTotal = 0.0;
-                            let valorDescuentoTmp = 0.0;
-
-                            if(listVentaDetalle[i].ventad_descuento && listVentaDetalle[i].ventad_descuento > 0){
-                                valorDescuentoTmp = 
-                                (Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu) * listVentaDetalle[i].ventad_descuento / 100);
-                                
-                                valorTotal = (Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu) - valorDescuentoTmp);
-                            }else{
-                                valorTotal = Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu);
-                            }
-                            
-                            let valorIva = 0
-                            if(listVentaDetalle[i].ventad_iva == '12.00'){
-                                valorIva = (Number(valorTotal * 12) / 100);
-                            }else{
-                                valorIva = 0;
-                            }
+                        valorTotal = (Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu) - valorDescuentoTmp);
+                    }else{
+                        valorTotal = Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu);
+                    }
+                    
+                    let valorIva = 0
+                    if(listVentaDetalle[i].ventad_iva == '12.00'){
+                        valorIva = (Number(valorTotal * 12) / 100);
+                    }else{
+                        valorIva = 0;
+                    }
 
 
-                            if(listVentaDetalle[i].ventad_iva == '12.00'){
-                                totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','2').up()
-                                    .ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up()
-                            }else{
-                                totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','0').up()
-                                    .ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up()
-                            }
-                        }
+                    console.log('valor total');
+                    console.log(valorTotal);
+                    console.log(listVentaDetalle[i].ventad_iva);
+                    if(listVentaDetalle[i].ventad_iva == '12.00'){
+                        baseImponibleIva12 += valorTotal;
+                        valorIva12BI += valorIva;
+                        /*totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','2').up()
+                            .ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up()*/
+                    }else{
+                        baseImponibleIva0 += valorTotal;
+                        /*totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','0').up()
+                            .ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up()*/
+                    }
+            }
 
-                        parcialElement1.ele('propina','0.00').up()
-                        .ele('importeTotal', valorTotal).up()
-                        .ele('moneda','DOLAR').up().ele('pagos').ele('pago').ele('formaPago',codigoFormaPago).up().ele('total',valorTotal).up()
+            console.log('base imponible iva 12');
+            console.log(baseImponibleIva12);
+
+            if(baseImponibleIva12 > 0){
+                console.log('base imponible iva 12');
+                console.log(baseImponibleIva12);
+                totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','2').up()
+                            .ele('baseImponible',(baseImponibleIva12.toFixed(2)).toString()).up().ele('valor',valorIva12BI.toFixed(2)).up().up().up()
+            }
+
+            console.log('base imponible iva 0');
+            console.log(baseImponibleIva0);
+
+            if(baseImponibleIva0 > 0){
+                console.log('base imponible iva 0');
+                console.log(baseImponibleIva0);
+                totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','0').up()
+                            .ele('baseImponible',(baseImponibleIva0.toFixed(2)).toString()).up().ele('valor','0.00').up().up().up()
+            }
+
+            parcialElement1.ele('propina','0.00').up()
+            .ele('importeTotal', valorTotal).up()
+            .ele('moneda','DOLAR').up().ele('pagos').ele('pago').ele('formaPago',codigoFormaPago).up().ele('total',valorTotal).up()                
 
 
             let detallesNode = rootElement.ele('detalles');
