@@ -65,8 +65,6 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
       isAutorizado = false;
       fechaAutorizacion = '';
     }
-
-    console.log(datosVenta[0].venta_electronica_observacion.split(' - '));
   }
 
     //console.log(datosConfig);
@@ -94,8 +92,7 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     }
 
     let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
-    console.log('path imagen');
-    console.log(pathImagen);
+    
     if(!pathImagen){
         pathImagen = './src/assets/logo_default_sheyla.png';
     }
@@ -328,7 +325,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     pdfDoc.font(fontBold).text('Informacion Adicional', 20, ypositionzero , {width: 250});
     let yposition1 = ypositionzero + 10;
     pdfDoc.font(fontNormal).text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, yposition1 , {width: 250});
-    let yposition2 = yposition1 + 10;
+    let yposition2 = yposition1 + 20;
     pdfDoc.text(`FORMA PAGO: ${datosVenta[0]['venta_forma_pago']}`, 20, yposition2 , {width: 250});
     let yposition3 = yposition2 + 10;
     pdfDoc.text(`RESPONSABLE: ${datosVenta[0]['usu_nombres']}`, 20, yposition3 , {width: 250});
@@ -468,7 +465,6 @@ async function getImagenByRucEmp(rucEmp){
               
               fs.mkdirSync(`${path}`,{recursive: true});
               if(fs.existsSync(`${path}`)){
-                console.log('dir created');
 
                 try{
                   const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);

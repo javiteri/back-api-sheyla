@@ -37,7 +37,6 @@ module.exports = (job, done) => {
                 return done(new Error('Aun sin Respuesta'));
             }
 
-            
             // si el mensje indica qe fue atorizado significa que todo salio bien caso contrario 
             // caso contrario guardar un estado dew error y el mensaje que tenga 
             //let valorMensaje = resultMensaje[0].auto_mensaje;
@@ -52,6 +51,7 @@ module.exports = (job, done) => {
                     },
                     function(error){
                         console.log('error insertando estado venta');
+                        console.log(error);
                         return done(new Error('error insertando estado venta'));
                     }
                 );
@@ -142,7 +142,7 @@ function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
                             ventaValor,claveAcceso, done,resultMensaje,ventaId, job){
 
     const sqlInsertDocumento = `INSERT INTO documentos (documento_tipo, documento_fecha,documento_numero,
-            documento_cliente_id,documento_valor,documento_clave_acceso) VALUES (?,?,?,?,?,?)`;
+                                 documento_cliente_id,documento_valor,documento_clave_acceso) VALUES (?,?,?,?,?,?)`;
 
     mysqlEFactura.query(sqlInsertDocumento, [ventaTipo,ventaFecha,ventaNumero,clienteId,
                                             ventaValor,claveAcceso], function(errorr, resultInsertDocumento) {
@@ -171,6 +171,7 @@ function createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso, done, jobData){
         mysqlEFactura.query(sqlGetXmlAutorizedString, [claveAcceso], async function(error, results){
             if(error){
                 console.log(error);
+                done();
             }            
 
             // UPLOAD FILES TO FTP SERVER
@@ -187,7 +188,6 @@ function createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso, done, jobData){
 
 
 async function createPDFSendFTP(jobData){
-    console.log('inside send pdf ride ftp');
     const promiseCreatePDF = await documentosElectronicosRepository.generateDownloadPdfFromVenta(jobData.empresaIdLocal, jobData.idVenta,jobData.ciRucCliente,true);
 
     if(promiseCreatePDF.isSucess && promiseCreatePDF.generatePath){
@@ -206,7 +206,7 @@ async function createPDFSendFTP(jobData){
             });
 
         }catch(exception){
-            console.log(err)
+            console.log(exception)
         }
 
         client.close()
@@ -255,12 +255,6 @@ function sendEmailToClient(claveAcceso, jobData, done){
 
     //ENVIAR EMAIL AL CLIENTE
     // SE DEBE CREAR UN ARCHIVO PDF Y XML FIRMADO Y ENVIARLO POR FTP
-    var options = {
-        host: 'sheyla2.dyndns.info',
-        path: encodeURI(`/CORREOS_VARIOS/MYSQL_MAIL.php?FECHA=${dateString}&FECHAGAR=${dateString}&TIPO=2&EMPRESA=${nombreEmpresa}
-        &ACCESO=${claveAcceso}&EMAIL=${emailCliente}&CLIENTE=${nombreCliente}&DOCUMENTO=${tipoDocumento} ${numeroDocumento}
-        &WEB=${paginaWeb}&TIME=00:00 `) 
-    };
     const callback = function(response){
         let str = '';
 
@@ -272,15 +266,55 @@ function sendEmailToClient(claveAcceso, jobData, done){
         response.on('end', function () {
            console.log('se envio el email');
            //SEND EMAIL TO CLIENT
-           done(null,jobData);
+           //done(null,jobData);
 
         }).on('error', err =>{
             console.log('error enviando email');
             //SEND EMAIL TO CLIENT
-            done(null,jobData);
+            //done(null,jobData);
         });
     }
+    
+    if(emailCliente && emailCliente.length > 0 && emailCliente !== ' '){
+        let firstEmailCliente = '';
+        let arrayEmails = null;
+        
+        if(emailCliente.includes(',')){
+            arrayEmails = emailCliente.split(',');
+        }else{
+            
+            firstEmailCliente = emailCliente;
+            let options = {
+                host: 'sheyla2.dyndns.info',
+                path: encodeURI(`/CORREOS_VARIOS/MYSQL_MAIL.php?FECHA=${dateString}&FECHAGAR=${dateString}&TIPO=2&EMPRESA=${nombreEmpresa}
+                &ACCESO=${claveAcceso}&EMAIL=${firstEmailCliente}&CLIENTE=${nombreCliente}&DOCUMENTO=${tipoDocumento} ${numeroDocumento}
+                &WEB=${paginaWeb}&TIME=00:00 `) 
+            };
 
-    httpClient.request(options, callback).end();
+            httpClient.request(options, callback).end();
 
+            done(null,jobData);
+
+            return;
+        }
+
+        arrayEmails.forEach((element, index) => {
+            let options = {
+                host: 'sheyla2.dyndns.info',
+                path: encodeURI(`/CORREOS_VARIOS/MYSQL_MAIL.php?FECHA=${dateString}&FECHAGAR=${dateString}&TIPO=2&EMPRESA=${nombreEmpresa}
+                &ACCESO=${claveAcceso}&EMAIL=${element}&CLIENTE=${nombreCliente}&DOCUMENTO=${tipoDocumento} ${numeroDocumento}
+                &WEB=${paginaWeb}&TIME=00:00 `) 
+            };
+
+            httpClient.request(options, callback).end();
+
+            if(index == arrayEmails.length - 1){
+                done(null,jobData);
+            }
+        })
+
+     
+    }else{
+        done(null,jobData);
+    }
 }

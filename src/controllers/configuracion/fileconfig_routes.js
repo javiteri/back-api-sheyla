@@ -55,7 +55,6 @@ router.post('/insertfilefirmaelec',async (req, res) => {
             }
 
         }else{
-            
             if(req.body.claveFirma){
                 configRepository.insertFileNameFirmaElec(req.body.claveFirma,req.body.ruc,``).then(
                     function(result){
@@ -76,7 +75,7 @@ router.post('/insertfilefirmaelec',async (req, res) => {
 
 async function sendFileFirmaToFtp(pathFileFirmaUpload, nombreFirmaFile){
     const client = new ftp.Client()
-
+    console.log('subiendo');
     try {
         await client.access({
             host: "sheyla2.dyndns.info",
