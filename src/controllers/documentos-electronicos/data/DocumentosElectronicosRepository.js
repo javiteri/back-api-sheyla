@@ -479,8 +479,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             }
 
             if(baseImponibleIva0 > 0){
-                console.log('inside base imponible cero');
-                console.log(baseImponibleIva0);
                 totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','0').up()
                             .ele('baseImponible',(baseImponibleIva0.toFixed(2)).toString()).up().ele('valor','0.00').up().up().up()
             }
