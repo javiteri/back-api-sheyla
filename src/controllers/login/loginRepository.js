@@ -118,7 +118,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                         }
                         
                         const dateActual = new Date();
-                        const dateInit = new Date(results[0].finfactura);
+                        const dateInit = new Date(results[0].finfactura); 
 
                         let time = dateInit.getTime() - dateActual.getTime(); 
                         let days = time / (1000 * 3600 * 24); //Diference in Days
