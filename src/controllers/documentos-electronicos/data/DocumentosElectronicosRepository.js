@@ -461,10 +461,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                         valorIva = 0;
                     }
 
-
-                    console.log('valor total');
-                    console.log(valorTotal);
-                    console.log(listVentaDetalle[i].ventad_iva);
                     if(listVentaDetalle[i].ventad_iva == '12.00'){
                         baseImponibleIva12 += valorTotal;
                         valorIva12BI += valorIva;
@@ -477,21 +473,13 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                     }
             }
 
-            console.log('base imponible iva 12');
-            console.log(baseImponibleIva12);
-
             if(baseImponibleIva12 > 0){
-                console.log('base imponible iva 12');
-                console.log(baseImponibleIva12);
                 totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','2').up()
                             .ele('baseImponible',(baseImponibleIva12.toFixed(2)).toString()).up().ele('valor',valorIva12BI.toFixed(2)).up().up().up()
             }
 
-            console.log('base imponible iva 0');
-            console.log(baseImponibleIva0);
-
             if(baseImponibleIva0 > 0){
-                console.log('base imponible iva 0');
+                console.log('inside base imponible cero');
                 console.log(baseImponibleIva0);
                 totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','0').up()
                             .ele('baseImponible',(baseImponibleIva0.toFixed(2)).toString()).up().ele('valor','0.00').up().up().up()

@@ -7,7 +7,7 @@ const Readable = require('stream').Readable;
 const documentosElectronicosRepository = require('../../controllers/documentos-electronicos/data/DocumentosElectronicosRepository');
 
 
-module.exports = (job, done) => {
+module.exports = async (job, done) => {
     try{
 
         const sqlQueryAutoMessage = `SELECT auto_mensaje, auto_estado FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;

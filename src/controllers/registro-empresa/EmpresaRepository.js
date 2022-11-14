@@ -68,38 +68,40 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
             const {idEmpresa, ruc, nombreEmpresa, razonSocial, fechaInicio, eslogan, 
                 web, email, telefonos, direccionMatriz, sucursal1, sucursal2, 
                 sucursal3, propietario, comentario, img_base64} = datosEmpresa;
-            
-            console.log(ruc);
-            let base64Image = img_base64.split(';base64,').pop();
 
-            let path = `./files/${idEmpresa}`;
-            // save file in dir for send FTP
-            if(!fs.existsSync(`${path}`)){
-                fs.mkdir(`${path}`,{recursive: true}, (err) => {
-                    if (err) {
-                        return console.error(err);
-                    }
+            //IF EXIST, SEND IMAGE LOGO TO FTP 
+            if(img_base64){
+                let base64Image = img_base64.split(';base64,').pop();
+
+                let path = `./files/${idEmpresa}`;
+                // save file in dir for send FTP
+                if(!fs.existsSync(`${path}`)){
+                    fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                        if (err) {
+                            return console.error(err);
+                        }
+                        fs.writeFile(`${path}/${ruc}.png`, base64Image,{encoding: 'base64'}, function(error){
+                            if(error){
+                                console.log('inside error');
+                                console.log(error);
+                            }
+
+                            sendFilePdfToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
+
+                        });
+                    });
+                }else{
                     fs.writeFile(`${path}/${ruc}.png`, base64Image,{encoding: 'base64'}, function(error){
                         if(error){
                             console.log('inside error');
                             console.log(error);
+                            return;
                         }
 
                         sendFilePdfToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
 
                     });
-                });
-            }else{
-                fs.writeFile(`${path}/${ruc}.png`, base64Image,{encoding: 'base64'}, function(error){
-                    if(error){
-                        console.log('inside error');
-                        console.log(error);
-                        return;
-                    }
-
-                    sendFilePdfToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
-
-                });
+                }
             }
 
             queryInsertDatosEmpresa = ` UPDATE empresas SET EMP_NOMBRE = ?, EMP_RAZON_SOCIAL = ?, EMP_FECHA_INICIO = ?, EMP_SLOGAN = ?, 
