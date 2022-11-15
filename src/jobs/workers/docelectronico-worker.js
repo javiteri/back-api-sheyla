@@ -41,9 +41,16 @@ module.exports = async (job, done) => {
             //let valorMensaje = resultMensaje[0].auto_mensaje;
             let valorAutoEstado = resultMensaje[0].auto_estado;
 
+            let valorMensajeElectronica = '';
+            if(resultMensaje[0].auto_mensaje && resultMensaje[0].auto_mensaje.length > 250){
+                valorMensajeElectronica = resultMensaje[0].auto_mensaje.substring(0,250);
+            }else{
+                valorMensajeElectronica = resultMensaje[0].auto_mensaje;
+            }
+
             // SI EL CODIGO ES DE ERROR (2) GUARDAR ESTADO EN LA TABLA VENTA
             if(valorAutoEstado == 2){
-                updateEstadoVentaDocumentoElectronico('1',resultMensaje[0].auto_mensaje,ventaId).then(
+                updateEstadoVentaDocumentoElectronico('1',valorMensajeElectronica,ventaId).then(
                     function(result){
                         console.log('todo ok insertando estado venta error');
                         done(null,job.data);
@@ -58,7 +65,7 @@ module.exports = async (job, done) => {
                 if(rucCliente == '9999999999'){
                     // TODO OK, ENVIAR EMAIL TO URL 
                     // UPDATE TABLA VENTA CON EL ESTADO SI TODO OK
-                    updateEstadoVentaDocumentoElectronico('2',resultMensaje[0].auto_mensaje,ventaId).then(
+                    updateEstadoVentaDocumentoElectronico('2',valorMensajeElectronica,ventaId).then(
                         function(result){
                             done(null,job.data);
                         },

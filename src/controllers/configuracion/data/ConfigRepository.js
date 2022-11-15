@@ -30,6 +30,7 @@ exports.insertConfigsList = async (datosConfig) => {
 
                         if(errorr){
                             console.log(errorr);
+                            connection.release();
                             reject({
                                 isSucess: false,
                                 code: 400,
@@ -42,6 +43,7 @@ exports.insertConfigsList = async (datosConfig) => {
                         if(cantClients >= 1){
                             connection.query(updateConfigIfExist, [valorConfig,idEmpresa,nombreConfig], function(error, resultsss) {
                                 if(error){
+                                    connection.release();
                                     reject({
                                         isSucess: false,
                                         code: 400,
@@ -51,14 +53,13 @@ exports.insertConfigsList = async (datosConfig) => {
                                 }
 
                                 if(index == configsListArray.length - 1){
-                                    console.log('aqui se ejecutaria el commit');
                                     connection.commit(function(errorComit){
                                         if(errorComit){
                                             connection.rollback(function(){
                                                 connection.release();
                                                 reject('error actualizando config');
                                                 return;
-                                            });   
+                                            });
                                         }
             
                                         connection.release();
@@ -76,6 +77,7 @@ exports.insertConfigsList = async (datosConfig) => {
                             connection.query(queryInsertConfig, [idEmpresa,nombreConfig,valorConfig], function(errorr, resultsss) {
                                 if(errorr){
                                     console.log(errorr);
+                                    connection.release();
                                     reject({
                                         isSucess: false,
                                         code: 400,
@@ -85,7 +87,6 @@ exports.insertConfigsList = async (datosConfig) => {
                                 }
 
                                 if(index == configsListArray.length - 1){
-                                    console.log('aqui se ejecutaria el commit insert');
                                     connection.commit(function(errorComit){
                                         if(errorComit){
                                             connection.rollback(function(){
@@ -107,8 +108,7 @@ exports.insertConfigsList = async (datosConfig) => {
                         }
  
                     });    
-                });                
-
+                });
             });
 
 
