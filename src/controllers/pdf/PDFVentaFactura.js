@@ -343,7 +343,10 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     //pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
     pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, {width: 250});
 
-    pdfDoc.rect(pdfDoc.x - 10,yposition + 15,280, 100).stroke();
+    if(datosVenta[0]['venta_observaciones'] && datosVenta[0]['venta_observaciones'].length > 0){
+      pdfDoc.text(`Obs: ${datosVenta[0]['venta_observaciones']}`, {width: 250});
+    }
+    pdfDoc.rect(pdfDoc.x - 10,yposition + 30,280, 100).stroke();
 
     pdfDoc.lineCap('butt')
     .moveTo(200, yposition6 + 50)

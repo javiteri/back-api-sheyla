@@ -547,8 +547,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
 
             if(datosCliente.cli_email && datosCliente.cli_email.length > 0 && datosCliente.cli_email !== ' '){
                 let firstEmailCliente = '';
-                console.log(datosCliente.cli_email);
-                console.log(datosCliente.cli_email.includes(','));
                 if(datosCliente.cli_email.includes(',')){
                     firstEmailCliente = datosCliente.cli_email.split(',')[0];
                 }else{
@@ -567,7 +565,11 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             if(datosCliente.cli_teleono && datosCliente.cli_teleono.length > 0){
                 rootElement.ele('campoAdicional',{'nombre':'TELEFONOS'},datosCliente.cli_teleono).up();
             }
-        
+            
+            if(datosVenta.venta_observaciones && datosVenta.venta_observaciones.length > 0){
+                rootElement.ele('campoAdicional',{'nombre':'Observacion'},datosVenta.venta_observaciones).up();
+            }
+
             const xmlFinal = rootElement.end({pretty: true});
 
             // SAVE XML FILE IN FOLDER SERVER

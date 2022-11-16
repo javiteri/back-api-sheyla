@@ -122,15 +122,16 @@ exports.insertPoducto = async (datosProducto) => {
 
             const {idEmpresa, codigo, codigoBaras, nombre, pvp, 
                 costo, utilidad, stock, unidadMedida, iva, activo, 
-                categoria, marca, observacion} = datosProducto;
+                categoria, marca, observacion, tipoProducto} = datosProducto;
             
             let queryInsertProducto = `INSERT INTO productos (prod_empresa_id, prod_codigo, prod_codigo_barras, 
                                         prod_nombre, prod_costo, prod_utilidad, prod_pvp, prod_iva_si_no, prod_stock,prod_unidad_medida, 
-                                        prod_observaciones, pro_categoria, prod_marca, prod_activo_si_no) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+                                        prod_observaciones, pro_categoria, prod_marca, prod_activo_si_no, prod_fisico) 
+                                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
                                         
             pool.query(queryInsertProducto, [idEmpresa, codigo, codigoBaras?codigoBaras:'', nombre, costo,
                                             utilidad, pvp, iva, stock?stock:'0', unidadMedida, observacion, 
-                                            categoria, marca, activo], function (error, result){
+                                            categoria, marca, activo,tipoProducto], function (error, result){
 
                 if(error){
                     reject({
@@ -169,17 +170,18 @@ exports.updateProducto = async (datosProducto) => {
 
             const {idEmpresa, idProducto, codigo, codigoBaras, nombre, pvp,
                 costo, utilidad, stock, unidadMedida, iva, activo,
-                categoria, marca, observacion} = datosProducto;
+                categoria, marca, observacion, tipoProducto} = datosProducto;
             
             let queryUpdateProducto = `UPDATE productos SET prod_codigo = ?, 
                                         prod_codigo_barras = ?, prod_nombre = ?, prod_costo = ?, prod_utilidad = ?, 
                                         prod_pvp = ?, prod_iva_si_no = ?, prod_stock = ?, prod_unidad_medida = ?, 
-                                        prod_observaciones = ?, pro_categoria = ?, prod_marca = ?, prod_activo_si_no = ?            
+                                        prod_observaciones = ?, pro_categoria = ?, prod_marca = ?, prod_activo_si_no = ?,
+                                        prod_fisico = ?           
                                         WHERE prod_id = ? AND prod_empresa_id = ?`;
             
             pool.query(queryUpdateProducto, [codigo, codigoBaras?codigoBaras:'', nombre, 
                 costo, utilidad, pvp, iva, stock?stock:'0', unidadMedida, observacion, categoria, marca, 
-                activo, idProducto, idEmpresa], 
+                activo,tipoProducto, idProducto, idEmpresa], 
                         function (error, result){
                         
                             if(error){

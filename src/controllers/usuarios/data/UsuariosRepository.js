@@ -156,12 +156,13 @@ exports.updateUsuario = async (datosUsuarioUpdate) => {
             const {idUsuario, idEmpresa, identificacion, nombreNatural, telefono, direccion,
                 email, fechaNacimiento, nombreUsuario, password, permisoEscritura} = datosUsuarioUpdate;
             
-            let queryExistUser = "SELECT COUNT(*) AS CANT FROM usuarios WHERE usu_empresa_id = ? AND usu_identificacion = ?";
-            let queryUpdateUsuario = `UPDATE usuarios SET usu_empresa_id = ?, usu_nombres = ?,
+            console.log(idEmpresa);
+            let queryExistUser = "SELECT COUNT(*) AS CANT FROM usuarios WHERE usu_empresa_id = ? AND usu_id = ?";
+            let queryUpdateUsuario = `UPDATE usuarios SET usu_identificacion = ?, usu_empresa_id = ?, usu_nombres = ?,
                                                  usu_telefonos = ?, usu_direccion = ?, usu_mail = ? , usu_fecha_nacimiento = ? ,
                                                  usu_username = ?, usu_password = ?, usu_permiso_escritura = ? WHERE usu_empresa_id = ? AND usu_id = ?`;
             
-            pool.query(queryExistUser, [idEmpresa, identificacion], function(error, result, fields){
+            pool.query(queryExistUser, [idEmpresa, idUsuario], function(error, result, fields){
                 if(error){
                     reject({
                         isSucess: false,
@@ -184,7 +185,7 @@ exports.updateUsuario = async (datosUsuarioUpdate) => {
 
                 if(cantClients == 1){
                     
-                    pool.query(queryUpdateUsuario, [idEmpresa, nombreNatural, telefono, direccion, email, fechaNacimiento,
+                    pool.query(queryUpdateUsuario, [identificacion,idEmpresa, nombreNatural, telefono, direccion, email, fechaNacimiento,
                         nombreUsuario, password, permisoEscritura, idEmpresa, idUsuario], 
                         function (error, result){
     
