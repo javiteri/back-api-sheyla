@@ -179,11 +179,27 @@ exports.getDocumentosElectronicosByIdEmpNoAutorizados = async(datosFiltrar) => {
 
 
 //------------------------------------------------------------------------------------------------------------------------
-exports.atorizarDocumentoElectronico = (idEmp, idVentaCompra,identificacion,tipo) => {
+exports.atorizarDocumentoElectronico = async (idEmp, idVentaCompra,identificacion,tipo,estado) => {
     return new Promise(async (resolve,reject) => {
         try{
-            prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,tipo, resolve, reject);
-        }catch(exception){
+            if(estado == 0){
+                prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,tipo, resolve, reject);
+            }else{
+                const result = await queryStateDocumentoElectronicoError(idEmp, idVentaCompra,identificacion,tipo); 
+                resolve({
+                    isSucess: true,
+                    message: 'se envio para su autorizacion'
+                });
+                /*if(result.isAllowAutorizar == false){                    
+                    reject({
+                        isSucess: false, 
+                        message:'no cuenta con documentos para autorizar',
+                        isAllowAutorizar: false 
+                    });
+                }*/
+            }
+            
+        }catch(exception){            
             reject({
                 isSucess: false,
                 message: 'Error enviando documento electronico'
@@ -203,13 +219,12 @@ function prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,
     const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
     const querySelectVentasDetalles = `SELECT ventas_detalles.* ,productos.prod_codigo, productos.prod_nombre FROM ventas_detalles, productos WHERE 
             ventad_prod_id = prod_id AND ventad_venta_id = ?`;
-    const queryDatosEmpresaById = `SELECT * FROM empresas WHERE emp_id = ?`;
+    const queryDatosEmpresaById = `SELECT * FROM empresas WHERE emp_id = ?`;    
 
     pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%'], (er, datosConfig) => {
         if(er){
             return reject(err);
         }
-
         pool.query(queryDatosEmpresaById,[idEmp], (err, datosEmpresa) => {
             if(err){
                 return reject(err);
@@ -240,70 +255,90 @@ function prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,
                                 //INSERT XML FILE IN DB BLOB 
                                 const sqlQuerySelectEmpresa = `SELECT empresa_id FROM empresas WHERE empresa_ruc = ? LIMIT 1`;
                                 const sqlQueryInsertXmlBlob = `INSERT INTO autorizaciones (auto_id_empresa,auto_clave_acceso, auto_xml) VALUES (?,?,?)`;
+                                const queryPlanEnviados = `SELECT EMPRESA_WEB_PLAN_CANTIDAD, EMPRESA_WEB_PLAN_ENVIADOS,
+                                    CASE WHEN EMPRESA_WEB_PLAN_ENVIADOS >= EMPRESA_WEB_PLAN_CANTIDAD THEN 0 
+                                    ELSE 1 END AS isSucess
+                                    FROM empresas WHERE EMPRESA_RUC = ?`;
 
                                 poolEFactra.query(sqlQuerySelectEmpresa,[datosEmpresa[0].EMP_RUC], function(error, results) {
                                     if(error){
                                         return reject({isSucess: false, message:'error buscando empresa'});
                                     }
+                                    
+                                    poolEFactra.query(queryPlanEnviados, [datosEmpresa[0].EMP_RUC], function(errorPlan, resultPlan){
+                                        if(errorPlan){
+                                            return reject({isSucess: false, message:'error consultando plan'});
+                                        }
 
-                                    // READ XML FILE AS STRING
-                                    let stream  = fs.createReadStream(pathFile);
-                                    stream.setEncoding('utf-8');
-                                    let xmlString = '';
+                                        if(resultPlan[0].isSucess == 1){
+                                            // READ XML FILE AS STRING
+                                            let stream  = fs.createReadStream(pathFile);
+                                            stream.setEncoding('utf-8');
+                                            let xmlString = '';
 
-                                    stream.on('data',function(chunk){
-                                        xmlString += chunk;
-                                    });
-
-                                    stream.on('end', function() {
-                                        let str = xmlString.replace(/[\n\r\t]+/g, '');
-                                        poolEFactra.query(sqlQueryInsertXmlBlob,[results[0].empresa_id,claveActivacion, str], function(errores, resultss) {
-                                            if(errores){
-                                                return reject(
-                                                    {
-                                                        isSucess: false, 
-                                                        message: (errores.sqlMessage.includes('Duplicate entry')) ? 'ya existe el xml clave acceso' 
-                                                                    : 'error insertando text xml db'
-                                                    }
-                                                );
-                                            }
-
-                                            const actualDateHours = new Date(ventaResponse[0].venta_fecha_hora);
-                                            const dateString = '' + actualDateHours.getFullYear() + '-' + ('0' + (actualDateHours.getMonth()+1)).slice(-2) + 
-                                                                        '-' + ('0' + actualDateHours.getDate()).slice(-2);
-
-                                            const objSendJob = {
-                                                claveAct: claveActivacion,
-                                                empresaId: results[0].empresa_id,
-                                                empresaIdLocal: datosEmpresa[0].EMP_ID,
-                                                rucEmpresa: datosEmpresa[0].EMP_RUC,
-                                                nombreEmpresa: datosEmpresa[0].EMP_NOMBRE,
-                                                ciRucCliente: clienteResponse[0].cli_documento_identidad,
-                                                emailCliente: clienteResponse[0].cli_email,
-                                                nombreCliente:  clienteResponse[0].cli_nombres_natural,
-                                                idVenta: ventaResponse[0].venta_id,
-                                                tipoDocumento: ventaResponse[0].venta_tipo,
-                                                documentoNumero: 
-                                                                `${ventaResponse[0].venta_001}-${ventaResponse[0].venta_002}-${ventaResponse[0].venta_numero}`,
-                                                ventaValorTotal: ventaResponse[0].venta_total,
-                                                ventaFecha: dateString
-                                            }
-                                            // SEND JOB TO QUEUE BULL
-                                            docElectronicoQueue.add(objSendJob,{
-                                                //delay: 30000,
-                                                removeOnComplete: true,
-                                                removeOnFail: true,
-                                                attempts: 100,
-                                                backoff: {
-                                                    type: 'fixed',
-                                                    delay: 60000
-                                                }
+                                            stream.on('data',function(chunk){
+                                                xmlString += chunk;
                                             });
 
-                                            resolve(data);
-                                        });
+                                            stream.on('end', function() {
+                                                let str = xmlString.replace(/[\n\r\t]+/g, '');
+                                                poolEFactra.query(sqlQueryInsertXmlBlob,[results[0].empresa_id,claveActivacion, str], function(errores, resultss) {
+                                                    if(errores){
+                                                        return reject(
+                                                            {
+                                                                isSucess: false, 
+                                                                message: (errores.sqlMessage.includes('Duplicate entry')) ? 'ya existe el xml clave acceso' 
+                                                                            : 'error insertando text xml db'
+                                                            }
+                                                        );
+                                                    }
 
-                                    })
+                                                    const actualDateHours = new Date(ventaResponse[0].venta_fecha_hora);
+                                                    const dateString = '' + actualDateHours.getFullYear() + '-' + ('0' + (actualDateHours.getMonth()+1)).slice(-2) + 
+                                                                                '-' + ('0' + actualDateHours.getDate()).slice(-2);
+
+                                                    const objSendJob = {
+                                                        claveAct: claveActivacion,
+                                                        empresaId: results[0].empresa_id,
+                                                        empresaIdLocal: datosEmpresa[0].EMP_ID,
+                                                        rucEmpresa: datosEmpresa[0].EMP_RUC,
+                                                        nombreEmpresa: datosEmpresa[0].EMP_NOMBRE,
+                                                        ciRucCliente: clienteResponse[0].cli_documento_identidad,
+                                                        emailCliente: clienteResponse[0].cli_email,
+                                                        nombreCliente:  clienteResponse[0].cli_nombres_natural,
+                                                        idVenta: ventaResponse[0].venta_id,
+                                                        tipoDocumento: ventaResponse[0].venta_tipo,
+                                                        documentoNumero: 
+                                                                        `${ventaResponse[0].venta_001}-${ventaResponse[0].venta_002}-${ventaResponse[0].venta_numero}`,
+                                                        ventaValorTotal: ventaResponse[0].venta_total,
+                                                        ventaFecha: dateString
+                                                    }
+                                                    // SEND JOB TO QUEUE BULL
+                                                    docElectronicoQueue.add(objSendJob,{
+                                                        //delay: 30000,
+                                                        removeOnComplete: true,
+                                                        removeOnFail: true,
+                                                        attempts: 100,
+                                                        backoff: {
+                                                            type: 'fixed',
+                                                            delay: 60000
+                                                        }
+                                                    });
+
+                                                    resolve(data);
+                                                });
+
+                                            })
+                                        }else{
+                                            return reject({
+                                                isSucess: false, 
+                                                message:'no cuenta con documentos para autorizar',
+                                                isAllowAutorizar: false
+                                            });
+                                        }
+
+                                        
+                                    });                                    
 
                                 });
 
@@ -826,8 +861,6 @@ function createExcelDocumentosElectronicos(datosFiltro){
                     }
             
                 }catch(error){
-                    console.log(`exception`);
-                    console.log(error);
             
                     reject({
                         isSucess: false,
@@ -979,76 +1012,91 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                 //INSERT XML FILE IN DB BLOB 
                                 const sqlQuerySelectEmpresa = `SELECT empresa_id FROM empresas WHERE empresa_ruc = ? LIMIT 1`;
                                 const sqlQueryInsertXmlBlob = `INSERT INTO autorizaciones (auto_id_empresa,auto_clave_acceso, auto_xml) VALUES (?,?,?)`;
+                                const queryPlanEnviados = `SELECT EMPRESA_WEB_PLAN_CANTIDAD, EMPRESA_WEB_PLAN_ENVIADOS,
+                                    CASE WHEN EMPRESA_WEB_PLAN_ENVIADOS >= EMPRESA_WEB_PLAN_CANTIDAD THEN 0 
+                                    ELSE 1 END AS isSucess
+                                    FROM empresas WHERE EMPRESA_RUC = ?`;
 
                                 poolEFactra.query(sqlQuerySelectEmpresa,[datosEmpresa[0].EMP_RUC], function(error, results) {
                                     if(error){
                                         return;
                                     }
 
-                                    // READ XML FILE AS STRING
-                                    let stream  = fs.createReadStream(pathFile);
-                                    stream.setEncoding('utf-8');
-                                    let xmlString = '';
+                                    poolEFactra.query(queryPlanEnviados, [datosEmpresa[0].EMP_RUC], function(errorPlan, resultPlan){
+                                        if(errorPlan){
+                                            return reject({isSucess: false, message:'error consultando plan'});
+                                        }
 
-                                    stream.on('data',function(chunk){
-                                        xmlString += chunk;
-                                    });
+                                        if(resultPlan[0].isSucess == 1){
+                                            // READ XML FILE AS STRING
+                                            let stream  = fs.createReadStream(pathFile);
+                                            stream.setEncoding('utf-8');
+                                            let xmlString = '';
 
-                                    stream.on('end', function() {
-                                        let str = xmlString.replace(/[\n\r\t]+/g, '');
-                                        poolEFactra.query(sqlQueryInsertXmlBlob,[results[0].empresa_id,claveActivacion, str], function(errores, resultss) {
-                                            if(errores){
-                                                return; /*reject(
-                                                    {isSucess: false, 
-                                                        message: 
-                                                            (errores.sqlMessage.includes('Duplicate entry')) ? 'ya existe el xml clave acceso' 
-                                                                    : 'error insertando text xml db'
+                                            stream.on('data',function(chunk){
+                                                xmlString += chunk;
+                                            });
+
+                                            stream.on('end', function() {
+                                                let str = xmlString.replace(/[\n\r\t]+/g, '');
+                                                poolEFactra.query(sqlQueryInsertXmlBlob,[results[0].empresa_id,claveActivacion, str], function(errores, resultss) {
+                                                    if(errores){
+                                                        return; /*reject(
+                                                            {isSucess: false, 
+                                                                message: 
+                                                                    (errores.sqlMessage.includes('Duplicate entry')) ? 'ya existe el xml clave acceso' 
+                                                                            : 'error insertando text xml db'
+                                                            }
+                                                        );*/
                                                     }
-                                                );*/
-                                            }
 
-                                            const actualDateHours = new Date(ventaResponse[0].venta_fecha_hora);
-                                            const dateString = '' + actualDateHours.getFullYear() + '-' + ('0' + (actualDateHours.getMonth()+1)).slice(-2) + 
-                                                                        '-' + ('0' + actualDateHours.getDate()).slice(-2);
+                                                    const actualDateHours = new Date(ventaResponse[0].venta_fecha_hora);
+                                                    const dateString = '' + actualDateHours.getFullYear() + '-' + ('0' + (actualDateHours.getMonth()+1)).slice(-2) + 
+                                                                                '-' + ('0' + actualDateHours.getDate()).slice(-2);
 
-                                            const objSendJob = {
-                                                claveAct: claveActivacion,
-                                                empresaId: results[0].empresa_id,
-                                                empresaIdLocal: datosEmpresa[0].EMP_ID,
-                                                rucEmpresa: datosEmpresa[0].EMP_RUC,
-                                                nombreEmpresa: datosEmpresa[0].EMP_NOMBRE,
-                                                ciRucCliente: clienteResponse[0].cli_documento_identidad,
-                                                emailCliente: clienteResponse[0].cli_email,
-                                                nombreCliente:  clienteResponse[0].cli_nombres_natural,
-                                                idVenta: ventaResponse[0].venta_id,
-                                                tipoDocumento: ventaResponse[0].venta_tipo,
-                                                documentoNumero: 
-                                                                `${ventaResponse[0].venta_001}-${ventaResponse[0].venta_002}-${ventaResponse[0].venta_numero}`,
-                                                ventaValorTotal: ventaResponse[0].venta_total,
-                                                ventaFecha: dateString
-                                            }
+                                                    const objSendJob = {
+                                                        claveAct: claveActivacion,
+                                                        empresaId: results[0].empresa_id,
+                                                        empresaIdLocal: datosEmpresa[0].EMP_ID,
+                                                        rucEmpresa: datosEmpresa[0].EMP_RUC,
+                                                        nombreEmpresa: datosEmpresa[0].EMP_NOMBRE,
+                                                        ciRucCliente: clienteResponse[0].cli_documento_identidad,
+                                                        emailCliente: clienteResponse[0].cli_email,
+                                                        nombreCliente:  clienteResponse[0].cli_nombres_natural,
+                                                        idVenta: ventaResponse[0].venta_id,
+                                                        tipoDocumento: ventaResponse[0].venta_tipo,
+                                                        documentoNumero: 
+                                                                        `${ventaResponse[0].venta_001}-${ventaResponse[0].venta_002}-${ventaResponse[0].venta_numero}`,
+                                                        ventaValorTotal: ventaResponse[0].venta_total,
+                                                        ventaFecha: dateString
+                                                    }
 
-                                            // SEND JOB TO QUEUE BULL
-                                            docElectronicoQueue.add(objSendJob,{
-                                                //delay: 30000,
-                                                removeOnComplete: true,
-                                                removeOnFail: true,
-                                                attempts: 100,
-                                                backoff: {
-                                                    type: 'fixed',
-                                                    delay: 60000
-                                                }
-                                            });
+                                                    // SEND JOB TO QUEUE BULL
+                                                    docElectronicoQueue.add(objSendJob,{
+                                                        //delay: 30000,
+                                                        removeOnComplete: true,
+                                                        removeOnFail: true,
+                                                        attempts: 100,
+                                                        backoff: {
+                                                            type: 'fixed',
+                                                            delay: 60000
+                                                        }
+                                                    });
 
-                                            //DELETE XML FILE GENERATED
-                                            fs.unlink(pathFile, function(){
-                                                console.log("File was deleted") // Callback
-                                            });
+                                                    //DELETE XML FILE GENERATED
+                                                    fs.unlink(pathFile, function(){
+                                                        console.log("File was deleted") // Callback
+                                                    });
 
-                                            //resolve(data);
-                                        });
+                                                    //resolve(data);
+                                                });
 
-                                    })
+                                            })
+                                        }else{
+                                            return;
+                                        }
+                                    });
+                                    
                                 });
                             },
                             function(error){
@@ -1070,7 +1118,7 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
     const queryDatosEmpresaById = `SELECT * FROM empresas WHERE emp_id = ?`;
     const queryUpdateFacAutorizacion = `UPDATE autorizaciones SET auto_estado = 0, auto_mensaje = '' WHERE auto_clave_acceso = ?`;
     const querySelectCliente = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
-
+    
     pool.query(queryDatosEmpresaById,[idEmp], (err, empResponse) => {
         if(err){
             return;
@@ -1109,106 +1157,128 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
         
                 //query in table Autorizaciones for state with clave
                 const sqlQuerySelectAutoFacState = `SELECT auto_estado, auto_mensaje,auto_id_empresa FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
-                
+                const queryPlanEnviados = `SELECT EMPRESA_WEB_PLAN_CANTIDAD, EMPRESA_WEB_PLAN_ENVIADOS,
+                                    CASE WHEN EMPRESA_WEB_PLAN_ENVIADOS >= EMPRESA_WEB_PLAN_CANTIDAD THEN 0 
+                                    ELSE 1 END AS isSucess
+                                    FROM empresas WHERE EMPRESA_RUC = ?`;
+
                 poolEFactra.query(sqlQuerySelectAutoFacState,[claveActivacion], function(error, results) {
                     if(error){
                         return;
                     }
-                    if(results.length <= 0){
-                        // no existe en la tabla autorizaciones
-                        //enviar otra vez el xml al servicio
-                        prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo);
-                        return;
-                    }else{
-                        // SE OBTENIENE EL ESTADO DE LA FACTRUA EN LA TABLA AUTORIZACION
-                        // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
-                        const queryUpdateVentaEstado = `UPDATE ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
-                        if(results[0].auto_estado == 2){
-                            poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion], function(errorUpdate, resultsUpdate){
-                                if(errorUpdate){
-                                    return;
-                                }
 
-                                pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra], function(errorUp, resultUpdateVentaEstado){
-                    
-                                    if(errorUp){
-                                        console.log('error insertando en estado venta');
-                                        return;
-                                    }
-
-                                    const dateString = '' + dateVenta.getFullYear() + '-' + ('0' + (dateVenta.getMonth()+1)).slice(-2) + 
-                                                        '-' + ('0' + dateVenta.getDate()).slice(-2);
-
-                                    const objSendJob = {
-                                        claveAct: claveActivacion,
-                                        empresaId: results[0].auto_id_empresa,
-                                        empresaIdLocal: datosEmpresa.EMP_ID,
-                                        rucEmpresa: datosEmpresa.EMP_RUC,
-                                        nombreEmpresa: datosEmpresa.EMP_NOMBRE,
-                                        ciRucCliente: datosCliente.cli_documento_identidad,
-                                        emailCliente: datosCliente.cli_email,
-                                        nombreCliente:  datosCliente.cli_nombres_natural,
-                                        idVenta: datosVenta.venta_id,
-                                        tipoDocumento: datosVenta.venta_tipo,
-                                        documentoNumero: 
-                                                        `${datosVenta.venta_001}-${datosVenta.venta_002}-${datosVenta.venta_numero}`,
-                                        ventaValorTotal: datosVenta.venta_total,
-                                        ventaFecha: dateString
-                                    }
-                                    // SEND JOB TO QUEUE BULL
-                                    docElectronicoQueue.add(objSendJob,{
-                                        removeOnComplete: true,
-                                        removeOnFail: true,
-                                        attempts: 100,
-                                        backoff: {
-                                            type: 'fixed',
-                                            delay: 60000
-                                        }
-                                    });
-
-                                });
-
-                            });
-                        }else if(results[0].auto_estado == 1){
-                            // YA SE AUTORIZO EL DOCUMENTO DEBO ACTUALIZAR ESE ESTADO EN LA VENTA
-                            pool.query(queryUpdateVentaEstado,[2,results[0].auto_mensaje,idVentaCompra], function(errorUp, resultUpdateVentaEstado){
-                                if(errorUp){
-                                    return;
-                                }
-
-                                //ENVIAR A  LA COLA PARA QUE GUARDE LOS DATOS DEL XML Y ENVIE POR CORREO
-                                const dateString = '' + dateVenta.getFullYear() + '-' + ('0' + (dateVenta.getMonth()+1)).slice(-2) + 
-                                                                        '-' + ('0' + dateVenta.getDate()).slice(-2);
-
-                                    const objSendJob = {
-                                        claveAct: claveActivacion,
-                                        empresaId: results[0].auto_id_empresa,
-                                        empresaIdLocal: datosEmpresa.EMP_ID,
-                                        rucEmpresa: datosEmpresa.EMP_RUC,
-                                        nombreEmpresa: datosEmpresa.EMP_NOMBRE,
-                                        ciRucCliente: datosCliente.cli_documento_identidad,
-                                        emailCliente: datosCliente.cli_email,
-                                        nombreCliente:  datosCliente.cli_nombres_natural,
-                                        idVenta: datosVenta.venta_id,
-                                        tipoDocumento: datosVenta.venta_tipo,
-                                        documentoNumero: 
-                                                        `${datosVenta.venta_001}-${datosVenta.venta_002}-${datosVenta.venta_numero}`,
-                                        ventaValorTotal: datosVenta.venta_total,
-                                        ventaFecha: dateString
-                                    }
-                                    // SEND JOB TO QUEUE BULL
-                                    docElectronicoQueue.add(objSendJob,{
-                                        removeOnComplete: true,
-                                        removeOnFail: true,
-                                        attempts: 100,
-                                        backoff: {
-                                            type: 'fixed',
-                                            delay: 60000
-                                        }
-                                    });
-                            });
+                    poolEFactra.query(queryPlanEnviados, [rucEmpresa], function(errorPlan, resultPlan){
+                        if(errorPlan){
+                            return {isSucess: false, message:'error consultando plan'};
                         }
-                    }
+                        if(resultPlan[0].isSucess == 1){
+                            if(results.length <= 0){
+                                // no existe en la tabla autorizaciones
+                                //enviar otra vez el xml al servicio
+                                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo);
+                                return{estado:'ok'};
+                            }else{
+                                // SE OBTENIENE EL ESTADO DE LA FACTRUA EN LA TABLA AUTORIZACION
+                                // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
+                                const queryUpdateVentaEstado = `UPDATE ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
+                                if(results[0].auto_estado == 2){
+                                    poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion], function(errorUpdate, resultsUpdate){
+                                        if(errorUpdate){
+                                            return;
+                                        }
+        
+                                        pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra], function(errorUp, resultUpdateVentaEstado){
+                                            if(errorUp){
+                                                return;
+                                            }
+                                            
+                                            const dateString = '' + dateVenta.getFullYear() + '-' + ('0' + (dateVenta.getMonth()+1)).slice(-2) + 
+                                                                '-' + ('0' + dateVenta.getDate()).slice(-2);
+        
+                                            const objSendJob = {
+                                                claveAct: claveActivacion,
+                                                empresaId: results[0].auto_id_empresa,
+                                                empresaIdLocal: datosEmpresa.EMP_ID,
+                                                rucEmpresa: datosEmpresa.EMP_RUC,
+                                                nombreEmpresa: datosEmpresa.EMP_NOMBRE,
+                                                ciRucCliente: datosCliente.cli_documento_identidad,
+                                                emailCliente: datosCliente.cli_email,
+                                                nombreCliente:  datosCliente.cli_nombres_natural,
+                                                idVenta: datosVenta.venta_id,
+                                                tipoDocumento: datosVenta.venta_tipo,
+                                                documentoNumero: 
+                                                                `${datosVenta.venta_001}-${datosVenta.venta_002}-${datosVenta.venta_numero}`,
+                                                ventaValorTotal: datosVenta.venta_total,
+                                                ventaFecha: dateString
+                                            }
+                                            // SEND JOB TO QUEUE BULL
+                                            docElectronicoQueue.add(objSendJob,{
+                                                removeOnComplete: true,
+                                                removeOnFail: true,
+                                                attempts: 100,
+                                                backoff: {
+                                                    type: 'fixed',
+                                                    delay: 60000
+                                                }
+                                            });
+
+                                            return{estado:'ok'}
+        
+                                        });
+        
+                                    });
+                                }else if(results[0].auto_estado == 1){
+                                    // YA SE AUTORIZO EL DOCUMENTO DEBO ACTUALIZAR ESE ESTADO EN LA VENTA
+                                    pool.query(queryUpdateVentaEstado,[2,results[0].auto_mensaje,idVentaCompra], function(errorUp, resultUpdateVentaEstado){
+                                        if(errorUp){
+                                            return;
+                                        }
+        
+                                        //ENVIAR A  LA COLA PARA QUE GUARDE LOS DATOS DEL XML Y ENVIE POR CORREO
+                                        const dateString = '' + dateVenta.getFullYear() + '-' + ('0' + (dateVenta.getMonth()+1)).slice(-2) + 
+                                                                                '-' + ('0' + dateVenta.getDate()).slice(-2);
+        
+                                            const objSendJob = {
+                                                claveAct: claveActivacion,
+                                                empresaId: results[0].auto_id_empresa,
+                                                empresaIdLocal: datosEmpresa.EMP_ID,
+                                                rucEmpresa: datosEmpresa.EMP_RUC,
+                                                nombreEmpresa: datosEmpresa.EMP_NOMBRE,
+                                                ciRucCliente: datosCliente.cli_documento_identidad,
+                                                emailCliente: datosCliente.cli_email,
+                                                nombreCliente:  datosCliente.cli_nombres_natural,
+                                                idVenta: datosVenta.venta_id,
+                                                tipoDocumento: datosVenta.venta_tipo,
+                                                documentoNumero: 
+                                                                `${datosVenta.venta_001}-${datosVenta.venta_002}-${datosVenta.venta_numero}`,
+                                                ventaValorTotal: datosVenta.venta_total,
+                                                ventaFecha: dateString
+                                            }
+                                            // SEND JOB TO QUEUE BULL
+                                            docElectronicoQueue.add(objSendJob,{
+                                                removeOnComplete: true,
+                                                removeOnFail: true,
+                                                attempts: 100,
+                                                backoff: {
+                                                    type: 'fixed',
+                                                    delay: 60000
+                                                }
+                                            });
+
+                                            return{estado:'ok'}
+                                    });
+                                }
+                            }
+
+                        }else{
+                            return {
+                                isSucess: false, 
+                                message:'no cuenta con documentos para autorizar',
+                                isAllowAutorizar: false
+                            };
+                        }
+
+                    });                    
 
                 });
             });
@@ -1230,8 +1300,7 @@ function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId){
                 if(errorUp){
                     console.log('error insertando en estado venta');
                     reject(errorUp);
-                }
-                console.log('update inside venta');
+                }                
                 resolve('ok');
             });
 

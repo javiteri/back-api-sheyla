@@ -266,6 +266,8 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
   );
 
   const duePosition = paidToDatePosition + 25;
+
+  let subtotalSinImpuestos = (Number(datosVenta[0].venta_subtotal_0) + Number(datosVenta[0].venta_subtotal_12)).toString();
   generateTableRow(
     doc,
     duePosition,
@@ -273,7 +275,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     "",
     "Subtotal Sin Impuestos",
     "",
-    formatCurrency(0.00)
+    formatCurrency(subtotalSinImpuestos)
   );
 
 

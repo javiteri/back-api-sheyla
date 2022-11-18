@@ -31,16 +31,19 @@ router.get('/getlistdocumentoselectronicosnoautorizados', async (req, res) => {
 
 router.get('/autorizardocumentoelectronico', async (req, res) => {
 
-    const {idEmp, idVentaCompra,identificacion,tipo} = req.query;
-    const documentosElectronicosProm = documentosElectronicosRepository.atorizarDocumentoElectronico(idEmp, idVentaCompra,
-                                                                                                        identificacion,tipo);
+    const {idEmp, idVentaCompra,identificacion,tipo, estado} = req.query;
+    
+    const documentosElectronicosProm = 
+        documentosElectronicosRepository.atorizarDocumentoElectronico(idEmp, idVentaCompra,identificacion,tipo,estado);
     documentosElectronicosProm.then(
         function(result) {
-            res.status(200).send(result);
-            fs.unlink(result.pathFile, function(){
-                console.log("File was deleted") // Callback
+            if(result.pathFile){
+                fs.unlink(result.pathFile, function(){
+                    res.status(200).send(result);
+                });
+            }else{
                 res.status(200).send(result);
-            });
+            }      
         },
         function(error) {
             res.status(400).send(error);

@@ -17,7 +17,8 @@ module.exports = async (job, done) => {
         let rucCliente = job.data.ciRucCliente;
         let nombreCliente = job.data.nombreCliente;
         let empresaId = job.data.empresaId;
-        
+        let rucEmpresa = job.data.rucEmpresa;
+
         let ventaNumero = job.data.documentoNumero;
         let ventaTipo = (job.data.tipoDocumento.toString()).toUpperCase();
         let ventaFecha = job.data.ventaFecha;
@@ -61,6 +62,11 @@ module.exports = async (job, done) => {
                     }
                 );
             }else{
+
+                // SUMA EN 1 A LA PROPIEDAD EMRESAS_WEB_PLAN_ENVIADOS
+                updatePlanEnviadosDocumentoElectronico(rucEmpresa);
+
+
                 // SI EL CLIENTE ES CONSUMIDOR FINAL ENTONCES TERMINAR EL PROCESO
                 if(rucCliente == '9999999999'){
                     // TODO OK, ENVIAR EMAIL TO URL 
@@ -142,6 +148,29 @@ function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, done,data
     });
 
 }
+
+//UPDATE IN ONE PLAN ENVIADOS DOCUMENTO
+function updatePlanEnviadosDocumentoElectronico(rucEmp){    
+    return new Promise((resolve, reject) => {
+        try{
+            const queryUpdatePlanWebEnviado = `UPDATE empresas SET EMPRESA_WEB_PLAN_ENVIADOS = EMPRESA_WEB_PLAN_ENVIADOS + 1 WHERE EMPRESA_RUC = ?`;
+
+            mysqlEFactura.query(queryUpdatePlanWebEnviado,[rucEmp], function(error, resultUpdatePlanEviado){
+
+                if(error){
+                    console.log('error actualizando plan enviado');
+                    reject(error);
+                }
+                resolve('ok');
+            });
+
+        }catch(exception){
+            reject('error actualizando plan enviado');
+        }
+    });
+
+}
+
 
 //---------------------------------------------------------------------------------------------------------------------
 function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
