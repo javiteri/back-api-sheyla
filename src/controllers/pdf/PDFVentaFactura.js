@@ -1,7 +1,6 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const ftp = require("basic-ftp");
-const util = require('util')
 const sharedFunctions = require('../../util/sharedfunctions');
 
 
@@ -31,7 +30,6 @@ exports.generatePdfFromVentaFactura = (datosEmpresa,datosCliente,datosVenta,dato
             }
         );
     }
-
 }
 
 
