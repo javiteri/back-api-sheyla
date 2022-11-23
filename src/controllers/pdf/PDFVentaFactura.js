@@ -55,7 +55,8 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
 
   let fechaAutorizacion = ''
   let isAutorizado = false;
-  if(datosVenta[0].venta_electronica_observacion.includes('AUTORIZADO')){
+
+  if(datosVenta[0].venta_electronica_observacion.includes('AUTORIZADO') && datosVenta[0].venta_electronica_estado == 2){
     try{
       isAutorizado = true;
       fechaAutorizacion = (datosVenta[0].venta_electronica_observacion.split(' - '))[2]

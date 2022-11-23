@@ -57,6 +57,7 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosCo
 
 async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,datosConfig){
 
+  
     let contribuyenteEspecial = '';
     let obligadoContabilidad = false;
     let perteneceRegimenRimpe = false;
