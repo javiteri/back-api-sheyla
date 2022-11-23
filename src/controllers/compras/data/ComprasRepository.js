@@ -1,7 +1,73 @@
 const pool = require('../../../connectiondb/mysqlconnection');
 const excelJS = require("exceljs");
 const fs = require('fs');
+const e = require('express');
 
+
+exports.verifyListProductXml = async (idEmpresa, listProductosXml) => {
+    return new Promise((resolve, reject) => {
+        console.log(idEmpresa);
+        console.log(listProductosXml);
+
+        const sqlQueryExistProduct = `SELECT * FROM PRODUCTOS WHERE prod_empresa_id = ? AND (prod_codigo_xml = ? || prod_codigo = ?) LIMIT 1 `;
+
+        let resultProductsExist = [];
+
+        listProductosXml.forEach((elemento, index) => {
+
+            pool.query(sqlQueryExistProduct, [idEmpresa, elemento.codigoPrincipal, elemento.codigoPrincipal], function(erro, results){
+                if(erro){
+                    resultProductsExist.push({
+                        codigoXml: elemento,
+                        exist: false
+                    });
+
+                    return;
+                }
+
+                let elementTmp = elemento;
+                if(!(!results | results == undefined | results == null | !results.length)){
+                    
+                    elementTmp['codigoXml'] = elemento.codigoPrincipal;
+                    elementTmp['exist'] = true;
+                    elementTmp['codigoInterno'] =  results[0].prod_codigo;
+                    elementTmp['descripcionInterna'] = results[0].prod_nombre;
+
+                    resultProductsExist.push(elementTmp);
+                    /*resultProductsExist.push({
+                        codigoXml : elemento.codigoPrincipal,
+                        exist : true,
+                        codigoInterno: results[0].prod_codigo,
+                        descripcionInterna: results[0].prod_nombre
+                    });*/
+
+
+                }else{
+
+                    elementTmp['codigoXml'] = elemento.codigoPrincipal;
+                    elementTmp['exist'] = (!results | results == undefined | results == null | !results.length) ? false : true;
+
+                    resultProductsExist.push(elementTmp);
+
+                    /*resultProductsExist.push({
+                        codigoXml : elemento.codigoPrincipal,
+                        exist : (!results | results == undefined | results == null | !results.length) ? false : true
+                    });*/
+
+                }
+
+                if(resultProductsExist.length == listProductosXml.length){
+                    resolve({
+                        isSuccess: true,
+                        mensaje: 'ok',
+                        listProductosXml: resultProductsExist
+                    });
+                }
+            });
+        });
+        
+    });
+}
 
 exports.insertCompra = async (datosCompra) => {
 
@@ -21,7 +87,6 @@ exports.insertCompra = async (datosCompra) => {
                 isPlusInventario = true;
             }
 
-            //console.log(ventaDetallesArray);
             // INSERT VENTA Y OBTENER ID
                 // INSERTAR EN EL CAMPO UNICO CORRESPONDIENTE
                 // SI SALTA QUE YA EXISTE ENTONCES ENVIAR UN MENSAJE AL CLIENTE PARA QUE SE MUESTRE

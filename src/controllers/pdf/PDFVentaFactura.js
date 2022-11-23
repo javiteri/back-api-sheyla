@@ -127,7 +127,7 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     }
 
     if(perteneceRegimenRimpe){
-      pdfDoc.text(`CONTRIBUYENTE RÉGIMEN MICROEMPRESAS`, 20, 260,{width: 250});
+      pdfDoc.text(`CONTRIBUYENTE RÉGIMEN RIMPE`, 20, 260,{width: 250});
     }
 
     if(agenteDeRetencion && agenteDeRetencion.length > 0){
@@ -433,10 +433,12 @@ function generateTableRow(
     quantity,
     lineTotal
   ) {
+    let descriptionCut = (description.length > 60)? description.slice(0,59)  : description;
+    
     doc
       .fontSize(10)
       .text(item, 20, y)
-      .text(description, 150, y)
+      .text(descriptionCut, 150, y,{ width: 200})
       .text(unitCost, 280, y, { width: 90, align: "right" })
       .text(quantity, 370, y, { width: 90, align: "right" })
       .text(lineTotal, 0, y, { align: "right" });

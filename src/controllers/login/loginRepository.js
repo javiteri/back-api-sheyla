@@ -730,7 +730,7 @@ exports.validateDefaultUserByRuc = function(ruc){
                     
                     let queryEmpresas = `SELECT * FROM ${nombreBd}.empresas WHERE emp_ruc = ? LIMIT 1`;
                     let query = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_username = "ADMIN" AND usu_password = "ADMIN" AND usu_empresa_id = ? LIMIT 1`;
-                        
+                    
                     poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
                         if(err){
                             console.log(error);
@@ -749,6 +749,7 @@ exports.validateDefaultUserByRuc = function(ruc){
                                 idEmpresa = resultEmpresa[key].EMP_ID;
                                 nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
                         });
+                        console.log(idEmpresa);
 
                         poolMysql.query(query, [idEmpresa], function(err, results, fields) {
                                 if(err){

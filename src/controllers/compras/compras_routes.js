@@ -158,4 +158,19 @@ router.get('/getlistresumencomprasexcel', async(req, res) => {
 });
 
 
+router.post('/verifylistproductxml', async (req, res) => {
+    let idEmpresa = req.body.idEmp;
+    let listProducts = req.body.listProducts;
+
+    const resultVerifyProducts = comprasRepository.verifyListProductXml(idEmpresa, listProducts);
+    resultVerifyProducts.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(200).send(error);
+        }
+    );
+});
+
 module.exports = router;
