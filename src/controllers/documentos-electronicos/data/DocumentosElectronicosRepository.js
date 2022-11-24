@@ -444,7 +444,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                                    .ele('dirMatriz',direccionMatriz).up();
 
             if(perteneceRegimenRimpe){
-                rootElement = rootElement.ele('contribuyenteRimpe','CONTRIBUYENTE RÉGIMEN RIMPE').up();
+                rootElement = rootElement.ele('contribuyenteRimpe','CONTRIBUYENTE REGIMEN RIMPE').up();
             }
             if(agenteDeRetencion && agenteDeRetencion.length > 0){
                 rootElement = rootElement.ele('agenteRetencion', agenteDeRetencion).up();
