@@ -173,4 +173,16 @@ router.post('/verifylistproductxml', async (req, res) => {
     );
 });
 
+router.get('/getxmlsoapservice', async(req, res) => {
+    const resultXmlSoapService = comprasRepository.getXmlSoapService(req.query.autorizacion);
+    resultXmlSoapService.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(200).send(error);
+        }
+    );
+});
+
 module.exports = router;

@@ -1,7 +1,7 @@
 const pool = require('../../../connectiondb/mysqlconnection');
 const excelJS = require("exceljs");
 const fs = require('fs');
-const e = require('express');
+const soapRequest = require('easy-soap-request');
 
 
 exports.verifyListProductXml = async (idEmpresa, listProductosXml) => {
@@ -897,4 +897,42 @@ function createExcelFileResumenCompras(idEmp,fechaIni,fechaFin,nombreOrCiRuc, no
         }
     });
 
+}
+
+
+exports.getXmlSoapService = async (numeroAutorizacion) =>{
+    return new Promise(async (resolve, reject) => {
+        try{
+            const urlSoapXml = 'https://cel.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl';
+
+            const xml = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ec="http://ec.gob.sri.ws.autorizacion">
+                 <soapenv:Header/>
+                 <soapenv:Body>
+                    <ec:autorizacionComprobante>
+                       <!--Optional:-->
+                       
+                        <claveAccesoComprobante>${numeroAutorizacion}</claveAccesoComprobante>
+                    </ec:autorizacionComprobante>
+                 </soapenv:Body>
+              </soapenv:Envelope>`;
+            
+            const response = await soapRequest({url: urlSoapXml, xml: xml, timeout: 1000});
+            
+            const {headers, body, statusCode} = response.response;
+
+            resolve({
+                isSuccess: true,
+                mensaje: 'ok',
+                dataXml: body.replace(/&lt;/g,"<")
+            });
+
+        }catch(exception){
+            console.log(exception);
+            console.log('error consultando servicio SOAP XML');
+            reject({
+                isSuccess: false,
+                mensaje:'error consultando servicio SOAP XML'
+            });
+        }
+    });
 }

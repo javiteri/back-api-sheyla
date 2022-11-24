@@ -179,8 +179,9 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
 
     //pdfDoc.rect(290,110,250,150).stroke();
 
-    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${datosCliente[0]['cli_nombres_natural']}`, 20, 320 );
-    pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20, 340);
+    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${datosCliente[0]['cli_nombres_natural']}`, 20, 315 );
+    pdfDoc.text(`Identificacion: ${datosCliente[0]['cli_documento_identidad']}`, 20, 330 );
+    pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20, 345);
     pdfDoc.text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, 360);
 
     pdfDoc.rect(pdfDoc.x - 10, 320 - 10, 560, 80).stroke();
@@ -350,8 +351,8 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     pdfDoc.rect(pdfDoc.x - 10,yposition + 30,280, 100).stroke();
 
     pdfDoc.lineCap('butt')
-    .moveTo(200, yposition6 + 50)
-    .lineTo(200, yposition6 + 90)
+    .moveTo(210, yposition6 + 50)
+    .lineTo(210, yposition6 + 90)
     .stroke()
   
     row(pdfDoc, yposition6 + 50);
@@ -386,7 +387,7 @@ function textInRowFirst(doc, text, heigth) {
 }
 function textInRowFirstValor(doc, text, heigth) {
   doc.y = heigth;
-  doc.x = 200;
+  doc.x = 200 + 20;
   doc.fillColor('black')
   doc.text(text, {
     paragraphGap: 5,
