@@ -27,6 +27,20 @@ exports.generatePdfFromVenta = (datosEmpresa, datosCliente,
             );
         }
     });
+}
 
+exports.generatePdfFromDataXmlCompra = (datosFactura) => {
+  return new Promise((resolve, reject) => {
+
+    try{
+      pdfVentaFactura.generatePdfByDatosXmlCompra(datosFactura,resolve, reject);
+    }catch(ex){
+      reject({
+          error: true,
+          message: 'error creando directorio: ' + ex
+        }
+    );
+    }
+  });
 }
 

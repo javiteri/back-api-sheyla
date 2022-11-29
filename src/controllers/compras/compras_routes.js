@@ -185,4 +185,26 @@ router.get('/getxmlsoapservice', async(req, res) => {
     );
 });
 
+router.post('/generatepdfxmlcompra', async(req, res) => {
+    
+    const generatePdfVentaPromise = comprasRepository.generateDownloadPdfFromVentaByXmlData(req.body);
+
+    generatePdfVentaPromise.then(
+        function(response){
+            res.download(response['generatePath'],((error) => {
+                if(error){
+                }
+                fs.unlink(response['generatePath'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+
 module.exports = router;

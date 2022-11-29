@@ -1,6 +1,5 @@
 const pool = require('../../../connectiondb/mysqlconnection');
 const excelJS = require("exceljs");
-
 const fs = require('fs');
 
 
@@ -185,7 +184,6 @@ exports.updateProducto = async (datosProducto) => {
                         function (error, result){
                         
                             if(error){
-                                console.log(error);
 
                                 reject({
                                     isSucess: false,
@@ -456,8 +454,6 @@ function createExcelFileProductos(idEmp){
                 const worksheet = workBook.addWorksheet("Lista Productos");
                 const path = `./files/${idEmp}`;
 
-                console.log(results);
-
                 worksheet.columns = [
                     {header: 'Codigo', key:'codigo', width: 20},
                     {header: 'Codigo Barras', key:'codigobarras',width: 20},
@@ -525,8 +521,6 @@ function createExcelFileProductos(idEmp){
                     }
             
                 }catch(exception){
-                    console.log(`exception`);
-                    console.log(exception);
             
                     reject({
                         isSucess: false,

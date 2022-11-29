@@ -80,19 +80,7 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
                 const containsText =  !containsNumber;
                 valueNombreClient = containsText ? nombresci : "";
             }
-
-
-            /*const sqlQueryDocumentosElectronicos = `SELECT venta_electronica_observacion,VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
-            CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
-            venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo LIKE ?
-            AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_fecha_hora BETWEEN ? AND ?
-            AND CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ? AND venta_anulado=0 
-            UNION ALL 
-            SELECT compra_electronica_observacion,compra_tipo,compra_id,compra_fecha_hora,compra_numero, compra_total AS total, pro_nombre_natural, pro_documento_identidad AS identificacion,
-            compra_forma_pago , compra_electronica_estado 
-            FROM compras,proveedores  WHERE compra_empresa_id = ? AND compra_proveedor_id=pro_id AND compra_tipo LIKE ?
-            AND compra_fecha_hora  BETWEEN ? AND ?
-            AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ? `;*/
+            
             const sqlQueryDocumentosElectronicos = `SELECT venta_electronica_observacion,VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
             venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo LIKE ?
@@ -134,15 +122,7 @@ exports.getDocumentosElectronicosByIdEmpNoAutorizados = async(datosFiltrar) => {
     return new Promise((resolve, reject) => {
         try{
             const {idEmp} = datosFiltrar;
-
-            /*const sqlQueryDocumentosElectronicos = `SELECT VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
-            CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
-            venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ? 
-            AND venta_cliente_id=cli_id AND venta_electronica_estado = 0 AND venta_anulado=0 
-            UNION ALL 
-            SELECT compra_tipo,compra_id,compra_fecha_hora,compra_numero, compra_total AS total, pro_nombre_natural, pro_documento_identidad AS identificacion,
-            compra_forma_pago , compra_electronica_estado 
-            FROM compras,proveedores  WHERE compra_empresa_id = ? AND compra_proveedor_id=pro_id AND compra_electronica_estado = 0`;*/
+            
             const sqlQueryDocumentosElectronicos = `SELECT VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
             venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ? 
@@ -190,13 +170,6 @@ exports.atorizarDocumentoElectronico = async (idEmp, idVentaCompra,identificacio
                     isSucess: true,
                     message: 'se envio para su autorizacion'
                 });
-                /*if(result.isAllowAutorizar == false){                    
-                    reject({
-                        isSucess: false, 
-                        message:'no cuenta con documentos para autorizar',
-                        isAllowAutorizar: false 
-                    });
-                }*/
             }
             
         }catch(exception){            
@@ -244,7 +217,7 @@ function prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,
                         if(erro){
                             return reject(erro);
                         }
-                            
+                        
                         const valorGenerateXmlResponse = 
                                         generateXmlDocumentoElectronicoVenta(clienteResponse[0],ventaResponse[0],ventaDetalleResponse,datosEmpresa[0],datosConfig);
                         valorGenerateXmlResponse.then(
@@ -499,12 +472,8 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                     if(listVentaDetalle[i].ventad_iva == '12.00'){
                         baseImponibleIva12 += valorTotal;
                         valorIva12BI += valorIva;
-                        /*totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','2').up()
-                            .ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up()*/
                     }else{
                         baseImponibleIva0 += valorTotal;
-                        /*totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','0').up()
-                            .ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up()*/
                     }
             }
 
@@ -594,9 +563,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             }
 
 
-            /*if(datosCliente.cli_email && datosCliente.cli_email.length > 0 && datosCliente.cli_email !== ' '){
-                rootElement = rootElement.ele('campoAdicional',{'nombre':'EMAIL'},datosCliente.cli_email).up()
-            }*/
             if(datosCliente.cli_teleono && datosCliente.cli_teleono.length > 0){
                 rootElement.ele('campoAdicional',{'nombre':'TELEFONOS'},datosCliente.cli_teleono).up();
             }
@@ -693,12 +659,6 @@ function getCodigoFormaPago(formaPago){
     }else{
         return '20'
     }
-    /*if(formaPago == 'TARJETA DE CRÉDITO'){
-        return '19';
-    }
-    if(formaPago == 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO'){
-        return '20';
-    }*/
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------

@@ -2,12 +2,10 @@ const pool = require('../../../connectiondb/mysqlconnection');
 const excelJS = require("exceljs");
 const fs = require('fs');
 const soapRequest = require('easy-soap-request');
-
+const pdfGenerator = require('../../pdf/PDFGenerator');
 
 exports.verifyListProductXml = async (idEmpresa, listProductosXml) => {
     return new Promise((resolve, reject) => {
-        console.log(idEmpresa);
-        console.log(listProductosXml);
 
         const sqlQueryExistProduct = `SELECT * FROM PRODUCTOS WHERE prod_empresa_id = ? AND (prod_codigo_xml = ? || prod_codigo = ?) LIMIT 1 `;
 
@@ -34,13 +32,6 @@ exports.verifyListProductXml = async (idEmpresa, listProductosXml) => {
                     elementTmp['descripcionInterna'] = results[0].prod_nombre;
 
                     resultProductsExist.push(elementTmp);
-                    /*resultProductsExist.push({
-                        codigoXml : elemento.codigoPrincipal,
-                        exist : true,
-                        codigoInterno: results[0].prod_codigo,
-                        descripcionInterna: results[0].prod_nombre
-                    });*/
-
 
                 }else{
 
@@ -48,11 +39,6 @@ exports.verifyListProductXml = async (idEmpresa, listProductosXml) => {
                     elementTmp['exist'] = (!results | results == undefined | results == null | !results.length) ? false : true;
 
                     resultProductsExist.push(elementTmp);
-
-                    /*resultProductsExist.push({
-                        codigoXml : elemento.codigoPrincipal,
-                        exist : (!results | results == undefined | results == null | !results.length) ? false : true
-                    });*/
 
                 }
 
@@ -927,7 +913,6 @@ exports.getXmlSoapService = async (numeroAutorizacion) =>{
             });
 
         }catch(exception){
-            console.log(exception);
             console.log('error consultando servicio SOAP XML');
             reject({
                 isSuccess: false,
@@ -936,3 +921,31 @@ exports.getXmlSoapService = async (numeroAutorizacion) =>{
         }
     });
 }
+
+
+exports.generateDownloadPdfFromVentaByXmlData = (datosFactura) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const pathPdfGeneratedProm = pdfGenerator.generatePdfFromDataXmlCompra(datosFactura);
+            
+            pathPdfGeneratedProm.then(
+            function(result){
+                resolve({
+                    isSucess: true,
+                    message: 'todo Ok',
+                    generatePath: result.pathFile
+                });
+            },
+            function(error){
+                reject({
+                    isSucess: false,
+                    message:  error.message
+                });
+            }
+            );
+
+        }catch(exception){
+
+        }
+    });
+};
