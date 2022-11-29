@@ -135,7 +135,7 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
 
   let infoAdicional = datosFactura['infoAdicional'];
   let infoFactura = datosFactura['infoFactura'];
-  let listDetalle = datosFactura['detalles'];
+  let listDetalle = (datosFactura['detalles'].length == undefined)? [datosFactura['detalles']] : datosFactura['detalles'];
 
   let totalImpuestos = infoFactura['totalConImpuestos'].totalImpuesto;
   let valorSubtotal12 = '0.0';
@@ -197,7 +197,9 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     doc.addPage();
   }
 
-  totalImpuestos.forEach((elemento) => {
+  let listTotalImpuestos = (totalImpuestos.length == undefined)? [totalImpuestos]: totalImpuestos;
+
+  listTotalImpuestos.forEach((elemento) => {
     if(elemento.codigoPorcentaje == "2"){
       valorSubtotal12 = elemento.baseImponible;
       valorIva12 = elemento.valor;

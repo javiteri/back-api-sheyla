@@ -39,6 +39,7 @@ router.get('/autorizardocumentoelectronico', async (req, res) => {
         function(result) {
             if(result.pathFile){
                 fs.unlink(result.pathFile, function(){
+                    console.log('inside delete file ');
                     res.status(200).send(result);
                 });
             }else{
@@ -94,16 +95,26 @@ router.get('/getlistdocumentoselectronicosexcel', async(req, res) => {
 })
 
 router.post('/autorizarlistdocumentosbyid', async (req, res) => {
-    const sendListDocElectronicosProm = documentosElectronicosRepository.autorizarListDocumentos(req.body);
+    const responseQuery = await documentosElectronicosRepository.getNumDocByAutorizar(req.body.rucEmpresa)
+    
+    if(responseQuery.isSucess == true && responseQuery.docRestantes >= req.body.list.length){
+        const sendListDocElectronicosProm = documentosElectronicosRepository.autorizarListDocumentos(req.body);
 
-    sendListDocElectronicosProm.then(
-        function (result){
-            res.status(200).send(result);
-        },
-        function(error){
-            res.status(400).send(error);
-        }
-    );
+        sendListDocElectronicosProm.then(
+            function (result){
+                res.status(200).send(result);
+            },
+            function(error){
+                res.status(400).send(error);
+            }
+        );
+    }else{
+        res.status(400).send({
+            isSuccess: false,
+            isDenyAutorizar: true
+        });
+    }
+    
 });
 
 
