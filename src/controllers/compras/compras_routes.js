@@ -162,7 +162,6 @@ router.post('/verifylistproductxml', async (req, res) => {
     let idEmpresa = req.body.idEmp;
     let listProducts = req.body.listProducts;
 
-    console.log(listProducts);
     const resultVerifyProducts = comprasRepository.verifyListProductXml(idEmpresa, listProducts);
     resultVerifyProducts.then(
         function(result){

@@ -39,7 +39,6 @@ router.get('/autorizardocumentoelectronico', async (req, res) => {
         function(result) {
             if(result.pathFile){
                 fs.unlink(result.pathFile, function(){
-                    console.log('inside delete file ');
                     res.status(200).send(result);
                 });
             }else{
@@ -98,7 +97,7 @@ router.post('/autorizarlistdocumentosbyid', async (req, res) => {
     const responseQuery = await documentosElectronicosRepository.getNumDocByAutorizar(req.body.rucEmpresa)
     
     if(responseQuery.isSucess == true && responseQuery.docRestantes >= req.body.list.length){
-        const sendListDocElectronicosProm = documentosElectronicosRepository.autorizarListDocumentos(req.body);
+        const sendListDocElectronicosProm = documentosElectronicosRepository.autorizarListDocumentos(req.body.list);
 
         sendListDocElectronicosProm.then(
             function (result){

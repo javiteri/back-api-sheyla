@@ -78,8 +78,8 @@ async function generateHeaderPDFByXmlData(pdfDoc,datosFactura){
     }
 
     pdfDoc.fontSize(9);
-    pdfDoc.font(fontBold).text(infoTributaria.razonSocial, 20, 170, {width: 250});
-    pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${infoTributaria.dirMatriz}`, {width: 250});
+    pdfDoc.font(fontBold).text(removeAccentDiactricsFromString(infoTributaria.razonSocial), 20, 170, {width: 250});
+    pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${removeAccentDiactricsFromString(infoTributaria.dirMatriz)}`, {width: 250});
 
     if(!(contribuyenteEspecial === '')){
       pdfDoc.text(`Contribuyente Especial Nro: ${contribuyenteEspecial}`, 20, 230,{width: 250});
@@ -181,7 +181,7 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
         doc,
         position,
         item.codigoPrincipal,
-        item.descripcion,
+        removeAccentDiactricsFromString(item.descripcion),
         item.cantidad,
         formatCurrency(item.precioUnitario),
         formatCurrency(item.precioTotalSinImpuesto)
@@ -205,7 +205,7 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
       valorIva12 = elemento.valor;
     }else{
       valorSubtotal0 = elemento.baseImponible;
-    } 
+    }
   });
 
 
@@ -331,6 +331,13 @@ function getFormaPagoByCodigo(codigoFormaPago){
   }else{
       return 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO'
   }
+}
+
+function removeAccentDiactricsFromString(texto){    
+  let textoNormlizeAccent = texto.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  let textoFinal = textoNormlizeAccent.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '')
+
+  return textoFinal;
 }
 
 
