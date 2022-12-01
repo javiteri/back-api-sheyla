@@ -260,11 +260,7 @@ exports.insertFileNameFirmaElec = async(claveFirma,rucEmpresa, nombreFirma) => {
             const sqlInsertRutaFirma = `UPDATE efactura_factura.empresas SET EMPRESA_RUTA_FIRMA = ? WHERE EMPRESA_RUC = ? `;
             const sqlInsertClaveFirma = `UPDATE efactura_factura.empresas SET EMPRESA_CLAVE_FIRMA = ? WHERE EMPRESA_RUC = ? `;
 
-            console.log(claveFirma);
-            console.log(rucEmpresa);
-            console.log(nombreFirma);
             if(claveFirma && nombreFirma){
-                console.log('inside clave y firma');
                 poolMysqlBd1.query(sqlInsertRutaAndClaveFirma, [claveFirma,nombreFirma,rucEmpresa], function(error, results){
                     if(error){
                         console.log(error);
@@ -285,7 +281,6 @@ exports.insertFileNameFirmaElec = async(claveFirma,rucEmpresa, nombreFirma) => {
             }
 
             if(claveFirma){
-                console.log('inside clave');
                 poolMysqlBd1.query(sqlInsertClaveFirma, [claveFirma,rucEmpresa], function(error, results){
                     if(error){
                         console.log(error);
@@ -305,7 +300,6 @@ exports.insertFileNameFirmaElec = async(claveFirma,rucEmpresa, nombreFirma) => {
             }
 
             if(nombreFirma){
-                console.log('inside firma');
                 poolMysqlBd1.query(sqlInsertRutaFirma, [nombreFirma,rucEmpresa], function(error, results){
                     if(error){
                         console.log(error);
@@ -348,7 +342,6 @@ exports.getConfigsFirmaElecNameAndPassword = async(ruc) => {
                     return;
                 }
 
-                console.log(results);
                 resolve({
                     isSuccess: true,
                     data: results[0]

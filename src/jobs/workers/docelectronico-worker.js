@@ -299,13 +299,9 @@ function sendEmailToClient(claveAcceso, jobData, done){
 
         response.on('end', function () {
            console.log('se envio el email');
-           //SEND EMAIL TO CLIENT
-           //done(null,jobData);
 
         }).on('error', err =>{
             console.log('error enviando email');
-            //SEND EMAIL TO CLIENT
-            //done(null,jobData);
         });
     }
     

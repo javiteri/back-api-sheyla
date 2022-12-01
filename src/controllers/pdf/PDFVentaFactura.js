@@ -377,7 +377,6 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosCo
 
     await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig);
     await generateInvoiceTable(pdfDoc,datosVenta, datosCliente);
-   // await generateFooterTable(pdfDoc,datosCliente, datosVenta);
 
     let stream = fs.createWriteStream(`${path}${nameFile}`);
     pdfDoc.pipe(stream).on('finish', function () {
@@ -404,7 +403,6 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     }
   }
 
-    //console.log(datosConfig);
     let contribuyenteEspecial = '';
     let obligadoContabilidad = false;
     let perteneceRegimenRimpe = false;
@@ -414,13 +412,17 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
         datosConfig.forEach((element) => {
             
             if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
+              if(element.con_valor.toUpperCase() != 'NO'){
                 contribuyenteEspecial = element.con_valor;
+              }
             }
             if(element.con_nombre_config == 'FAC_ELECTRONICA_OBLIGADO_LLEVAR_CONTABILIDAD'){
                 obligadoContabilidad = element.con_valor === '1';
             }
             if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
-              agenteDeRetencion = element.con_valor;
+              if(element.con_valor.toUpperCase() != 'NO'){
+                agenteDeRetencion = element.con_valor;
+              }
             }
             if(element.con_nombre_config == 'FAC_ELECTRONICA_PERTENECE_REGIMEN_RIMPE'){
                 perteneceRegimenRimpe = element.con_valor === '1';
@@ -823,6 +825,9 @@ async function getImagenByRucEmp(rucEmp){
 
                   client.close();
 
+                  console.log('response client download image in FTP');
+                  console.log(response);
+
                   return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
 
                 }catch(errorInside){
@@ -835,6 +840,10 @@ async function getImagenByRucEmp(rucEmp){
                 const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
 
                 client.close();
+                
+                console.log('response client download image in FTP');
+                console.log(response);
+
                 return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
             }
 

@@ -86,7 +86,7 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
                                 console.log(error);
                             }
 
-                            sendFilePdfToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
+                            sendFileLogoToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
 
                         });
                     });
@@ -98,7 +98,7 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
                             return;
                         }
 
-                        sendFilePdfToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
+                        sendFileLogoToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
 
                     });
                 }
@@ -140,7 +140,7 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
     });
 }
 
-async function sendFilePdfToFtp(pathFile, nombrePdf){
+async function sendFileLogoToFtp(pathFile, nombrePdf){
     const client = new ftp.Client()
 
     try {

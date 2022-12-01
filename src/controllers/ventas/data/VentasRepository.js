@@ -10,11 +10,9 @@ exports.insertVenta = async (datosVenta) => {
         try{
 
             const {empresaId,tipoVenta,venta001,venta002,ventaNumero,ventaFechaHora,
-                    usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,formaPago,
-                    obs} = datosVenta;
+                    usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,formaPago,obs} = datosVenta;
             const ventaDetallesArray = datosVenta['ventaDetalles'];
             
-            //console.log(ventaDetallesArray);
             // INSERT VENTA Y OBTENER ID
                 // INSERTAR EN EL CAMPO UNICO CORRESPONDIENTE
                 // SI SALTA QUE YA EXISTE ENTONCES ENVIAR UN MENSAJE AL CLIENTE PARA QUE SE MUESTRE
@@ -339,7 +337,6 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
             let valueNombreClient = "";
             let valueCiRucClient = "";
 
-            console.log(noDoc);
             if(nombreOrCiRuc){
             
                 const containsNumber =  /^[0-9]*$/.test(nombreOrCiRuc);
@@ -635,8 +632,6 @@ exports.getDataByIdVenta = async (idVenta, idEmp, ruc) => {
                     return;
                 }
 
-                console.log('results lenght');
-                console.log(results.length);
                 if(results.length > 0){
                     pool.query(queryListVentaDelleByIdVenta,[idVenta], (errorr, resultss) => {
                     
@@ -913,7 +908,6 @@ function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noD
                     return;
                 }
                 
-                console.log(results);
                 const arrayData = Array.from(results);
 
                 const workBook = new excelJS.Workbook(); // Create a new workbook

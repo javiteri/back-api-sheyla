@@ -42,8 +42,7 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosCo
     console.log('inside generic pdf');
 
     await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig);
-    await generateInvoiceTable(pdfDoc,datosVenta, datosCliente);//generateInvoiceTable(pdfDoc, datos, datosVenta)
-   // await generateFooterTable(pdfDoc,datosCliente, datosVenta);
+    await generateInvoiceTable(pdfDoc,datosVenta, datosCliente);
 
     let stream = fs.createWriteStream(`${path}${nameFile}`);
     pdfDoc.pipe(stream).on('finish', function () {
@@ -67,13 +66,17 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
         datosConfig.forEach((element) => {
             
             if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
+              if(element.con_valor.toUpperCase() != 'NO'){
                 contribuyenteEspecial = element.con_valor;
+              }
             }
             if(element.con_nombre_config == 'FAC_ELECTRONICA_OBLIGADO_LLEVAR_CONTABILIDAD'){
                 obligadoContabilidad = element.con_valor === '1';
             }
             if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
-              agenteDeRetencion = element.con_valor;
+              if(element.con_valor.toUpperCase() != 'NO'){
+                agenteDeRetencion = element.con_valor;
+              }
             }
             if(element.con_nombre_config == 'FAC_ELECTRONICA_PERTENECE_REGIMEN_RIMPE'){
                 perteneceRegimenRimpe = element.con_valor === '1';
@@ -99,24 +102,11 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
     pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 190,{width: 250});
     pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, 20, 210,{width: 250});
 
-    /*if(!(contribuyenteEspecial === '')){
-      pdfDoc.text(`Contribuyente Especial Nro: ${contribuyenteEspecial}`, 20, 230,{width: 250});
-    }*/
-
     if(obligadoContabilidad){
       pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: SI`, 20, 240,{width: 250});
     }else{
       pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: NO`, 20, 240,{width: 250});
     }
-
-    /*if(perteneceRegimenRimpe){
-      pdfDoc.text(`CONTRIBUYENTE RÉGIMEN MICROEMPRESAS`, 20, 260,{width: 250});
-    }
-
-    if(agenteDeRetencion && agenteDeRetencion.length > 0){
-      pdfDoc.text(`Agente de Retención Resolucion No. ${agenteDeRetencion}`, 20, 270,{width: 250});
-    }*/
-
 
     pdfDoc.rect(pdfDoc.x - 10,170 - 5,250,pdfDoc.y - 145).stroke();
 
@@ -124,19 +114,6 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
     pdfDoc.font(fontBold).text(datosVenta[0]['venta_tipo'], 280, 185);
     pdfDoc.font(fontNormal).text(`NO:${datosVenta[0]['venta_001']}-${datosVenta[0]['venta_002']}-${datosVenta[0]['venta_numero']}`, 280, 200);
 
-    /*pdfDoc.text(`NUMERO DE AUTORIZACION`, 280, 215);
-    
-    let rucEmpresa = datosEmpresa[0].EMP_RUC;
-    let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta[0].venta_tipo);;
-    let tipoAmbiente = '2';//PRODUCCION
-    let serie = `${datosVenta[0]['venta_001']}${datosVenta[0]['venta_002']}`;;
-    let codigoNumerico = '12174565';
-    let secuencial = (datosVenta[0].venta_numero).toString().padStart(9,'0');
-    let tipoEmision = 1;
-
-    let digit48 = 
-    `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
-    pdfDoc.text(`${digit48}`, 280, 230);*/
 
     const dateVenta = new Date(datosVenta[0].venta_fecha_hora);
     const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
@@ -426,7 +403,6 @@ async function getImagenByRucEmp(rucEmp){
             if(!fs.existsSync(`${path}`)){
               fs.mkdirSync(`${path}`,{recursive: true});
               if(fs.existsSync(`${path}`)){
-                console.log('dir created');
 
                 try{
                   const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);

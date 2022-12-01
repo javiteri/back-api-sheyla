@@ -311,8 +311,6 @@ function prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,
                                                                 }
                                                                 
                                                                 prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo);
-                                                                /*sendDataToWorkerAutorizacion(claveActivacion, results[0].empresa_id,
-                                                                                            datosEmpresa[0],clienteResponse[0],ventaResponse[0]);*/
                                                                 
                                                                 resolve(data);
                                                             });
@@ -402,13 +400,17 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                 datosConfig.forEach((element) => {
                     
                     if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
-                        contribuyenteEspecial = element.con_valor;
+                        if(element.con_valor.toUpperCase() != 'NO'){
+                            contribuyenteEspecial = element.con_valor;
+                        }
                     }
                     if(element.con_nombre_config == 'FAC_ELECTRONICA_OBLIGADO_LLEVAR_CONTABILIDAD'){
                         obligadoContabilidad = element.con_valor === '1';
                     }
                     if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
-                        agenteDeRetencion = element.con_valor;
+                        if(element.con_valor.toUpperCase() != 'NO'){
+                            agenteDeRetencion = element.con_valor;
+                        }
                     }
                     if(element.con_nombre_config == 'FAC_ELECTRONICA_PERTENECE_REGIMEN_RIMPE'){
                         perteneceRegimenRimpe = element.con_valor === '1';
@@ -1304,7 +1306,7 @@ function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmpresa, 
             type: 'fixed',
             delay: 60000
         }
-    });    
+    });
 }
 
 function deleteVentaFromAutorizacionesTableByClaveAcceso(claveAcceso){

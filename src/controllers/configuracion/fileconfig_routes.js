@@ -18,15 +18,11 @@ router.post('/insertfilefirmaelec',async (req, res) => {
         if(req.file){
             const now = new Date();
             const dateString = '' + now.getFullYear() + '' + ('0' + (now.getMonth()+1)).slice(-2) + 
-                            '' + ('0' + now.getDate()).slice(-2) ;
+                                '' + ('0' + now.getDate()).slice(-2) ;
 
             let ruc = req.body.ruc;
             let claveFirma = req.body.claveFirma;
 
-            console.log('ruc firma');
-            console.log(ruc);
-            console.log(dateString);
-            console.log(claveFirma);
             let path = './uploads';
             const response = await sendFileFirmaToFtp(`${path}/${req.file.filename}`, `${ruc}${dateString}.p12`);
             

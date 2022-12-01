@@ -94,7 +94,7 @@ router.get('/getlistdocumentoselectronicosexcel', async(req, res) => {
 })
 
 router.post('/autorizarlistdocumentosbyid', async (req, res) => {
-    const responseQuery = await documentosElectronicosRepository.getNumDocByAutorizar(req.body.rucEmpresa)
+    const responseQuery = await documentosElectronicosRepository.getNumDocByAutorizar(req.body.rucEmpresa);
     
     if(responseQuery.isSucess == true && responseQuery.docRestantes >= req.body.list.length){
         const sendListDocElectronicosProm = documentosElectronicosRepository.autorizarListDocumentos(req.body.list);

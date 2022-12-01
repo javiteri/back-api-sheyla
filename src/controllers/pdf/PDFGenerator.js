@@ -5,15 +5,11 @@ exports.generatePdfFromVenta = (datosEmpresa, datosCliente,
                                 datosVenta, isPdfNormal, datosConfig) => {
 
     return new Promise((resolve, reject) => {
-        try{   
-          if(isPdfNormal){
-            if(datosVenta[0].venta_tipo == 'Factura' || datosVenta[0].venta_tipo == 'FACTURA'){
-              pdfVentaFactura.generatePdfFromVentaFactura(datosEmpresa, datosCliente, datosVenta,datosConfig, 
-                                                          resolve, reject);
-            }else{
-              pdfVentaFacturaGeneric.generatePdfFromVentaFacturaGeneric(datosEmpresa, datosCliente, datosVenta,datosConfig,
-                                                                           resolve, reject);
-            }
+        try{
+
+          if(isPdfNormal && datosVenta[0].venta_tipo.toUpperCase() == 'FACTURA'){
+            pdfVentaFactura.generatePdfFromVentaFactura(datosEmpresa, datosCliente, datosVenta,datosConfig, 
+                                                        resolve, reject);
           }else{
             pdfVentaFacturaGeneric.generatePdfFromVentaFacturaGeneric(datosEmpresa, datosCliente, 
                                                                       datosVenta,datosConfig, resolve, reject);
