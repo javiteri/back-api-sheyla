@@ -24,7 +24,7 @@ exports.loginUser = function(user, password){
                                 let userMysqlData; 
     
                                 Object.keys(results).forEach(function(key){
-                                    var row = results[key]
+                                    let row = results[key]
                                     userMysqlData = {
                                         'cedula': row.USU_CEDULA,
                                         'nombre': row.USU_NOMBRE_USUARIO    
@@ -63,7 +63,7 @@ exports.loginValidateExistEmpresaRucBd1 = function(ruc){
                     let existEmpresaResponse;
 
                     Object.keys(results).forEach(function(key){
-                        var row = results[key]
+                        let row = results[key]
                         existEmpresaResponse = {
                             'isSuccess': true,
                             'ruc': ruc,
@@ -176,7 +176,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                                 let idUsuario;
                                 let nombreUsuario;
                                 Object.keys(results).forEach(function(key){
-                                    var row = results[key]
+                                    let row = results[key]
                                     idUsuario = row.usu_id;
                                     nombreUsuario = row.usu_nombres;
                                 });
@@ -371,7 +371,8 @@ exports.createEmpresaByRuc = function(ruc){
         try{
             //PARA NUEVA EMPRESA http://sheyla2.dyndns.info/sheylaweb/CREAR_EMPRESA.php?SERIE=1718792656001
 
-            var options = {
+            console.log(ruc);
+            let options = {
                 host: 'sheyla2.dyndns.info',
                 path: `/sheylaweb/CREAR_EMPRESA.php?SERIE=${ruc}`
             };
@@ -384,6 +385,16 @@ exports.createEmpresaByRuc = function(ruc){
                 });
 
                 response.on('end', function () {
+                    console.log('inside end');
+                    console.log(str);
+                    if(str.includes('ERROR')){
+                        resolve({
+                            isSucess: true,
+                            isError: true,
+                            message: 'ocurrio un error al crear la empresa'
+                        });
+                        return;
+                    }
                     if(str.includes('YAEXISTE')){
                         resolve({
                             isSucess: true,
@@ -395,7 +406,7 @@ exports.createEmpresaByRuc = function(ruc){
 
                     if(str.includes('NUEVAEMPRESAOK')){
 
-                        var options1 = {
+                        let options1 = {
                             host: 'sheyla2.dyndns.info',
                             path: `/sheylaweb/VALIDAR_EMPRESA.php?SERIE=${ruc}`
                         };
@@ -495,7 +506,7 @@ exports.recoveryPasswordByRucAndEmail = function(ruc, email){
 
     return new Promise((resolve, reject) => {
         try{
-            var options = {
+            let options = {
                 host: 'sheyla2.dyndns.info',
                 path: `/sheylaweb/VALIDAR_EMPRESA.php?SERIE=${ruc}`
             };
@@ -625,9 +636,9 @@ async function sendEmailRecoveryAccount(ruc, email,datosUsario,resolve, reject){
         
         const textMensage = `Hola. <br><br>Los datos de usuario para ingresar a su cuenta son: <br><br> Username: ${datosUsario.usu_username}. 
         <br>Password: ${datosUsario.usu_password}<br><br>Saludos.`;
-        const path = `/CORREOS_VARIOS/EMAIL_NOTIFICACIONES/EMAIL.php?EMAIL=${email}&ASUNTO=RECUPERAR CUENTA&MENSAJE2=${textMensage}`;
+        const path = `/CORREOS_letIOS/EMAIL_NOTIFICACIONES/EMAIL.php?EMAIL=${email}&ASUNTO=RECUPERAR CUENTA&MENSAJE2=${textMensage}`;
 
-        var options = {
+        let options = {
             host: 'sheyla2.dyndns.info',
             path: encodeURI(path)
         };
@@ -667,7 +678,7 @@ function getNameBdByRuc(ruc){
         try{
 
             // HACER UN REQUEST A http://sheyla2.dyndns.info/sheylaweb/VALIDAR_EMPRESA.php?SERIE=1718792656001
-            var options = {
+            let options = {
                 host: 'sheyla2.dyndns.info',
                 path: `/sheylaweb/VALIDAR_EMPRESA.php?SERIE=${ruc}`
             };
