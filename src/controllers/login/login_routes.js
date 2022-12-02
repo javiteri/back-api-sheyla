@@ -140,7 +140,6 @@ router.get('/crearnuevaempresa', async(req, res) => {
     const rucEmp = req.query.ruc;
     const crearEmpresaProm = loginRepository.createEmpresaByRuc(rucEmp);
 
-    console.log('inside crear nueva empresa loguin');
     crearEmpresaProm.then(
         function(response){
             res.status(200).send(response);
