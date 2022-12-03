@@ -2,6 +2,8 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const ftp = require("basic-ftp");
 const sharedFunctions = require('../../util/sharedfunctions');
+const encoder = require('code-128-encoder');
+
 
 exports.generatePdfByDatosXmlCompra = (datosFactura, resolve, reject) => {
   try{
@@ -451,10 +453,12 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
 
     pdfDoc.fontSize(9);
     pdfDoc.font(fontBold).text(datosEmpresa[0]['EMP_RAZON_SOCIAL'], 20, 170, {width: 250});
-    //pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 190,{width: 250});
+    
     pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, {width: 250});
-    //pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, 20, 210,{width: 250});
-    pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, {width: 250});
+    
+    if(!(datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1'] === '')){
+      pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, {width: 250});
+    }
 
     if(!(contribuyenteEspecial === '')){
       pdfDoc.text(`Contribuyente Especial Nro: ${contribuyenteEspecial}`, 20, 230,{width: 250});
@@ -508,14 +512,19 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
       pdfDoc.text(`${fechaAutorizacion}`, 280, 160);
     }
 
+    let claveEncoder = new encoder();
+
     pdfDoc.text(`AMBIENTE: PRODUCCION`, 280, 180);
     pdfDoc.text(`EMISION: NORMAL`, 280, 200);
     pdfDoc.text(`CLAVE DE ACCESO`, 280, 220);
-    pdfDoc.font('./src/assets/font/LibreBarcode39-Regular.ttf')
-        .fontSize(28).text(`${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${secuencial}`, 280, 230);
-    pdfDoc.font(fontNormal).fontSize(9).text(`${claveActivacion}`, 280, 250);
+    pdfDoc.font('./src/assets/font/LibreBarcode128-Regular.ttf')
+            .fontSize(27).text(claveEncoder.encode(`${claveActivacion}`) ,{
+              lineGap: -7,
+              align: 'justify',
+            });
+    pdfDoc.font(fontNormal).fontSize(9).text(`${claveActivacion}`, 280);
 
-    pdfDoc.rect(pdfDoc.x - 10,50,300,pdfDoc.y - 20).stroke();
+    pdfDoc.rect(pdfDoc.x - 10,50,300,pdfDoc.y - 25).stroke();
 
     //pdfDoc.rect(290,110,250,150).stroke();
 
