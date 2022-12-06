@@ -187,12 +187,9 @@ function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
 
         updateEstadoVentaDocumentoElectronico('2',resultMensaje[0].auto_mensaje,ventaId).then(
         function(result){
-
             createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso,done, job.data);
-            //done(null,job.data);
         },
         function(error){
-            //return done(new Error('error insertando estado venta'));
             done(null,job.data);
         });
 
