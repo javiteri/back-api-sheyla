@@ -4,11 +4,14 @@ const poolMysqlBd1 = require('../../../connectiondb/mysqlconnectionlogin');
 exports.insertConfigsList = async (datosConfig) => {
     return new Promise((resolve, reject ) => {
         try{
-            
-            let queryExistConfig = "SELECT COUNT(*) AS CANT FROM config WHERE con_empresa_id = ? AND con_nombre_config = ?";
-            let queryInsertConfig = `INSERT INTO config (con_empresa_id,con_nombre_config,con_valor) 
+
+            const configsListArray = Array.from(datosConfig);
+            const nombreBd = configsListArray[0].nombreBd;
+
+            let queryExistConfig = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.config WHERE con_empresa_id = ? AND con_nombre_config = ?`;
+            let queryInsertConfig = `INSERT INTO ${nombreBd}.config (con_empresa_id,con_nombre_config,con_valor) 
                                                  VALUES (?,?,?)`;
-            let updateConfigIfExist = `UPDATE config SET con_valor = ? WHERE con_empresa_id = ? AND con_nombre_config = ?`;
+            let updateConfigIfExist = `UPDATE ${nombreBd}.config SET con_valor = ? WHERE con_empresa_id = ? AND con_nombre_config = ?`;
 
             pool.getConnection(function(error, connection){
                 connection.beginTransaction(function(err){
@@ -21,7 +24,6 @@ exports.insertConfigsList = async (datosConfig) => {
                     }
                 });
 
-                const configsListArray = Array.from(datosConfig);
                 configsListArray.forEach((config, index) => {
 
                     const {idEmpresa,nombreConfig,valorConfig} = config;
@@ -187,11 +189,11 @@ exports.insertConfigsListFacElec = async (datosConfig) => {
     });
 }
 
-exports.getListConfigsByIdEmp = async (idEmpresa) => {
+exports.getListConfigsByIdEmp = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectConfigs = `SELECT * FROM config WHERE con_empresa_id = ? ORDER BY con_id DESC `
+            let querySelectConfigs = `SELECT * FROM ${nombreBd}.config WHERE con_empresa_id = ? ORDER BY con_id DESC `
             
             pool.query(querySelectConfigs, [idEmpresa], (err, results) => {
 
@@ -219,11 +221,11 @@ exports.getListConfigsByIdEmp = async (idEmpresa) => {
 
 }
 
-exports.getConfigByIdEmp = async (idEmpresa, nombreConfig) => {
+exports.getConfigByIdEmp = async (idEmpresa, nombreConfig, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectConfigs = `SELECT * FROM config WHERE con_empresa_id = ? AND con_nombre_config = ? ORDER BY con_id DESC `
+            let querySelectConfigs = `SELECT * FROM ${nombreBd}.config WHERE con_empresa_id = ? AND con_nombre_config = ? ORDER BY con_id DESC `
             
             pool.query(querySelectConfigs, [idEmpresa, nombreConfig], (err, results) => {
 

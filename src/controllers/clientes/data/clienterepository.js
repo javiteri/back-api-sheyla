@@ -24,10 +24,10 @@ exports.insertCliente = async (datosCliente) => {
 
             const {idEmpresa, nacionalidad, documentoIdentidad, tipoIdentificacion, nombreNatural, 
                     razonSocial, comentario, fechaNacimiento, telefonos,
-                    celular, email, direccion, profesion} = datosCliente;
+                    celular, email, direccion, profesion, nombreBd} = datosCliente;
             
-            let queryExistClient = "SELECT COUNT(*) AS CANT FROM clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ?";
-            let queryInsertUserDefaultEmpresa = `INSERT INTO clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
+            let queryExistClient = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ?`;
+            let queryInsertUserDefaultEmpresa = `INSERT INTO ${nombreBd}.clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
                                                 cli_nombres_natural, cli_razon_social , cli_observacion , cli_fecha_nacimiento , 
                                                 cli_teleono, cli_celular, cli_email, cli_direccion, cli_profesion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
             
@@ -98,11 +98,11 @@ exports.insertCliente = async (datosCliente) => {
     });
 }
 
-exports.getListClientesByIdEmp = async (idEmpresa) => {
+exports.getListClientesByIdEmp = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectClientes = `SELECT * FROM clientes WHERE cli_empresa_id = ? ORDER BY cli_id DESC `
+            let querySelectClientes = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? ORDER BY cli_id DESC `
             
             pool.query(querySelectClientes, [idEmpresa], (err, results) => {
 
@@ -130,11 +130,11 @@ exports.getListClientesByIdEmp = async (idEmpresa) => {
 
 }
 
-exports.getClienteByIdEmp = async (idCliente, idEmpresa) => {
+exports.getClienteByIdEmp = async (idCliente, idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectClientes = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_id = ? LIMIT 1`
+            let querySelectClientes = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_id = ? LIMIT 1`
             
             pool.query(querySelectClientes, [idEmpresa, idCliente], (err, results) => {
 
@@ -178,10 +178,10 @@ exports.updateCliente = async (datosClienteUpdate) => {
 
             const {idCliente, idEmpresa, nacionalidad, documentoIdentidad, tipoIdentificacion, nombreNatural, 
                     razonSocial, comentario, fechaNacimiento, telefonos,
-                    celular, email, direccion, profesion} = datosClienteUpdate;
+                    celular, email, direccion, profesion, nombreBd} = datosClienteUpdate;
             
-            let queryExistClient = "SELECT COUNT(*) AS CANT FROM clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ?";
-            let queryUpdateClienteDefaultEmpresa = `UPDATE clientes SET cli_nacionalidad = ?, cli_documento_identidad = ?,
+            let queryExistClient = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ?`;
+            let queryUpdateClienteDefaultEmpresa = `UPDATE ${nombreBd}.clientes SET cli_nacionalidad = ?, cli_documento_identidad = ?,
                                                  cli_tipo_documento_identidad = ?, cli_nombres_natural = ?, cli_razon_social = ? , cli_observacion = ? ,
                                                  cli_fecha_nacimiento = ?, cli_teleono = ?, cli_celular = ?, cli_email = ?, cli_direccion = ?, cli_profesion = ?
                                                  WHERE cli_empresa_id = ? AND cli_id = ?`;
@@ -256,10 +256,10 @@ exports.updateCliente = async (datosClienteUpdate) => {
     });
 }
 
-exports.deleteCliente = async (idEmpresa, idCliente) => {
+exports.deleteCliente = async (idEmpresa, idCliente, nombreBd) => {
     return new Promise((resolve, reject) => {
         try {
-            let queryDeleteCliente = 'DELETE FROM clientes WHERE cli_empresa_id = ? AND cli_id = ? LIMIT 1';
+            let queryDeleteCliente = `DELETE FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_id = ? LIMIT 1`;
 
             pool.query(queryDeleteCliente, [idEmpresa, idCliente], function(error, results, fields){
                 if(error){
@@ -303,11 +303,11 @@ exports.deleteCliente = async (idEmpresa, idCliente) => {
     });
 }
 
-exports.searchClientesByIdEmp = async (idEmpresa, textSearch) => {
+exports.searchClientesByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySearchClientes = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND (cli_nombres_natural LIKE ? || cli_documento_identidad LIKE ?)
+            let querySearchClientes = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND (cli_nombres_natural LIKE ? || cli_documento_identidad LIKE ?)
                                          ORDER BY cli_id DESC`
             
             pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
@@ -336,10 +336,10 @@ exports.searchClientesByIdEmp = async (idEmpresa, textSearch) => {
 
 }
 
-exports.getListClientesExcel = async (idEmpresa) => {
+exports.getListClientesExcel = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
-            const valueResultPromise = createExcelFileClientes(idEmpresa);
+            const valueResultPromise = createExcelFileClientes(idEmpresa, nombreBd);
             valueResultPromise.then( 
                 function (data) {
                     resolve(data);
@@ -354,13 +354,13 @@ exports.getListClientesExcel = async (idEmpresa) => {
     });
 }
 
-function createExcelFileClientes(idEmp){
+function createExcelFileClientes(idEmp, nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
 
 
-            let querySelectClientes = `SELECT * FROM clientes WHERE cli_empresa_id = ? ORDER BY cli_id DESC `
+            let querySelectClientes = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? ORDER BY cli_id DESC `
             
             pool.query(querySelectClientes, [idEmp], (err, results) => {
                 

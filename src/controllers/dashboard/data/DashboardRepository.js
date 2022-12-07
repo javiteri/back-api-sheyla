@@ -1,10 +1,10 @@
 const pool = require('../../../connectiondb/mysqlconnection');
 
-exports.getInfoVentaDiaria = async (idEmpresa, fechaIni,fechaFin) => {
+exports.getInfoVentaDiaria = async (idEmpresa, fechaIni,fechaFin, nombreBd) => {
     return new Promise((resolve, reject) => {
 
         try{
-            let querySelectVentaDiaria = `SELECT SUM(venta_total) AS 'total' FROM ventas WHERE venta_empresa_id= ? AND
+            let querySelectVentaDiaria = `SELECT SUM(venta_total) AS 'total' FROM ${nombreBd}.ventas WHERE venta_empresa_id= ? AND
                                     venta_fecha_hora BETWEEN ? AND ? AND
                                     venta_anulado=0`
             
@@ -35,11 +35,11 @@ exports.getInfoVentaDiaria = async (idEmpresa, fechaIni,fechaFin) => {
 
 }
 
-exports.getInfoVentaMensual = async (idEmpresa, fechaIni,fechaFin) => {
+exports.getInfoVentaMensual = async (idEmpresa, fechaIni,fechaFin, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectVentaMensual = `SELECT SUM(venta_total) AS 'total' FROM ventas WHERE venta_empresa_id=? AND
+            let querySelectVentaMensual = `SELECT SUM(venta_total) AS 'total' FROM ${nombreBd}.ventas WHERE venta_empresa_id=? AND
                                             venta_fecha_hora BETWEEN ? AND ? AND
                                             venta_anulado=0`
             
@@ -68,11 +68,11 @@ exports.getInfoVentaMensual = async (idEmpresa, fechaIni,fechaFin) => {
 
 }
 
-exports.getInfoClientesRegistrados = async (idEmpresa) => {
+exports.getInfoClientesRegistrados = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let queryInfoClientesRegistrados = `SELECT COUNT(*) AS 'total' FROM clientes WHERE cli_empresa_id=?`
+            let queryInfoClientesRegistrados = `SELECT COUNT(*) AS 'total' FROM ${nombreBd}.clientes WHERE cli_empresa_id=?`
             
             pool.query(queryInfoClientesRegistrados, [idEmpresa], (err, results) => {
 
@@ -133,15 +133,15 @@ exports.getInfoProdctosRegistrados = async (idEmpresa) => {
 
 }
 
-exports.getDocEmitidosAndLicenceDays = async(rucEmpresa) => {
+exports.getDocEmitidosAndLicenceDays = async(rucEmpresa, nombreBd) => {
 
     return new Promise((resolve, reject) => {
         
         try{
             let queryNumDocAndLicenceDays = `SELECT empresa_web_plan_enviados as emitidos,empresa_fecha_fin_facturacion as finfactura FROM
-                            efactura_web.empresas,efactura_factura.empresas WHERE efactura_web.empresas.EMP_RUC
+                            ${nombreBd}.empresas,efactura_factura.empresas WHERE ${nombreBd}.empresas.EMP_RUC
                             = efactura_factura.empresas.EMPRESA_RUC AND
-                            efactura_web.empresas.EMP_RUC= ?`;
+                            ${nombreBd}.empresas.EMP_RUC= ?`;
             
             pool.query(queryNumDocAndLicenceDays, [rucEmpresa], (err, results) => {
 
@@ -169,13 +169,13 @@ exports.getDocEmitidosAndLicenceDays = async(rucEmpresa) => {
 
 }
 
-exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
+exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
 
     return new Promise((resolve, reject) => {
         
         try{
             let queryProductosDelMes = `SELECT COUNT(*) AS cantidad,ventad_producto, SUM(venta_total) AS total FROM
-                                        ventas,ventas_detalles WHERE venta_id=ventad_venta_id AND venta_empresa_id=? AND
+                                        ${nombreBd}.ventas,${nombreBd}.ventas_detalles WHERE venta_id=ventad_venta_id AND venta_empresa_id=? AND
                                         venta_fecha_hora BETWEEN ? AND ? AND
                                         venta_anulado=0 GROUP BY ventad_prod_id ORDER BY SUM(venta_total) LIMIT 10`;
             
@@ -205,13 +205,13 @@ exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
 
 }
 
-exports.getClientesDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
+exports.getClientesDelMesByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
 
     return new Promise((resolve, reject) => {
         
         try{
             let queryClientesDelMes = `SELECT COUNT(*) AS cantidad,cli_nombres_natural,SUM(venta_total) AS total
-                                    FROM ventas,clientes WHERE cli_id=venta_cliente_id AND venta_empresa_id=? AND
+                                    FROM ${nombreBd}.ventas,${nombreBd}.clientes WHERE cli_id=venta_cliente_id AND venta_empresa_id=? AND
                                     venta_fecha_hora BETWEEN ? AND ? AND
                                     venta_anulado=0 GROUP BY venta_cliente_id ORDER BY SUM(venta_total) LIMIT 10`;
             
@@ -241,13 +241,13 @@ exports.getClientesDelMesByIdEmp = async(idEmp,fechaIni,fechaFin) => {
 
 }
 
-exports.getVentasDiaFormaPagoByIdEmp = async(idEmp,fechaIni,fechaFin) => {
+exports.getVentasDiaFormaPagoByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
 
     return new Promise((resolve, reject) => {
         
         try{
             let queryVentasDelDiaFormaPago = `SELECT COUNT(*) AS cantidad,venta_forma_pago,SUM(venta_total) AS total
-                                FROM ventas WHERE venta_empresa_id= ? AND 
+                                FROM ${nombreBd}.ventas WHERE venta_empresa_id= ? AND 
                                 venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 GROUP BY venta_forma_pago`;
             
             pool.query(queryVentasDelDiaFormaPago, [idEmp,fechaIni,fechaFin], (err, results) => {

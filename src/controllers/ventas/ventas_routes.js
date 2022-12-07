@@ -50,8 +50,9 @@ router.get('/listaVentasIdEmp', async(req, res, next) => {
     let noDoc = req.query.nodoc;
     let fechaIni = req.query.fechaini;
     let fechaFin = req.query.fechafin;
+    let nombreBd = req.query.nombreBd;
 
-    const listaVentasIdEmpProm = ventasRepository.getListVentasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin);
+    const listaVentasIdEmpProm = ventasRepository.getListVentasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin, nombreBd);
     listaVentasIdEmpProm.then(
         function(result){
             res.status(200).send(result);
@@ -69,8 +70,9 @@ router.get('/listaResumenVentasIdEmp', async(req, res, next) => {
     let noDoc = req.query.nodoc;
     let fechaIni = req.query.fechaini;
     let fechaFin = req.query.fechafin;
+    let nombreBd = req.query.nombreBd;
 
-    const listaResumenVentasIdEmpProm = ventasRepository.getListResumenVentasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin);
+    const listaResumenVentasIdEmpProm = ventasRepository.getListResumenVentasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin, nombreBd);
     listaResumenVentasIdEmpProm.then(
         function(result){
             res.status(200).send(result);
@@ -82,7 +84,7 @@ router.get('/listaResumenVentasIdEmp', async(req, res, next) => {
 });
 
 router.get('/getorcreateconsfinalbyidemp', async(req, res, next) => {
-    const getConsumidorFinalProm = ventasRepository.getOrCreateConsFinalByIdEmp(req.query.idEmp);
+    const getConsumidorFinalProm = ventasRepository.getOrCreateConsFinalByIdEmp(req.query.idEmp,req.query.nombreBd);
     getConsumidorFinalProm.then(
         function(results){
             res.status(200).send(results);
@@ -94,9 +96,9 @@ router.get('/getorcreateconsfinalbyidemp', async(req, res, next) => {
 });
 
 router.get('/getNextNumeroSecuencialByIdEmp', async(req,res,next) => {
-    const {idEmp, tipoDoc, fac001, fac002} = req.query;
+    const {idEmp, tipoDoc, fac001, fac002, nombreBd} = req.query;
     const nextSecuencialProm = 
-            ventasRepository.getNextNumeroSecuencialByIdEmp(idEmp,tipoDoc,fac001,fac002);
+            ventasRepository.getNextNumeroSecuencialByIdEmp(idEmp,tipoDoc,fac001,fac002,nombreBd);
     nextSecuencialProm.then(
         function(results){
             res.status(200).send(results);
@@ -108,10 +110,10 @@ router.get('/getNextNumeroSecuencialByIdEmp', async(req,res,next) => {
 });
 
 router.get('/getNoPuntoVentaByIdUsr', async(req,res,next) => {
-    const {idEmp, tipoDoc, idUsuario} = req.query;
+    const {idEmp, tipoDoc, idUsuario, nombreBd} = req.query;
     console.log(req.query);
     const nextSecuencialProm = 
-            ventasRepository.getNoPuntoVentaSecuencialByIdusuarioAndEmp(idEmp,tipoDoc,idUsuario);
+            ventasRepository.getNoPuntoVentaSecuencialByIdusuarioAndEmp(idEmp,tipoDoc,idUsuario,nombreBd);
     nextSecuencialProm.then(
         function(results){
             res.status(200).send(results);
@@ -125,7 +127,7 @@ router.get('/getNoPuntoVentaByIdUsr', async(req,res,next) => {
 
 router.get('/getDataByIdVenta',async(req,res,next) => {
     const getDataByIdVentaPromise = 
-            ventasRepository.getDataByIdVenta(req.query.id, req.query.idEmp, req.query.ruc);
+            ventasRepository.getDataByIdVenta(req.query.id, req.query.idEmp, req.query.ruc,req.query.nombreBd);
     getDataByIdVentaPromise.then(
         function(results){
             res.status(200).send(results);
@@ -143,11 +145,16 @@ router.get('/getlistventasexcel', async(req, res) => {
     const noDoc = req.query.nodoc;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
-    const getListaVentasExcelPromise = ventasRepository.getListListaVentasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc);
+    const getListaVentasExcelPromise = ventasRepository.getListListaVentasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc, nombreBd);
 
     getListaVentasExcelPromise.then(
         function (clientes){
+            if(clientes.isSucess == false){
+                res.status(200).send();
+                return;
+            }
             res.download(clientes['pathFile'],((error) => {
 
                 fs.unlink(clientes['pathFile'], function(){
@@ -168,8 +175,9 @@ router.get('/getlistresumenventasexcel', async(req, res) => {
     const noDoc = req.query.nodoc;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
-    const getListaVentasExcelPromise = ventasRepository.getListListaResumenVentasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc);
+    const getListaVentasExcelPromise = ventasRepository.getListListaResumenVentasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc,nombreBd);
 
     getListaVentasExcelPromise.then(
         function (clientes){

@@ -4,10 +4,10 @@ const fs = require('fs');
 const soapRequest = require('easy-soap-request');
 const pdfGenerator = require('../../pdf/PDFGenerator');
 
-exports.verifyListProductXml = async (idEmpresa, listProductosXml) => {
+exports.verifyListProductXml = async (idEmpresa, listProductosXml, nombreBd) => {
     return new Promise((resolve, reject) => {
 
-        const sqlQueryExistProduct = `SELECT * FROM PRODUCTOS WHERE prod_empresa_id = ? AND (prod_codigo_xml = ? || prod_codigo = ?) LIMIT 1 `;
+        const sqlQueryExistProduct = `SELECT * FROM ${nombreBd}.PRODUCTOS WHERE prod_empresa_id = ? AND (prod_codigo_xml = ? || prod_codigo = ?) LIMIT 1 `;
 
         let resultProductsExist = [];
 
@@ -62,7 +62,7 @@ exports.insertCompra = async (datosCompra) => {
 
             const {empresaId,tipoCompra,compraNumero,compraFechaHora,
                     usuId,proveedorId,subtotal12,subtotal0,valorIva,compraTotal,formaPago,
-                    obs, sriSustento,compraAutorizacionSri,compraNcId} = datosCompra;
+                    obs, sriSustento,compraAutorizacionSri,compraNcId, nombreBd} = datosCompra;
             const compraDetallesArray = datosCompra['compraDetalles'];
             
             let isPlusInventario;
@@ -79,17 +79,17 @@ exports.insertCompra = async (datosCompra) => {
                 // SI TODO ESTA CORRECTO SEGUIR CON LA INSERCION DEL DETALLE DE LA VENTA
             // INSERT VENTA DETALLE CON EL ID DE LA VENTA RECIBIDO
             // EN CADA VENTA DETALLE SE DEBE BAJAR EL STOCK DEL PRODUCTO CORRESPONDIENTE
-            const sqlQueryExistCompra = `SELECT * FROM compras WHERE compra_empresa_id = ? AND compra_tipo = ? 
+            const sqlQueryExistCompra = `SELECT * FROM ${nombreBd}.compras WHERE compra_empresa_id = ? AND compra_tipo = ? 
                                         AND compra_proveedor_id = ? AND compra_numero = ? `;
-            const sqlQueryInsertCompra = `INSERT INTO compras (
+            const sqlQueryInsertCompra = `INSERT INTO ${nombreBd}.compras (
                 compra_empresa_id,compra_tipo,compra_numero,compra_fecha_hora,compra_usu_id,compra_proveedor_id,
                 compra_subtotal_12,compra_subtotal_0,compra_valor_iva,compra_total,compra_forma_pago,compra_observaciones,
                 compra_sri_sustento,compra_autorizacion_sri,compra_nc_nd_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-            const sqlQueryInsertCompraDetalle = `INSERT INTO compras_detalles (comprad_compra_id,comprad_pro_id,comprad_cantidad, 
+            const sqlQueryInsertCompraDetalle = `INSERT INTO ${nombreBd}.compras_detalles (comprad_compra_id,comprad_pro_id,comprad_cantidad, 
                 comprad_iva,comprad_producto,comprad_vu,comprad_descuento,comprad_vt) VALUES (?,?,?,?,?,?,?,?)`
 
-            const sqlQueryUpdatePlusStockProducto = `UPDATE productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`
-            const sqlQueryUpdateMinusStockProducto = `UPDATE productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ?`
+            const sqlQueryUpdatePlusStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`
+            const sqlQueryUpdateMinusStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ?`
             
             pool.getConnection(function(error, connection){
 
@@ -207,7 +207,7 @@ exports.insertCompra = async (datosCompra) => {
     });
 }
 
-exports.getListComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin) => {
+exports.getListComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
             let valueNombreClient = "";
@@ -225,7 +225,8 @@ exports.getListComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni
 
             const queryGetListaVentas = `SELECT compra_id as id, compra_fecha_hora AS fechaHora, compra_tipo AS documento,compra_numero AS numero, compra_total AS total,
                                             usu_username AS usuario,pro_nombre_natural AS proveedor,pro_documento_identidad AS cc_ruc_pasaporte,
-                                            compra_forma_pago AS forma_pago,compra_observaciones AS Observaciones FROM compras,proveedores,usuarios 
+                                            compra_forma_pago AS forma_pago,compra_observaciones AS Observaciones 
+                                            FROM ${nombreBd}.compras,${nombreBd}.proveedores,${nombreBd}.usuarios 
                                             WHERE compra_empresa_id= ? AND compra_usu_id=usu_id AND compra_proveedor_id=pro_id 
                                             AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ?
                                             AND  compra_fecha_hora  BETWEEN ? AND ? `;
@@ -257,7 +258,7 @@ exports.getListComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni
     });
 }
 
-exports.getListResumenComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin) => {
+exports.getListResumenComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
             let valueNombreClient = "";
@@ -273,7 +274,8 @@ exports.getListResumenComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, f
 
             const queryGetListaResumenVentas = `SELECT compra_fecha_hora AS fechaHora, compra_tipo AS documento,compra_numero AS numero,
             pro_nombre_natural AS proveedor,pro_documento_identidad AS cc_ruc_pasaporte,compra_forma_pago AS forma_pago,compra_subtotal_12 AS subtotalIva,
-            compra_subtotal_0 AS subtotalCero, compra_valor_iva AS valorIva,compra_total AS total FROM compras,proveedores,usuarios WHERE compra_empresa_id=? 
+            compra_subtotal_0 AS subtotalCero, compra_valor_iva AS valorIva,compra_total AS total 
+            FROM ${nombreBd}.compras,${nombreBd}.proveedores,${nombreBd}.usuarios WHERE compra_empresa_id=? 
             AND compra_usu_id=usu_id AND compra_proveedor_id=pro_id AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ?
             AND compra_fecha_hora BETWEEN ? AND ? `;
 
@@ -305,13 +307,13 @@ exports.getListResumenComprasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, f
     });
 };
 
-exports.getOrCreateProveedorGenericoByIdEmp = async (idEmp) => {
+exports.getOrCreateProveedorGenericoByIdEmp = async (idEmp,nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
             const consumidorFinalName = 'PROVEEDOR GENERICO';
             
-            const queryGetConsumidorFinal = `SELECT * FROM proveedores WHERE pro_empresa_id = ? AND pro_nombre_natural LIKE ? LIMIT 1`;
-            const insertDefaultProveedorGenerico = `INSERT INTO proveedores (pro_empresa_id, pro_documento_identidad, pro_tipo_documento_identidad, 
+            const queryGetConsumidorFinal = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_nombre_natural LIKE ? LIMIT 1`;
+            const insertDefaultProveedorGenerico = `INSERT INTO ${nombreBd}.proveedores (pro_empresa_id, pro_documento_identidad, pro_tipo_documento_identidad, 
                                                     pro_nombre_natural, pro_telefono,pro_direccion) VALUES (?,?,?,?,?,?)`
 
             pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`], (error, results) => {
@@ -372,11 +374,11 @@ exports.getOrCreateProveedorGenericoByIdEmp = async (idEmp) => {
     });
 }
 
-exports.getNextNumeroSecuencialByIdEmp = async(idEmp,tipoDoc,idProveedor,compraNumero) => {
+exports.getNextNumeroSecuencialByIdEmp = async(idEmp,tipoDoc,idProveedor,compraNumero, nombreBd) => {
 
     return new Promise((resolve, reject) => {
         try{
-            const queryNextSecencial = `SELECT CAST(MID(compra_numero,9,15) AS UNSIGNED) AS numero FROM compras WHERE compra_numero LIKE ? AND compra_empresa_id = ? 
+            const queryNextSecencial = `SELECT CAST(MID(compra_numero,9,15) AS UNSIGNED) AS numero FROM ${nombreBd}.compras WHERE compra_numero LIKE ? AND compra_empresa_id = ? 
             AND compra_proveedor_id = ? AND compra_tipo =? ORDER BY  CAST(MID(compra_numero,9,15) AS UNSIGNED) DESC LIMIT 1`;
 
             pool.query(queryNextSecencial, [`${compraNumero}-%`,idEmp,idProveedor,tipoDoc], function(error, results){
@@ -419,12 +421,12 @@ exports.deleteCompraByIdEmpresa = async (datos) => {
 
         try{
 
-            const {idEmpresa,idCompra,tipoDoc} = datos;
+            const {idEmpresa,idCompra,tipoDoc, nombreBd} = datos;
 
-            const sqlSelectDetalleCompra = `SELECT * FROM compras_detalles WHERE comprad_compra_id = ?`;
-            const sqlQueryUpdatePlusStockProducto = `UPDATE productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`
-            const sqlQueryUpdateMinusStockProducto = `UPDATE productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ?`
-            const queryDeleteCompraByIdEmp = `DELETE FROM compras WHERE compra_id = ? AND compra_empresa_id = ? LIMIT 1`;
+            const sqlSelectDetalleCompra = `SELECT * FROM ${nombreBd}.compras_detalles WHERE comprad_compra_id = ?`;
+            const sqlQueryUpdatePlusStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`
+            const sqlQueryUpdateMinusStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ?`
+            const queryDeleteCompraByIdEmp = `DELETE FROM ${nombreBd}.compras WHERE compra_id = ? AND compra_empresa_id = ? LIMIT 1`;
 
             pool.getConnection(function(error, connection){
                 connection.beginTransaction(function(err){
@@ -514,11 +516,12 @@ exports.deleteCompraByIdEmpresa = async (datos) => {
     });
 }
 
-exports.getDataByIdCompra = async (idCompra, idEmp) => {
+exports.getDataByIdCompra = async (idCompra, idEmp, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
             const queryListCompraDelleByIdCompra = `SELECT comprad_cantidad,comprad_descuento,comprad_id,comprad_iva,
-            comprad_pro_id,comprad_producto,comprad_compra_id,comprad_vt,comprad_vu,prod_codigo, prod_pvp AS prod_precio FROM compras_detalles, productos 
+            comprad_pro_id,comprad_producto,comprad_compra_id,comprad_vt,comprad_vu,prod_codigo, prod_pvp AS prod_precio 
+            FROM ${nombreBd}.compras_detalles, ${nombreBd}.productos 
             WHERE comprad_pro_id = prod_id AND comprad_compra_id = ?`;
             const queryGetListaCompras = `SELECT compra_id as id, compra_fecha_hora AS fechaHora, compra_tipo AS documento,compra_numero AS numero,
                                          compra_total AS total, compra_subtotal_12 AS subtotal12, compra_subtotal_0 AS subtotal0, compra_valor_iva AS valorIva,
@@ -526,7 +529,7 @@ exports.getDataByIdCompra = async (idCompra, idEmp) => {
                                          usu_username AS usuario,pro_nombre_natural AS proveedor,pro_id as proveedorId,pro_telefono as proveedorTele,
                                          pro_direccion as proveedorDir,pro_email as proveedorEmail,pro_documento_identidad AS cc_ruc_pasaporte,
                                          compra_forma_pago AS forma_pago,compra_observaciones AS Observaciones 
-                                         FROM compras,proveedores,usuarios WHERE compra_empresa_id=? AND compra_usu_id=usu_id AND compra_proveedor_id=pro_id 
+                                         FROM ${nombreBd}.compras,${nombreBd}.proveedores,${nombreBd}.usuarios WHERE compra_empresa_id=? AND compra_usu_id=usu_id AND compra_proveedor_id=pro_id 
                                          AND compra_id = ? `;
 
             pool.query(queryGetListaCompras,[idEmp,idCompra], (error, results) => {
@@ -584,10 +587,10 @@ exports.getDataByIdCompra = async (idCompra, idEmp) => {
 }
 
 
-exports.getListaComprasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc) => {
+exports.getListaComprasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
-            const valueResultPromise = createExcelFileListaCompras(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc);
+            const valueResultPromise = createExcelFileListaCompras(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd);
             valueResultPromise.then( 
                 function (data) {
                     resolve(data);
@@ -602,10 +605,10 @@ exports.getListaComprasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc
     });
 }
 
-exports.getListaResumenComprasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc) => {
+exports.getListaResumenComprasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
-            const valueResultPromise = createExcelFileResumenCompras(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc);
+            const valueResultPromise = createExcelFileResumenCompras(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd);
             valueResultPromise.then( 
                 function (data) {
                     resolve(data);
@@ -621,7 +624,7 @@ exports.getListaResumenComprasExcel = async (idEmpresa, fechaIni,fechaFin,nombre
 }
 
 
-function createExcelFileListaCompras(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc){
+function createExcelFileListaCompras(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
@@ -641,7 +644,8 @@ function createExcelFileListaCompras(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDo
 
             const queryGetListaVentas = `SELECT compra_id as id, compra_fecha_hora AS fechaHora, compra_tipo AS documento,compra_numero AS numero, compra_total AS total,
                                             usu_username AS usuario,pro_nombre_natural AS proveedor,pro_documento_identidad AS cc_ruc_pasaporte,
-                                            compra_forma_pago AS forma_pago,compra_observaciones AS Observaciones FROM compras,proveedores,usuarios 
+                                            compra_forma_pago AS forma_pago,compra_observaciones AS Observaciones 
+                                            FROM ${nombreBd}.compras,${nombreBd}.proveedores,${nombreBd}.usuarios 
                                             WHERE compra_empresa_id= ? AND compra_usu_id=usu_id AND compra_proveedor_id=pro_id 
                                             AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ?
                                             AND  compra_fecha_hora  BETWEEN ? AND ? `;
@@ -752,7 +756,7 @@ function createExcelFileListaCompras(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDo
 
 }
 
-function createExcelFileResumenCompras(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc){
+function createExcelFileResumenCompras(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
@@ -770,7 +774,8 @@ function createExcelFileResumenCompras(idEmp,fechaIni,fechaFin,nombreOrCiRuc, no
 
             const queryGetListaResumenVentas = `SELECT compra_fecha_hora AS fechaHora, compra_tipo AS documento,compra_numero AS numero,
             pro_nombre_natural AS proveedor,pro_documento_identidad AS cc_ruc_pasaporte,compra_forma_pago AS forma_pago,compra_subtotal_12 AS subtotalIva,
-            compra_subtotal_0 AS subtotalCero, compra_valor_iva AS valorIva,compra_total AS total FROM compras,proveedores,usuarios WHERE compra_empresa_id=? 
+            compra_subtotal_0 AS subtotalCero, compra_valor_iva AS valorIva,compra_total AS total 
+            FROM ${nombreBd}.compras,${nombreBd}.proveedores,${nombreBd}.usuarios WHERE compra_empresa_id=? 
             AND compra_usu_id=usu_id AND compra_proveedor_id=pro_id AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ?
             AND compra_fecha_hora BETWEEN ? AND ? `;
 

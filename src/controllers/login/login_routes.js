@@ -174,7 +174,7 @@ router.get('/verifyExistAdminByRucEmp', async(req, res) => {
             res.status(200).send(result);
         },
         function(error){
-            res.status(300).send(result);
+            res.status(300).send(error);
         }
     );
 });

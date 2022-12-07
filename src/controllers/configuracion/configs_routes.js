@@ -32,7 +32,7 @@ router.post('/insertarlistconfigfacelec', async (req, res) => {
 
 router.get('/listConfigsIdEmp', async (req, res) => {
 
-    const getListConfigPromise = configRepository.getListConfigsByIdEmp(req.query.idEmp);
+    const getListConfigPromise = configRepository.getListConfigsByIdEmp(req.query.idEmp,req.query.nombreBd);
 
     getListConfigPromise.then(
         function(result) {
@@ -46,7 +46,7 @@ router.get('/listConfigsIdEmp', async (req, res) => {
 
 router.get('/getConfigByIdEmp', async (req, res) => {
 
-    const getListConfigPromise = configRepository.getConfigByIdEmp(req.query.idEmp, req.query.nombreConfig);
+    const getListConfigPromise = configRepository.getConfigByIdEmp(req.query.idEmp, req.query.nombreConfig, req.query.nombreBd);
 
     getListConfigPromise.then(
         function(result) {

@@ -2,12 +2,12 @@ const poolMysql = require('../../connectiondb/mysqlconnection');
 const fs = require('fs');
 const ftp = require("basic-ftp");
 
-exports.getEmpresaByRuc = function (rucEmpresa, idEmpresa){
+exports.getEmpresaByRuc = function (rucEmpresa, idEmpresa, nombreBd){
     return new Promise((resolve, reject) => {
 
         try {
             
-            queryDatosEmpresa = 'SELECT * FROM empresas WHERE emp_ruc = ? AND emp_id = ? LIMIT 1';
+            queryDatosEmpresa = `SELECT * FROM ${nombreBd}.empresas WHERE emp_ruc = ? AND emp_id = ? LIMIT 1`;
 
             poolMysql.query(queryDatosEmpresa, [rucEmpresa, idEmpresa], function (err, results, fields) {
 

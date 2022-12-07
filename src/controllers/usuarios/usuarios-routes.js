@@ -6,7 +6,7 @@ const usuarioRepository = require('./data/UsuariosRepository');
 
 router.get('/getUsuariosByIdEmp', async (req, res) => {
 
-    const usuariosByIdEmpresa = usuarioRepository.getListUsuariosByIdEmp(req.query.idEmp);
+    const usuariosByIdEmpresa = usuarioRepository.getListUsuariosByIdEmp(req.query.idEmp,req.query.nombreBd);
     usuariosByIdEmpresa.then(
         function(usuarios){
             res.status(200).send(usuarios);
@@ -19,7 +19,7 @@ router.get('/getUsuariosByIdEmp', async (req, res) => {
 
 router.get('/getUsuarioByIdEmp', async (req, res) => {
 
-    const usuarioByIdEmpresa = usuarioRepository.getUsuarioByIdEmp(req.query.id, req.query.idEmp);
+    const usuarioByIdEmpresa = usuarioRepository.getUsuarioByIdEmp(req.query.id, req.query.idEmp, req.query.nombreBd);
     usuarioByIdEmpresa.then(
         function(usuarios){
             res.status(200).send(usuarios);
@@ -59,9 +59,9 @@ router.post('/update', async (req, res) => {
 
 router.post('/delete', async (req, res) => {
 
-    const {idEmpresa, idUser} = req.body;
+    const {idEmpresa, idUser, nombreBd} = req.body;
     
-    const deleteUsuarioPromise = usuarioRepository.deleteUsuario(idEmpresa, idUser);
+    const deleteUsuarioPromise = usuarioRepository.deleteUsuario(idEmpresa, idUser, nombreBd);
 
     deleteUsuarioPromise.then(
         function(result){
@@ -74,7 +74,7 @@ router.post('/delete', async (req, res) => {
 });
 
 router.get('/searchUsuariosByIdEmp', async (req, res) => {
-    const searchProductosByIdEmpPromise = usuarioRepository.searchUsuariosByIdEmp(req.query.idEmp, req.query.textSearch);
+    const searchProductosByIdEmpPromise = usuarioRepository.searchUsuariosByIdEmp(req.query.idEmp, req.query.textSearch,req.query.nombreBd);
 
     searchProductosByIdEmpPromise.then(
         function (clientes){
@@ -87,8 +87,7 @@ router.get('/searchUsuariosByIdEmp', async (req, res) => {
 });
 
 router.get('/getlistusersexcel', async(req, res) => {
-    console.log('inside excel files');
-    const getListUserExcelPromise = usuarioRepository.getListUsersExcel(req.query.idEmp);
+    const getListUserExcelPromise = usuarioRepository.getListUsersExcel(req.query.idEmp, req.query.nombreBd);
 
     getListUserExcelPromise.then(
         function (clientes){

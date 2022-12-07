@@ -78,7 +78,7 @@ exports.getNumDocByAutorizar = async(rucEmpresa) =>{
     });
 }
 
-exports.autorizarListDocumentos = async(listDoc) => {
+exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{    
             // GET LISTA DE DOCUMENTOS 
@@ -87,9 +87,9 @@ exports.autorizarListDocumentos = async(listDoc) => {
                 const {idEmp, id,identificacion,VENTA_TIPO, estado} = documento;
                 
                 if(estado == 0){
-                    prepareAndSendDocumentoElectronicoAsync(idEmp, id,identificacion,VENTA_TIPO);
+                    prepareAndSendDocumentoElectronicoAsync(idEmp, id,identificacion,VENTA_TIPO, nombreBd);
                 }else{
-                    queryStateDocumentoElectronicoError(idEmp, id,identificacion,VENTA_TIPO);
+                    queryStateDocumentoElectronicoError(idEmp, id,identificacion,VENTA_TIPO,nombreBd);
                 }
             }
             resolve({
@@ -108,7 +108,7 @@ exports.autorizarListDocumentos = async(listDoc) => {
 exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
     return new Promise((resolve, reject) => {
         try{
-            const {idEmp, fechaIni, fechaFin, tipo, nodoc,nombresci} = datosFiltrar;
+            const {idEmp, fechaIni, fechaFin, tipo, nodoc,nombresci, nombreBd} = datosFiltrar;
 
             let valueNombreClient = "";
             let valueCiRucClient = "";
@@ -123,7 +123,8 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
             
             const sqlQueryDocumentosElectronicos = `SELECT venta_electronica_observacion,VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
-            venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo LIKE ?
+            venta_forma_pago AS formaPago, venta_electronica_estado AS estado 
+            FROM ${nombreBd}.ventas,${nombreBd}.clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo LIKE ?
             AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_fecha_hora BETWEEN ? AND ?
             AND CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ? AND venta_anulado=0 `;
 
@@ -161,11 +162,12 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
 exports.getDocumentosElectronicosByIdEmpNoAutorizados = async(datosFiltrar) => {
     return new Promise((resolve, reject) => {
         try{
-            const {idEmp} = datosFiltrar;
+            const {idEmp, nombreBd} = datosFiltrar;
             
             const sqlQueryDocumentosElectronicos = `SELECT VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
-            venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ? 
+            venta_forma_pago AS formaPago, venta_electronica_estado AS estado 
+            FROM ${nombreBd}.ventas,${nombreBd}.clientes WHERE venta_empresa_id = ? 
             AND venta_cliente_id=cli_id AND venta_electronica_estado != 2 AND venta_anulado=0`;
 
             pool.query(sqlQueryDocumentosElectronicos, [idEmp, idEmp], function(error, results) {
@@ -756,7 +758,7 @@ function createExcelDocumentosElectronicos(datosFiltro){
     return new Promise((resolve, reject) => {
         try{
 
-            const {idEmp, fechaIni, fechaFin, tipo, nodoc,nombresci, rucEmp} = datosFiltro;
+            const {idEmp, fechaIni, fechaFin, tipo, nodoc,nombresci, rucEmp, nombreBd} = datosFiltro;
 
             let valueNombreClient = "";
             let valueCiRucClient = "";
@@ -771,13 +773,14 @@ function createExcelDocumentosElectronicos(datosFiltro){
 
             const sqlQueryDocumentosElectronicos = `SELECT VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, venta_001,venta_002,venta_numero, 
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
-            venta_forma_pago AS formaPago, venta_electronica_estado AS estado FROM ventas,clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo LIKE ?
+            venta_forma_pago AS formaPago, venta_electronica_estado AS estado 
+            FROM ${nombreBd}.ventas,${nombreBd}.clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo LIKE ?
             AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_fecha_hora BETWEEN ? AND ?
             AND CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ? AND venta_anulado=0 
             UNION ALL 
             SELECT compra_tipo,compra_id,compra_fecha_hora,compra_numero,compra_numero,compra_numero,compra_numero, compra_total AS total, pro_nombre_natural, pro_documento_identidad AS identificacion,
             compra_forma_pago , compra_electronica_estado 
-            FROM compras,proveedores  WHERE compra_empresa_id = ? AND compra_proveedor_id=pro_id AND compra_tipo LIKE ?
+            FROM ${nombreBd}.compras,${nombreBd}.proveedores  WHERE compra_empresa_id = ? AND compra_proveedor_id=pro_id AND compra_tipo LIKE ?
             AND compra_fecha_hora  BETWEEN ? AND ?
             AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ? `;
 
@@ -909,15 +912,15 @@ function createExcelDocumentosElectronicos(datosFiltro){
 }
 
 
-exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClienteProv, isPdfNormal) => {
+exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClienteProv, isPdfNormal, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
 
-            const querySelectConfigFactElectr = `SELECT * FROM config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
-            const sqlQuerySelectEmp = `SELECT * FROM empresas WHERE emp_id = ? LIMIT 1`;
-            const sqlQuerySelectClienteByIdEmp = `SELECT * FROM clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ? LIMIT 1`;
-            const sqlQuerySelectVentaByIdEmp = `SELECT ventas.*, usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
-            const sqlQuerySelectVentaDetallesByIdVenta = `SELECT ventas_detalles.*, prod_codigo FROM ventas_detalles, productos WHERE 
+            const querySelectConfigFactElectr = `SELECT * FROM ${nombreBd}.config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
+            const sqlQuerySelectEmp = `SELECT * FROM ${nombreBd}.empresas WHERE emp_id = ? LIMIT 1`;
+            const sqlQuerySelectClienteByIdEmp = `SELECT * FROM ${nombreBd}.clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ? LIMIT 1`;
+            const sqlQuerySelectVentaByIdEmp = `SELECT ventas.*, usu_nombres FROM ${nombreBd}.ventas, ${nombreBd}.usuarios WHERE venta_usu_id = usu_id AND venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
+            const sqlQuerySelectVentaDetallesByIdVenta = `SELECT ventas_detalles.*, prod_codigo FROM ${nombreBd}.ventas_detalles, ${nombreBd}.productos WHERE 
                                                             ventad_prod_id = prod_id AND ventad_venta_id = ? `;
             pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%'], (er, datosConfig) => {
                 if(er){
@@ -989,18 +992,19 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
-async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,identificacion,tipo){
+async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,identificacion,tipo,nombreBd){
     // VERIFICAR SI ES UNA COMPRA O VENTA POR QUE DE ESO 
     // CONSULTAR Y OBTENER LOS DATOS DE - DATOS CLIENTE O PROVEEDOR
     // - DATOS DE LA VENTA - DATOS DETALLE DE LA VENTA O COMPRA
     // CON ESOS DATOS GENERAR EL XML Y POR AHORA GUARDARLO EN UNA CARPETA EN EL SERVER
     // OBTENER LOS DATOS DEL EMISOR (LA EMPRESA) QUE ENVIA EL DOCUMENTO ELECTRONICO
-    const querySelectConfigFactElectr = `SELECT * FROM config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
-    const querySelectCliente = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
-    const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
-    const querySelectVentasDetalles = `SELECT ventas_detalles.* ,productos.prod_codigo, productos.prod_nombre FROM ventas_detalles, productos WHERE 
-            ventad_prod_id = prod_id AND ventad_venta_id = ?`;
-    const queryDatosEmpresaById = `SELECT * FROM empresas WHERE emp_id = ?`;
+    const querySelectConfigFactElectr = `SELECT * FROM ${nombreBd}.config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
+    const querySelectCliente = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
+    const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ${nombreBd}.ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
+    const querySelectVentasDetalles = `SELECT ventas_detalles.* ,productos.prod_codigo, productos.prod_nombre 
+                                        FROM ${nombreBd}.ventas_detalles, ${nombreBd}.productos WHERE 
+                                        ventad_prod_id = prod_id AND ventad_venta_id = ?`;
+    const queryDatosEmpresaById = `SELECT * FROM ${nombreBd}.empresas WHERE emp_id = ?`;
 
     pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%'], (er, datosConfig) => {
         if(er){
@@ -1068,7 +1072,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                                     // SE OBTENIENE EL ESTADO DE LA FACTRUA EN LA TABLA AUTORIZACION
                                                     // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
                                                     const queryUpdateFacAutorizacion = `DELETE FROM autorizaciones WHERE auto_clave_acceso = ?`;
-                                                    const queryUpdateVentaEstado = `UPDATE ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
+                                                    const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
                                                     //2.- ERROR
                                                     if(resultExistDoc[0].auto_estado == 2){
                                                         poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion], function(errorUpdate, resultsUpdate){
@@ -1080,7 +1084,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                                                 if(errorUp){
                                                                     return;
                                                                 }
-                                                                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo);
+                                                                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo, nombreBd);
 
                                                             });
                             
@@ -1093,7 +1097,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                                             }
                             
                                                             sendDataToWorkerAutorizacion(claveActivacion, results[0].empresa_id,
-                                                                                            datosEmpresa[0],clienteResponse[0],ventaResponse[0]);
+                                                                                            datosEmpresa[0],clienteResponse[0],ventaResponse[0], nombreBd);
 
                                                         });
                                                     }
@@ -1117,7 +1121,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                                             }
 
                                                             sendDataToWorkerAutorizacion(claveActivacion, results[0].empresa_id,
-                                                                                            datosEmpresa[0],clienteResponse[0],ventaResponse[0]);
+                                                                                            datosEmpresa[0],clienteResponse[0],ventaResponse[0],nombreBd);
 
                                                             //DELETE XML FILE GENERATED
                                                             fs.unlink(pathFile, function(){
@@ -1152,11 +1156,12 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
 }
 
 
-async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identificacion, tipo){
-    const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
-    const queryDatosEmpresaById = `SELECT * FROM empresas WHERE emp_id = ?`;
-    const querySelectCliente = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
+async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identificacion, tipo, nombreBd){
+    const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ${nombreBd}.ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
+    const queryDatosEmpresaById = `SELECT * FROM ${nombreBd}.empresas WHERE emp_id = ?`;
+    const querySelectCliente = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
     
+    console.log(nombreBd);
     pool.query(queryDatosEmpresaById,[idEmp], (err, empResponse) => {
         if(err){
             return;
@@ -1210,16 +1215,18 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
                             return {isSucess: false, message:'error consultando plan'};
                         }
                         if(resultPlan[0].isSucess == 1){
+                            console.log('plan is success');
                             if(results.length <= 0){
                                 // no existe en la tabla autorizaciones
                                 //enviar otra vez el xml al servicio
-                                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo);
+                                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo, nombreBd);
                                 return{estado:'ok'};
                             }else{
                                 // SE OBTENIENE EL ESTADO DE LA FACTURA EN LA TABLA AUTORIZACION
                                 // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
                                 const queryUpdateFacAutorizacion = `DELETE FROM autorizaciones WHERE auto_clave_acceso = ?`;
-                                const queryUpdateVentaEstado = `UPDATE ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
+                                const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
+
                                 //2.-Error
                                 if(results[0].auto_estado == 2){
                                     poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion], function(errorUpdate, resultsUpdate){
@@ -1232,7 +1239,7 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
                                                 return;
                                             }   
                                             
-                                            prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo);
+                                            prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo, nombreBd);
 
                                             return{estado:'ok'}
         
@@ -1248,9 +1255,18 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
         
                                         //ENVIAR A  LA COLA PARA QUE GUARDE LOS DATOS DEL XML Y ENVIE POR CORREO
                                         sendDataToWorkerAutorizacion(claveActivacion,results[0].auto_id_empresa,datosEmpresa,
-                                                                        datosCliente,datosVenta)
+                                                                        datosCliente,datosVenta,nombreBd)
                                         
                                         return{estado:'ok'}
+                                    });
+                                }else if(results[0].auto_estado == 0){
+                                    pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra], function(errorUp, resultUpdateVentaEstado){
+                                        if(errorUp){
+                                            return;
+                                        }   
+
+                                        return{estado:'ok'}
+    
                                     });
                                 }
                             }
@@ -1273,7 +1289,7 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
    
 }
 
-function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmpresa, datosCliente, datosVenta){
+function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmpresa, datosCliente, datosVenta, nombreBd){
 
     const dateVenta = new Date(datosVenta.venta_fecha_hora);
         
@@ -1295,7 +1311,8 @@ function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmpresa, 
         documentoNumero: 
                     `${datosVenta.venta_001}-${datosVenta.venta_002}-${datosVenta.venta_numero}`,
         ventaValorTotal: datosVenta.venta_total,
-        ventaFecha: dateString
+        ventaFecha: dateString,
+        nombreBd: nombreBd
     }
     // SEND JOB TO QUEUE BULL
     docElectronicoQueue.add(objSendJob,{

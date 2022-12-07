@@ -52,8 +52,8 @@ router.get('/autorizardocumentoelectronico', async (req, res) => {
 });
 
 router.get('/generatepdffromventa', async(req, res) => {
-    const {idEmp,idVentaCompra,identificacion} = req.query;
-    const generatePdfVentaPromise = documentosElectronicosRepository.generateDownloadPdfFromVenta(idEmp,idVentaCompra,identificacion, true);
+    const {idEmp,idVentaCompra,identificacion, nombreBd} = req.query;
+    const generatePdfVentaPromise = documentosElectronicosRepository.generateDownloadPdfFromVenta(idEmp,idVentaCompra,identificacion, true, nombreBd);
 
     generatePdfVentaPromise.then(
         function(response){
@@ -97,7 +97,7 @@ router.post('/autorizarlistdocumentosbyid', async (req, res) => {
     const responseQuery = await documentosElectronicosRepository.getNumDocByAutorizar(req.body.rucEmpresa);
     
     if(responseQuery.isSucess == true && responseQuery.docRestantes >= req.body.list.length){
-        const sendListDocElectronicosProm = documentosElectronicosRepository.autorizarListDocumentos(req.body.list);
+        const sendListDocElectronicosProm = documentosElectronicosRepository.autorizarListDocumentos(req.body.list, req.body.nombreBd);
 
         sendListDocElectronicosProm.then(
             function (result){

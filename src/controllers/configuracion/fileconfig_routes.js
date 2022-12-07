@@ -10,8 +10,6 @@ router.post('/insertfilefirmaelec',async (req, res) => {
 
     upload(req, res, async (error) => {
         if(error){
-            console.log(error);
-            console.log('ocurrio un error en multer');
             return;
         }
 
@@ -52,6 +50,8 @@ router.post('/insertfilefirmaelec',async (req, res) => {
 
         }else{
             if(req.body.claveFirma){
+                console.log('dentro clave firma');
+                console.log(req.body.claveFirma);
                 configRepository.insertFileNameFirmaElec(req.body.claveFirma,req.body.ruc,``).then(
                     function(result){
                         res.send(result);
@@ -71,7 +71,6 @@ router.post('/insertfilefirmaelec',async (req, res) => {
 
 async function sendFileFirmaToFtp(pathFileFirmaUpload, nombreFirmaFile){
     const client = new ftp.Client()
-    console.log('subiendo');
     try {
         await client.access({
             host: "sheyla2.dyndns.info",
@@ -79,8 +78,6 @@ async function sendFileFirmaToFtp(pathFileFirmaUpload, nombreFirmaFile){
             password: "m10101418M"
         })
         const response = await client.uploadFrom(pathFileFirmaUpload,`${nombreFirmaFile}` );
-        console.log('response clave firma');
-        console.log(response);
         client.close();
 
         return response;

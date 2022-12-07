@@ -834,9 +834,6 @@ async function getImagenByRucEmp(rucEmp){
 
                   client.close();
 
-                  console.log('response client download image in FTP');
-                  console.log(response);
-
                   return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
 
                 }catch(errorInside){

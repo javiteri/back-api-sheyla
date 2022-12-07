@@ -2,12 +2,12 @@ const pool = require('../../../connectiondb/mysqlconnection');
 const excelJS = require("exceljs");
 const fs = require('fs');
 
-exports.getListProveedoresByIdEmp = async (idEmpresa) => {
+exports.getListProveedoresByIdEmp = async (idEmpresa,nombreBd) => {
 
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectProveedoresByIdEmp = 'SELECT * FROM proveedores WHERE pro_empresa_id = ? ';
+            let querySelectProveedoresByIdEmp = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? `;
             pool.query(querySelectProveedoresByIdEmp, [idEmpresa], function (error, results, fields){
 
                 if(error){
@@ -37,11 +37,11 @@ exports.getListProveedoresByIdEmp = async (idEmpresa) => {
     });
 }
 
-exports.getProveedorByIdEmp = async (idProv, idEmpresa) => {
+exports.getProveedorByIdEmp = async (idProv, idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectProveedor = `SELECT * FROM proveedores WHERE pro_empresa_id = ? AND pro_id = ? LIMIT 1`
+            let querySelectProveedor = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_id = ? LIMIT 1`
             
             pool.query(querySelectProveedor, [idEmpresa, idProv], (err, results) => {
 
@@ -85,10 +85,10 @@ exports.insertProveedor = async (datosProveedor) => {
 
             const {idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
                 observacion, telefono, celular, email, paginaWeb, direccion, identificacionRepre,
-                nombreRepre, telefonoRepre, direccionRepre, emailRepre} = datosProveedor;
+                nombreRepre, telefonoRepre, direccionRepre, emailRepre, nombreBd} = datosProveedor;
             
-            let queryExistProveedor = "SELECT COUNT(*) AS CANT FROM proveedores WHERE pro_empresa_id = ? AND pro_documento_identidad = ?";
-            let queryInsertProveedor = `INSERT INTO proveedores (pro_empresa_id, pro_tipo_documento_identidad, pro_documento_identidad, 
+            let queryExistProveedor = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_documento_identidad = ?`;
+            let queryInsertProveedor = `INSERT INTO ${nombreBd}.proveedores (pro_empresa_id, pro_tipo_documento_identidad, pro_documento_identidad, 
             pro_nombre_natural, pro_razon_social, pro_observacion, pro_telefono, pro_celular, pro_email, 
             pro_pagina_web, pro_direccion, pro_cedula_representante, pro_nombre_presentante, pro_telefonos_representante, 
             pro_direccion_representante, pro_mail_representante) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
@@ -167,10 +167,10 @@ exports.updateProveedor = async (datosProveedor) => {
 
             const {idProveedor, idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
                 observacion, telefono, celular, email, paginaWeb, direccion, identificacionRepre,
-                nombreRepre, telefonoRepre, direccionRepre, emailRepre} = datosProveedor;
+                nombreRepre, telefonoRepre, direccionRepre, emailRepre, nombreBd} = datosProveedor;
             
-            let queryExistProveedor = "SELECT COUNT(*) AS CANT FROM proveedores WHERE pro_empresa_id = ? AND pro_documento_identidad = ?";
-            let queryUpdateProveedor = `UPDATE proveedores SET pro_tipo_documento_identidad = ?, pro_documento_identidad = ?, 
+            let queryExistProveedor = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_documento_identidad = ?`;
+            let queryUpdateProveedor = `UPDATE ${nombreBd}.proveedores SET pro_tipo_documento_identidad = ?, pro_documento_identidad = ?, 
                                     pro_nombre_natural = ?, pro_razon_social = ?, pro_observacion = ?, pro_telefono = ?, pro_celular = ?, 
                                     pro_email = ?, pro_pagina_web = ?, pro_direccion = ?, pro_cedula_representante = ?, 
                                     pro_nombre_presentante = ?, pro_telefonos_representante = ?, 
@@ -252,7 +252,7 @@ exports.updateProveedor = async (datosProveedor) => {
 exports.deleteProveedor = async (idEmpresa, idProv) => {
     return new Promise((resolve, reject) => {
         try {
-            let queryDeleteProveedor = 'DELETE FROM proveedores WHERE pro_empresa_id = ? AND pro_id = ? LIMIT 1';
+            let queryDeleteProveedor = `DELETE FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_id = ? LIMIT 1`;
 
             pool.query(queryDeleteProveedor, [idEmpresa, idProv], function(error, results, fields){
                 if(error){
@@ -328,10 +328,10 @@ exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch) => {
 
 }
 
-exports.getListProveedoresExcel = async (idEmpresa) => {
+exports.getListProveedoresExcel = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
-            const valueResultPromise = createExcelFileProveedores(idEmpresa);
+            const valueResultPromise = createExcelFileProveedores(idEmpresa, nombreBd);
             valueResultPromise.then( 
                 function (data) {
                     resolve(data);
@@ -346,13 +346,13 @@ exports.getListProveedoresExcel = async (idEmpresa) => {
     });
 }
 
-function createExcelFileProveedores(idEmp){
+function createExcelFileProveedores(idEmp, nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
 
 
-            let querySelectProveedoresByIdEmp = 'SELECT * FROM proveedores WHERE pro_empresa_id = ? ';
+            let querySelectProveedoresByIdEmp = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? `;
             pool.query(querySelectProveedoresByIdEmp, [idEmp], function (error, results){
 
                 if(error){

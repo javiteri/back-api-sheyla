@@ -3,7 +3,7 @@ const excelJS = require("exceljs");
 const fs = require('fs');
 
 exports.getListResumenCajaByIdEmp = async (idEmp,idUsuario,tipo,
-    concepto,fechaIni,fechaFin) => {
+    concepto,fechaIni,fechaFin, nombreBd) => {
 
         return new Promise((resolve, reject) => {
             try{
@@ -17,7 +17,8 @@ exports.getListResumenCajaByIdEmp = async (idEmp,idUsuario,tipo,
                 }
 
                 const sqlQueryGetListResumen = `SELECT bc_Fecha_hora AS fecha,bc_tipo AS tipo,bc_monto AS monto,bc_concepto AS concepto,
-                                                usu_nombres AS responsable FROM bitacora_caja,usuarios 
+                                                usu_nombres AS responsable 
+                                                FROM ${nombreBd}.bitacora_caja,${nombreBd}.usuarios 
                                                 WHERE bc_empresa_id = ? AND usu_id=ie_user ${searchByTipo} AND bc_concepto LIKE ?
                                                 ${searchByUsuario} AND bc_Fecha_hora BETWEEN ? AND ? ORDER BY bc_id`;
                 
@@ -52,12 +53,12 @@ exports.getListResumenCajaByIdEmp = async (idEmp,idUsuario,tipo,
 }
 
 
-exports.getListValorCajaByIdEmp = async (idEmp) => {
+exports.getListValorCajaByIdEmp = async (idEmp, nombreBd) => {
 
         return new Promise((resolve, reject) => {
             try{
 
-                const sqlQueryGetListValorCaja = `SELECT EMP_CAJA AS valorcaja FROM empresas WHERE EMP_ID = ?`;
+                const sqlQueryGetListValorCaja = `SELECT EMP_CAJA AS valorcaja FROM ${nombreBd}.empresas WHERE EMP_ID = ?`;
                 
                 pool.query(sqlQueryGetListValorCaja, [idEmp], (error, results) => { 
                     
@@ -87,7 +88,7 @@ exports.getListValorCajaByIdEmp = async (idEmp) => {
         });
 }
 
-exports.getListCuadreCajaMovimientosGrupo = async (idEmp, idUsuario,fechaIni,fechaFin) => {
+exports.getListCuadreCajaMovimientosGrupo = async (idEmp, idUsuario,fechaIni,fechaFin, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
             let queryByUsu = ``;
@@ -98,7 +99,8 @@ exports.getListCuadreCajaMovimientosGrupo = async (idEmp, idUsuario,fechaIni,fec
             }
             
             const sqlQueryMovimientosGrupo = `SELECT bc_tipo AS tipo,
-                SUM(bc_monto) AS monto,ie_grupo AS grupo FROM bitacora_caja, usuarios
+                SUM(bc_monto) AS monto,ie_grupo AS grupo 
+                FROM ${nombreBd}.bitacora_caja, ${nombreBd}.usuarios
                 WHERE bc_empresa_id = ? AND usu_id = ie_user AND (bc_tipo = 'INGRESO' || bc_tipo = 'EGRESO')
                 AND bc_Fecha_hora BETWEEN ? AND ? 
                 ${queryByUsu} GROUP BY  ie_grupo ORDER BY bc_id`;
@@ -200,14 +202,14 @@ exports.insertCuadreCajaByIdEmp = async (cuadreCajaData) => {
     return new Promise((resolve, reject) => {
         try{
 
-            const {idEmp,fecha,tipo,concepto,idUser,grupo,monto} = cuadreCajaData;
+            const {idEmp,fecha,tipo,concepto,idUser,grupo,monto,nombreBd} = cuadreCajaData;
 
-            const sqlQueryInsertDataBitacora = `INSERT INTO bitacora_caja 
+            const sqlQueryInsertDataBitacora = `INSERT INTO ${nombreBd}.bitacora_caja 
                     (bc_empresa_id,bc_fecha_hora,bc_tipo,bc_monto,bc_concepto,ie_user,ie_grupo) VALUES (?,?,?,?,?,?,?)`;
-            const sqlQueryInsertDataBitacora2 = `INSERT INTO bitacora_caja 
+            const sqlQueryInsertDataBitacora2 = `INSERT INTO ${nombreBd}.bitacora_caja 
                     (bc_empresa_id,bc_fecha_hora,bc_tipo,bc_monto,bc_concepto,ie_user,ie_grupo) VALUES (?,?,?,?,?,?,?)`;
-            const sqlQueryUpdateCajaByIdEmp = `UPDATE empresas SET emp_caja = ? WHERE emp_id = ?`;
-            const sqlQueryGetValueCajaEmp = `SELECT emp_caja AS valorcaja FROM empresas WHERE emp_id = ?`;
+            const sqlQueryUpdateCajaByIdEmp = `UPDATE ${nombreBd}.empresas SET emp_caja = ? WHERE emp_id = ?`;
+            const sqlQueryGetValueCajaEmp = `SELECT emp_caja AS valorcaja FROM ${nombreBd}.empresas WHERE emp_id = ?`;
 
             pool.getConnection(function(error, connection){
                 
@@ -335,12 +337,9 @@ exports.insertCuadreCajaByIdEmp = async (cuadreCajaData) => {
 exports.insertBitacoraIngresoOrEgreso = async (bitacoraData) => {
     return new Promise((resolve, reject) => {
         try{
-            console.log('inside este');
-            console.log(bitacoraData);
-            const {idEmp,fecha,tipo,concepto,idUser,grupo,monto} = bitacoraData;
+            const {idEmp,fecha,tipo,concepto,idUser,grupo,monto,nombreBd} = bitacoraData;
 
-            
-            const sqlQueryInsertDataBitacora = `INSERT INTO bitacora_caja 
+            const sqlQueryInsertDataBitacora = `INSERT INTO ${nombreBd}.bitacora_caja 
                     (bc_empresa_id,bc_fecha_hora,bc_tipo,bc_monto,bc_concepto,ie_user,ie_grupo) VALUES (?,?,?,?,?,?,?)`;
             pool.query(sqlQueryInsertDataBitacora,[idEmp,fecha,tipo,monto,concepto,idUser,grupo],function(error, reslts){
                if(error){
@@ -375,11 +374,11 @@ exports.insertBitacoraIngresoOrEgreso = async (bitacoraData) => {
 }
 
 
-exports.getListaMovimientosCajaExcel = async (idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin) => {
+exports.getListaMovimientosCajaExcel = async (idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin,nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
             const valueResultPromise = createExcelFileMovimientosCaja(idEmp,idUsuario,tipo,
-                concepto,fechaIni,fechaFin);
+                                        concepto,fechaIni,fechaFin,nombreBd);
             valueResultPromise.then( 
                 function (data) {
                     resolve(data);
@@ -394,7 +393,7 @@ exports.getListaMovimientosCajaExcel = async (idEmp,idUsuario,tipo,concepto,fech
     });
 }
 
-function createExcelFileMovimientosCaja(idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin){
+function createExcelFileMovimientosCaja(idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin, nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
@@ -409,7 +408,8 @@ function createExcelFileMovimientosCaja(idEmp,idUsuario,tipo,concepto,fechaIni,f
                 }
 
                 const sqlQueryGetListResumen = `SELECT bc_Fecha_hora AS fecha,bc_tipo AS tipo,bc_monto AS monto,bc_concepto AS concepto,
-                                                usu_nombres AS responsable FROM bitacora_caja,usuarios 
+                                                usu_nombres AS responsable 
+                                                FROM ${nombreBd}.bitacora_caja,${nombreBd}.usuarios 
                                                 WHERE bc_empresa_id = ? AND usu_id=ie_user ${searchByTipo} AND bc_concepto LIKE ?
                                                 ${searchByUsuario} AND bc_Fecha_hora BETWEEN ? AND ? ORDER BY bc_id`;
                 

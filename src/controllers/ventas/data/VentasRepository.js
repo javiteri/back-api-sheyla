@@ -10,7 +10,7 @@ exports.insertVenta = async (datosVenta) => {
         try{
 
             const {empresaId,tipoVenta,venta001,venta002,ventaNumero,ventaFechaHora,
-                    usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,formaPago,obs} = datosVenta;
+                    usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,formaPago,obs, nombreBd} = datosVenta;
             const ventaDetallesArray = datosVenta['ventaDetalles'];
             
             // INSERT VENTA Y OBTENER ID
@@ -19,14 +19,14 @@ exports.insertVenta = async (datosVenta) => {
                 // SI TODO ESTA CORRECTO SEGUIR CON LA INSERCION DEL DETALLE DE LA VENTA
             // INSERT VENTA DETALLE CON EL ID DE LA VENTA RECIBIDO
             // EN CADA VENTA DETALLE SE DEBE BAJAR EL STOCK DEL PRODUCTO CORRESPONDIENTE
-            const sqlQueryInsertVenta = `INSERT INTO ventas (venta_empresa_id,venta_tipo, 
+            const sqlQueryInsertVenta = `INSERT INTO ${nombreBd}.ventas (venta_empresa_id,venta_tipo, 
                                         venta_001,venta_002,venta_numero,venta_fecha_hora,venta_usu_id,venta_cliente_id, 
                                         venta_subtotal_12,venta_subtotal_0,venta_valor_iva,venta_total,venta_forma_pago, 
                                         venta_observaciones, venta_unico) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-            const sqlQueryInsertVentaDetalle = `INSERT INTO ventas_detalles (ventad_venta_id,ventad_prod_id,ventad_cantidad, 
+            const sqlQueryInsertVentaDetalle = `INSERT INTO ${nombreBd}.ventas_detalles (ventad_venta_id,ventad_prod_id,ventad_cantidad, 
                                                 ventad_iva,ventad_producto,ventad_vu,ventad_descuento,ventad_vt) VALUES 
                                                 (?,?,?,?,?,?,?,?)`
-            const sqlQueryUpdateStockProducto = `UPDATE productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ?`
+            const sqlQueryUpdateStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ?`
                 
             pool.getConnection(function(error, connection){
 
@@ -122,10 +122,10 @@ exports.insertVenta = async (datosVenta) => {
 exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
     return new Promise((resolve, reject) => {
         try{
-            const {idEmpresa,idVenta,estado} = datos;
-            const sqlSelectDetalleVenta = `SELECT * FROM ventas_detalles WHERE ventad_venta_id = ?`;
-            const sqlUpdateEstadoVenta = `UPDATE ventas SET venta_anulado = ? WHERE venta_id = ? AND venta_empresa_id = ?`;
-            const sqlQueryUpdateStockProducto = `UPDATE productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
+            const {idEmpresa,idVenta,estado, nombreBd} = datos;
+            const sqlSelectDetalleVenta = `SELECT * FROM ${nombreBd}.ventas_detalles WHERE ventad_venta_id = ?`;
+            const sqlUpdateEstadoVenta = `UPDATE ${nombreBd}.ventas SET venta_anulado = ? WHERE venta_id = ? AND venta_empresa_id = ?`;
+            const sqlQueryUpdateStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
 
             pool.getConnection(function(error, connection){
                 connection.beginTransaction(function(err){
@@ -213,12 +213,12 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
 
         try{
 
-            const {idEmpresa,idVenta,estado} = datos;
+            const {idEmpresa,idVenta,estado, nombreBd} = datos;
 
-            const sqlSelectDetalleVenta = `SELECT * FROM ventas_detalles WHERE ventad_venta_id = ?`;
-            const sqlQueryUpdateStockProducto = `UPDATE productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
-            const queryDeleteVentaByIdEmp = `DELETE FROM ventas WHERE venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
-            const queryDeleteVentaDetalleByIdEmp = `DELETE FROM ventas_detalles WHERE ventad_venta_id = ?`;
+            const sqlSelectDetalleVenta = `SELECT * FROM ${nombreBd}.ventas_detalles WHERE ventad_venta_id = ?`;
+            const sqlQueryUpdateStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
+            const queryDeleteVentaByIdEmp = `DELETE FROM ${nombreBd}.ventas WHERE venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
+            const queryDeleteVentaDetalleByIdEmp = `DELETE FROM ${nombreBd}.ventas_detalles WHERE ventad_venta_id = ?`;
 
             pool.getConnection(function(error, connection){
                 connection.beginTransaction(function(err){
@@ -331,7 +331,7 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
     });
 }
 
-exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin) => {
+exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
             let valueNombreClient = "";
@@ -350,7 +350,7 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
             const queryGetListaVentas = `SELECT venta_id as id, venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
                                          venta_anulado as anulado, venta_total AS total,usu_username AS usuario,cli_nombres_natural AS cliente, cli_documento_identidad AS cc_ruc_pasaporte,
                                          venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
-                                         FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
+                                         FROM ${nombreBd}.ventas,${nombreBd}.clientes,${nombreBd}.usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
                                          AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND 
                                          CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ?
                                          AND  venta_fecha_hora  BETWEEN ? AND ? ORDER BY venta_id DESC`;
@@ -382,7 +382,7 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
     });
 }
 
-exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin) => {
+exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
             let valueNombreClient = "";
@@ -398,7 +398,8 @@ exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fe
 
             const queryGetListaResumenVentas = `SELECT venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
             cli_nombres_natural AS cliente,cli_documento_identidad AS cc_ruc_pasaporte,venta_forma_pago AS forma_pago,venta_subtotal_12 AS subtotalIva,
-            venta_subtotal_0 AS subtotalCero, venta_valor_iva AS valorIva,venta_total AS total FROM ventas,clientes,usuarios WHERE venta_empresa_id=? 
+            venta_subtotal_0 AS subtotalCero, venta_valor_iva AS valorIva,venta_total AS total 
+            FROM ${nombreBd}.ventas,${nombreBd}.clientes,${nombreBd}.usuarios WHERE venta_empresa_id=? 
             AND venta_usu_id=usu_id AND venta_cliente_id=cli_id AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND 
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ?
             AND venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 `;
@@ -500,11 +501,11 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp) => {
 }
 
 
-exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002) => {
+exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002,nombreBd) => {
 
     return new Promise((resolve, reject) => {
         try{
-            const queryNextSecencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) as numero FROM ventas WHERE venta_001 = ? AND venta_002 = ? AND venta_tipo = ?  
+            const queryNextSecencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) as numero FROM ${nombreBd}.ventas WHERE venta_001 = ? AND venta_002 = ? AND venta_tipo = ?  
                                         AND venta_empresa_id = ?`;
             pool.query(queryNextSecencial, [fac001,fac002,tipoDoc,idEmp], function(error, results){
                 if(error){
@@ -534,13 +535,13 @@ exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002) =
     });
 }
 
-exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsuario) => {
+exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsuario, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
 
             const querySelectVenta1And2 = `SELECT CAST(venta_001 AS UNSIGNED ) AS valoruno,CAST(venta_002 AS UNSIGNED) AS valordos 
-                                            FROM ventas WHERE venta_tipo = ?  AND venta_empresa_id = ? AND  venta_usu_id = ? ORDER BY venta_id DESC LIMIT 1`;
-            const querySelectNextSecuencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) AS numero FROM ventas WHERE CAST(venta_001 AS UNSIGNED) = ?
+                                            FROM ${nombreBd}.ventas WHERE venta_tipo = ?  AND venta_empresa_id = ? AND  venta_usu_id = ? ORDER BY venta_id DESC LIMIT 1`;
+            const querySelectNextSecuencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) AS numero FROM ${nombreBd}.ventas WHERE CAST(venta_001 AS UNSIGNED) = ?
                                                 AND CAST(venta_002 AS UNSIGNED) = ? AND venta_empresa_id = ?`;
 
             pool.query(querySelectVenta1And2, [tipoDoc,idEmp,idUsuario], function(error, results) {
@@ -606,19 +607,20 @@ exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsu
 }
 
 
-exports.getDataByIdVenta = async (idVenta, idEmp, ruc) => {
+exports.getDataByIdVenta = async (idVenta, idEmp, ruc, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
 
             const queryListVentaDelleByIdVenta = `SELECT ventad_cantidad,ventad_descuento,ventad_id,ventad_iva,
-            ventad_prod_id,ventad_producto,ventad_venta_id,ventad_vt,ventad_vu,prod_codigo FROM ventas_detalles, productos 
+            ventad_prod_id,ventad_producto,ventad_venta_id,ventad_vt,ventad_vu,prod_codigo 
+            FROM ${nombreBd}.ventas_detalles, ${nombreBd}.productos 
             WHERE ventad_prod_id = prod_id AND ventad_venta_id = ?`;
             const queryGetListaVentas = `SELECT venta_id as id, venta_fecha_hora AS fechaHora, venta_tipo AS documento,venta_001 AS venta001,venta_002 AS venta002, venta_numero AS numero,
                                          venta_anulado as anulado, venta_total AS total, venta_subtotal_12 AS subtotal12, venta_subtotal_0 AS subtotal0, venta_valor_iva AS valorIva,
                                          usu_username AS usuario,cli_nombres_natural AS cliente,cli_id as clienteId,cli_teleono as clienteTele,
                                          cli_direccion as clienteDir,cli_email as clienteEmail,cli_documento_identidad AS cc_ruc_pasaporte,cli_teleono AS telefono,
                                          venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
-                                         FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
+                                         FROM ${nombreBd}.ventas,${nombreBd}.clientes,${nombreBd}.usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
                                          AND venta_id = ? `;
 
             pool.query(queryGetListaVentas,[idEmp, idVenta], (error, results) => {
@@ -700,10 +702,10 @@ exports.getDataByIdVenta = async (idVenta, idEmp, ruc) => {
 }
 
 
-exports.getListListaVentasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc) => {
+exports.getListListaVentasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
-            const valueResultPromise = createExcelFileListaVentas(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc);
+            const valueResultPromise = createExcelFileListaVentas(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd);
             valueResultPromise.then( 
                 function (data) {
                     resolve(data);
@@ -719,10 +721,10 @@ exports.getListListaVentasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCi
 }
 
 
-exports.getListListaResumenVentasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc) => {
+exports.getListListaResumenVentasExcel = async (idEmpresa, fechaIni,fechaFin,nombreOrCiRuc, noDoc,nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
-            const valueResultPromise = createExcelFileResumenVentas(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc);
+            const valueResultPromise = createExcelFileResumenVentas(idEmpresa,fechaIni,fechaFin,nombreOrCiRuc, noDoc,nombreBd);
             valueResultPromise.then( 
                 function (data) {
                     resolve(data);
@@ -737,7 +739,7 @@ exports.getListListaResumenVentasExcel = async (idEmpresa, fechaIni,fechaFin,nom
     });
 }
 
-function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc){
+function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
@@ -758,14 +760,15 @@ function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc
             const queryGetListaVentas = `SELECT venta_id as id, venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
             venta_anulado as anulado, venta_total AS total,usu_username AS usuario,cli_nombres_natural AS cliente, cli_documento_identidad AS cc_ruc_pasaporte,
             venta_forma_pago AS forma_pago,venta_observaciones AS 'Observaciones' 
-            FROM ventas,clientes,usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
+            FROM ${nombreBd}.ventas,${nombreBd}.clientes,${nombreBd}.usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
             AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
             AND  venta_fecha_hora  BETWEEN ? AND ? ORDER BY venta_id DESC`;
 
             pool.query(queryGetListaVentas, 
                         [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
                         fechaIni,fechaFin], (error, results) => {
-
+                
+                console.log(error);
                 if(error){
                     reject({
                         isSucess: false,
@@ -847,10 +850,7 @@ function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc
                         });
                     }
             
-                }catch(exception){
-                    console.log(`exception`);
-                    console.log(exception);
-            
+                }catch(exception){            
                     reject({
                         isSucess: false,
                         error: 'error creando archivo, reintente'
@@ -873,7 +873,7 @@ function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc
 }
 
 
-function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc){
+function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc,nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
@@ -891,7 +891,8 @@ function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noD
 
             const queryGetListaResumenVentas = `SELECT venta_fecha_hora AS fechaHora, venta_tipo AS documento,CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numero,
             cli_nombres_natural AS cliente,cli_documento_identidad AS cc_ruc_pasaporte,venta_forma_pago AS forma_pago,venta_subtotal_12 AS subtotalIva,
-            venta_subtotal_0 AS subtotalCero, venta_valor_iva AS valorIva,venta_total AS total FROM ventas,clientes,usuarios WHERE venta_empresa_id=? 
+            venta_subtotal_0 AS subtotalCero, venta_valor_iva AS valorIva,venta_total AS total 
+            FROM ${nombreBd}.ventas,${nombreBd}.clientes,${nombreBd}.usuarios WHERE venta_empresa_id=? 
             AND venta_usu_id=usu_id AND venta_cliente_id=cli_id AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
             AND venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 `;
 

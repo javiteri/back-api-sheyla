@@ -189,7 +189,8 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                                     idEmpresa: idEmpresa,
                                     nombreEmpresa: nombreEmpresa,
                                     rucEmpresa: ruc,
-                                    redirectToHome: true
+                                    redirectToHome: true,
+                                    nombreBd: result.value
                                 })
                             }
                         );
@@ -543,7 +544,7 @@ exports.recoveryPasswordByRucAndEmail = function(ruc, email){
                         if(email){
 
                             querySelectEmpresa = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? AND emp_mail = ? LIMIT 1`;
-                            let queryUser = "SELECT * FROM usuarios WHERE usu_empresa_id = ? AND usu_permiso_escritura = 1 LIMIT 1";
+                            let queryUser = `SELECT * FROM ${dbName}.usuarios WHERE usu_empresa_id = ? AND usu_permiso_escritura = 1 LIMIT 1`;
 
                             params = [ruc,email];
 
@@ -706,7 +707,7 @@ function getNameBdByRuc(ruc){
                         resolve({
                             isSucess: true,
                             existEmp: true,
-                            value: str
+                            value: ((str.split(',')[1]).trim()).replace(/\*/g, '') //str
                         });
                         return;
                     }
@@ -737,14 +738,14 @@ exports.validateDefaultUserByRuc = function(ruc){
 
                     // OBTENER EL VALOR DEL NOMBRE DE LA EMPRESA Y CONSULTAR SI EXISTE EL USUARIO DEFAUULT
                     
-                    let nombreBd = (result.value.trim().replace(/\*/g," ")).split(",")[1];
+                    let nombreBd = result.value
                     
                     let queryEmpresas = `SELECT * FROM ${nombreBd}.empresas WHERE emp_ruc = ? LIMIT 1`;
                     let query = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_username = "ADMIN" AND usu_password = "ADMIN" AND usu_empresa_id = ? LIMIT 1`;
                     
                     poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
                         if(err){
-                            console.log(error);
+                            console.log(err);
                             reject('error en BD2');
                             return;
                         }
@@ -760,7 +761,6 @@ exports.validateDefaultUserByRuc = function(ruc){
                                 idEmpresa = resultEmpresa[key].EMP_ID;
                                 nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
                         });
-                        console.log(idEmpresa);
 
                         poolMysql.query(query, [idEmpresa], function(err, results, fields) {
                                 if(err){

@@ -18,6 +18,7 @@ module.exports = async (job, done) => {
         let nombreCliente = job.data.nombreCliente;
         let empresaId = job.data.empresaId;
         let rucEmpresa = job.data.rucEmpresa;
+        let nombreBd = job.data.nombreBd;
 
         let ventaNumero = job.data.documentoNumero;
         let ventaTipo = (job.data.tipoDocumento.toString()).toUpperCase();
@@ -51,7 +52,7 @@ module.exports = async (job, done) => {
 
             // SI EL CODIGO ES DE ERROR (2) GUARDAR ESTADO EN LA TABLA VENTA
             if(valorAutoEstado == 2){
-                updateEstadoVentaDocumentoElectronico('1',valorMensajeElectronica,ventaId).then(
+                updateEstadoVentaDocumentoElectronico('1',valorMensajeElectronica,ventaId, nombreBd).then(
                     function(result){
                         console.log('todo ok insertando estado venta error');
                         done(null,job.data);
@@ -71,7 +72,7 @@ module.exports = async (job, done) => {
                 if(rucCliente == '9999999999'){
                     // TODO OK, ENVIAR EMAIL TO URL 
                     // UPDATE TABLA VENTA CON EL ESTADO SI TODO OK
-                    updateEstadoVentaDocumentoElectronico('2',valorMensajeElectronica,ventaId).then(
+                    updateEstadoVentaDocumentoElectronico('2',valorMensajeElectronica,ventaId, nombreBd).then(
                         function(result){
                             done(null,job.data);
                         },
@@ -127,11 +128,11 @@ module.exports = async (job, done) => {
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, done,data){
+function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
-            const queryUpdateVentaEstado = `UPDATE ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
+            const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
 
             mysql.query(queryUpdateVentaEstado,[estado,mensaje,ventaId], function(errorUp, resultUpdateVentaEstado){
 
@@ -185,7 +186,7 @@ function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
             return done(new Error(errorr));
         }
 
-        updateEstadoVentaDocumentoElectronico('2',resultMensaje[0].auto_mensaje,ventaId).then(
+        updateEstadoVentaDocumentoElectronico('2',resultMensaje[0].auto_mensaje,ventaId, job.data.nombreBd).then(
         function(result){
             createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso,done, job.data);
         },
@@ -220,7 +221,8 @@ function createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso, done, jobData){
 
 
 async function createPDFSendFTP(jobData){
-    const promiseCreatePDF = await documentosElectronicosRepository.generateDownloadPdfFromVenta(jobData.empresaIdLocal, jobData.idVenta,jobData.ciRucCliente,true);
+    const promiseCreatePDF = 
+        await documentosElectronicosRepository.generateDownloadPdfFromVenta(jobData.empresaIdLocal, jobData.idVenta,jobData.ciRucCliente,true, jobData.nombreBd);
 
     if(promiseCreatePDF.isSucess && promiseCreatePDF.generatePath){
 

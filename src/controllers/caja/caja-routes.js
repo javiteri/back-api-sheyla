@@ -11,8 +11,9 @@ router.get('/listaResumenCajaIdEmp', async(req, res, next) => {
     let concepto = req.query.concepto;
     let fechaIni = req.query.fechaini;
     let fechaFin = req.query.fechafin;
+    let nombreBd = req.query.nombreBd;
 
-    const listaMovimientoCajaIdEmpProm = cajaRepository.getListResumenCajaByIdEmp(idEmp, idUsuario,tipo, concepto,fechaIni, fechaFin);
+    const listaMovimientoCajaIdEmpProm = cajaRepository.getListResumenCajaByIdEmp(idEmp, idUsuario,tipo, concepto,fechaIni, fechaFin, nombreBd);
     listaMovimientoCajaIdEmpProm.then(
         function(result){
             res.status(200).send(result);
@@ -29,9 +30,10 @@ router.get('/listcuadrecajamovimientosidemp', async(req,res,next) => {
     const idUser = req.query.idUser;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
     const listMovimientosCuadreCaja = cajaRepository.getListCuadreCajaMovimientosGrupo(idEmp, idUser,
-        fechaIni, fechaFin);
+                                        fechaIni, fechaFin, nombreBd);
     listMovimientosCuadreCaja.then(
         function(result){
             res.status(200).send(result);
@@ -45,8 +47,9 @@ router.get('/listcuadrecajamovimientosidemp', async(req,res,next) => {
 router.get('/getvalorcajabyidemp', async(req,res,next) => {
 
     const idEmp = req.query.idEmp;
+    const nombreBd = req.query.nombreBd;
 
-    const valorCajaPromise = cajaRepository.getListValorCajaByIdEmp(idEmp);
+    const valorCajaPromise = cajaRepository.getListValorCajaByIdEmp(idEmp, nombreBd);
     valorCajaPromise.then(
         function(result){
             res.status(200).send(result);
@@ -91,8 +94,9 @@ router.get('/getlistmovimientoscajaexcel', async(req, res) => {
     let concepto = req.query.concepto;
     let fechaIni = req.query.fechaini;
     let fechaFin = req.query.fechafin;
+    let nombreBd = req.query.nombreBd;
 
-    const getListaMovCajaExcelPromise = cajaRepository.getListaMovimientosCajaExcel(idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin);
+    const getListaMovCajaExcelPromise = cajaRepository.getListaMovimientosCajaExcel(idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin,nombreBd);
 
     getListaMovCajaExcelPromise.then(
         function (clientes){

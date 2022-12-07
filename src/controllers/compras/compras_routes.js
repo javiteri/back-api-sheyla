@@ -11,8 +11,9 @@ router.get('/listaComprasByIdEmp', async(req, res, next) => {
     let noDoc = req.query.nodoc;
     let fechaIni = req.query.fechaini;
     let fechaFin = req.query.fechafin;
+    let nombreBd = req.query.nombreBd;
 
-    const listaComprasIdEmpProm = comprasRepository.getListComprasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin);
+    const listaComprasIdEmpProm = comprasRepository.getListComprasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin, nombreBd);
     listaComprasIdEmpProm.then(
         function(result){
             res.status(200).send(result);
@@ -30,8 +31,9 @@ router.get('/listaResumenComprasIdEmp', async(req, res, next) => {
     let noDoc = req.query.nodoc;
     let fechaIni = req.query.fechaini;
     let fechaFin = req.query.fechafin;
+    let nombreBd = req.query.nombreBd;
 
-    const listaResumenComprasIdEmpProm = comprasRepository.getListResumenComprasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin);
+    const listaResumenComprasIdEmpProm = comprasRepository.getListResumenComprasByIdEmpresa(idEmp, nombreCi,noDoc, fechaIni, fechaFin, nombreBd);
     listaResumenComprasIdEmpProm.then(
         function(result){
             res.status(200).send(result);
@@ -56,7 +58,7 @@ router.post('/insertar', async (req, res, next) => {
 });
 
 router.get('/getorcreateprovgenericobyidemp', async(req, res, next) => {
-    const getProveedorGenericoProm = comprasRepository.getOrCreateProveedorGenericoByIdEmp(req.query.idEmp);
+    const getProveedorGenericoProm = comprasRepository.getOrCreateProveedorGenericoByIdEmp(req.query.idEmp,req.query.nombreBd);
     getProveedorGenericoProm.then(
         function(results){
             res.status(200).send(results);
@@ -68,9 +70,9 @@ router.get('/getorcreateprovgenericobyidemp', async(req, res, next) => {
 });
 
 router.get('/getNextNumeroSecuencialByIdEmp', async(req,res,next) => {
-    const {idEmp, tipoDoc, idProveedor,compraNumero} = req.query;
+    const {idEmp, tipoDoc, idProveedor,compraNumero, nombreBd} = req.query;
     const nextSecuencialProm = 
-            comprasRepository.getNextNumeroSecuencialByIdEmp(idEmp,tipoDoc,idProveedor,compraNumero);
+            comprasRepository.getNextNumeroSecuencialByIdEmp(idEmp,tipoDoc,idProveedor,compraNumero, nombreBd);
     nextSecuencialProm.then(
         function(results){
             res.status(200).send(results);
@@ -96,7 +98,7 @@ router.post('/deleteCompra', async(req, res, next) => {
 
 router.get('/getDataByIdCompra',async(req,res,next) => {
     const getDataByIdCompraPromise = 
-            comprasRepository.getDataByIdCompra(req.query.id, req.query.idEmp);
+            comprasRepository.getDataByIdCompra(req.query.id, req.query.idEmp,req.query.nombreBd);
     getDataByIdCompraPromise.then(
         function(results){
             res.status(200).send(results);
@@ -114,8 +116,9 @@ router.get('/getlistcomprasexcel', async(req, res) => {
     const noDoc = req.query.nodoc;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
-    const getListaComprasExcelPromise = comprasRepository.getListaComprasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc);
+    const getListaComprasExcelPromise = comprasRepository.getListaComprasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc, nombreBd);
 
     getListaComprasExcelPromise.then(
         function (clientes){
@@ -139,8 +142,9 @@ router.get('/getlistresumencomprasexcel', async(req, res) => {
     const noDoc = req.query.nodoc;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
-    const getListaComprasExcelPromise = comprasRepository.getListaResumenComprasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc);
+    const getListaComprasExcelPromise = comprasRepository.getListaResumenComprasExcel(idEmp,fechaIni,fechaFin,nombreCi,noDoc, nombreBd);
 
     getListaComprasExcelPromise.then(
         function (clientes){
@@ -161,8 +165,9 @@ router.get('/getlistresumencomprasexcel', async(req, res) => {
 router.post('/verifylistproductxml', async (req, res) => {
     let idEmpresa = req.body.idEmp;
     let listProducts = req.body.listProducts;
+    let nombreBd = req.body.nombreBd;
 
-    const resultVerifyProducts = comprasRepository.verifyListProductXml(idEmpresa, listProducts);
+    const resultVerifyProducts = comprasRepository.verifyListProductXml(idEmpresa, listProducts, nombreBd);
     resultVerifyProducts.then(
         function(result){
             res.status(200).send(result);

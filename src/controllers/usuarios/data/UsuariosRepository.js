@@ -3,11 +3,11 @@ const excelJS = require("exceljs");
 
 const fs = require('fs');
 
-exports.getUsuarioByIdEmp = async (idUser, idEmpresa) => {
+exports.getUsuarioByIdEmp = async (idUser, idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectClientes = `SELECT * FROM usuarios WHERE usu_empresa_id = ? AND usu_id = ? LIMIT 1`
+            let querySelectClientes = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? AND usu_id = ? LIMIT 1`
             
             pool.query(querySelectClientes, [idEmpresa, idUser], (err, results) => {
 
@@ -45,19 +45,19 @@ exports.getUsuarioByIdEmp = async (idUser, idEmpresa) => {
 
 }
 
-exports.getListUsuariosByIdEmp = async (idEmpresa) => {
+exports.getListUsuariosByIdEmp = async (idEmpresa, nombreBd) => {
 
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectUsuariosByIdEmp = 'SELECT * FROM usuarios WHERE usu_empresa_id = ? ';
+            let querySelectUsuariosByIdEmp = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? `;
             pool.query(querySelectUsuariosByIdEmp, [idEmpresa], function (error, results, fields){
 
                 if(error){
                     reject({
                         isSucess: false,
                         code: 400,
-                        messageError: err
+                        messageError: error
                     });
                     return;
                 }
@@ -85,10 +85,10 @@ exports.insertUsuario = async (datosCliente) => {
         try{
 
             const {idEmpresa, identificacion, nombreNatural, telefono, direccion,
-                    email, fechaNacimiento, nombreUsuario, password, permisoEscritura} = datosCliente;
+                    email, fechaNacimiento, nombreUsuario, password, permisoEscritura, nombreBd} = datosCliente;
 
-            let queryExistUsuario = "SELECT COUNT(*) AS CANT FROM usuarios WHERE usu_empresa_id = ? AND usu_identificacion = ?";
-            let queryInsertUser = `INSERT INTO usuarios (usu_empresa_id, usu_nombres, usu_identificacion, usu_telefonos, usu_direccion, usu_mail,
+            let queryExistUsuario = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? AND usu_identificacion = ?`;
+            let queryInsertUser = `INSERT INTO ${nombreBd}.usuarios (usu_empresa_id, usu_nombres, usu_identificacion, usu_telefonos, usu_direccion, usu_mail,
                                         usu_fecha_nacimiento, usu_username, usu_password, usu_permiso_escritura) 
                                         VALUES (?,?,?,?,?,?,?,?,?,?)`;
             
@@ -154,14 +154,14 @@ exports.updateUsuario = async (datosUsuarioUpdate) => {
         try{
 
             const {idUsuario, idEmpresa, identificacion, nombreNatural, telefono, direccion,
-                email, fechaNacimiento, nombreUsuario, password, permisoEscritura} = datosUsuarioUpdate;
+                email, fechaNacimiento, nombreUsuario, password, permisoEscritura, nombreBd} = datosUsuarioUpdate;
             
-            console.log(idEmpresa);
-            let queryExistUser = "SELECT COUNT(*) AS CANT FROM usuarios WHERE usu_empresa_id = ? AND usu_id = ?";
-            let queryUpdateUsuario = `UPDATE usuarios SET usu_identificacion = ?, usu_empresa_id = ?, usu_nombres = ?,
+            let queryExistUser = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? AND usu_id = ?`;
+            let queryUpdateUsuario = `UPDATE ${nombreBd}.usuarios SET usu_identificacion = ?, usu_empresa_id = ?, usu_nombres = ?,
                                                  usu_telefonos = ?, usu_direccion = ?, usu_mail = ? , usu_fecha_nacimiento = ? ,
                                                  usu_username = ?, usu_password = ?, usu_permiso_escritura = ? WHERE usu_empresa_id = ? AND usu_id = ?`;
             
+                                                 console.log(queryUpdateUsuario);
             pool.query(queryExistUser, [idEmpresa, idUsuario], function(error, result, fields){
                 if(error){
                     reject({
@@ -232,10 +232,10 @@ exports.updateUsuario = async (datosUsuarioUpdate) => {
     });
 }
 
-exports.deleteUsuario = async (idEmpresa, idUser) => {
+exports.deleteUsuario = async (idEmpresa, idUser,nombreBd) => {
     return new Promise((resolve, reject) => {
         try {
-            let queryDeleteUsuario = 'DELETE FROM usuarios WHERE usu_empresa_id = ? AND usu_id = ? LIMIT 1';
+            let queryDeleteUsuario = `DELETE FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? AND usu_id = ? LIMIT 1`;
 
             pool.query(queryDeleteUsuario, [idEmpresa, idUser], function(error, results, fields){
                 if(error){
@@ -278,11 +278,11 @@ exports.deleteUsuario = async (idEmpresa, idUser) => {
     });
 }
 
-exports.searchUsuariosByIdEmp = async (idEmpresa, textSearch) => {
+exports.searchUsuariosByIdEmp = async (idEmpresa, textSearch,nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySearchUsuarios = `SELECT * FROM usuarios WHERE usu_empresa_id = ? AND (usu_nombres LIKE ? || usu_identificacion LIKE ?)
+            let querySearchUsuarios = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? AND (usu_nombres LIKE ? || usu_identificacion LIKE ?)
                                          ORDER BY usu_id DESC`
             
             pool.query(querySearchUsuarios, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
@@ -311,13 +311,12 @@ exports.searchUsuariosByIdEmp = async (idEmpresa, textSearch) => {
 
 }
 
-exports.getListUsersExcel = async (idEmpresa) => {
+exports.getListUsersExcel = async (idEmpresa,nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
-            const valueResultPromise = createExcelFileUsuarios(idEmpresa);
+            const valueResultPromise = createExcelFileUsuarios(idEmpresa,nombreBd);
             valueResultPromise.then( 
                 function (data) {
-                    console.log('call to resolve');
                     resolve(data);
                 },
                 function (error) {
@@ -330,12 +329,12 @@ exports.getListUsersExcel = async (idEmpresa) => {
     });
 }
 
-function createExcelFileUsuarios(idEmp){
+function createExcelFileUsuarios(idEmp,nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
 
-            let querySelectUsuariosByIdEmp = 'SELECT * FROM usuarios WHERE usu_empresa_id = ? ';
+            let querySelectUsuariosByIdEmp = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? `;
             pool.query(querySelectUsuariosByIdEmp, [idEmp], function (error, results){
 
                 if(error){
@@ -348,7 +347,6 @@ function createExcelFileUsuarios(idEmp){
                 }
 
             
-                console.log(results);    
                 const arrayData = Array.from(results);
 
                 const workBook = new excelJS.Workbook(); // Create a new workbook

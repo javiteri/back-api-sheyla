@@ -5,9 +5,9 @@ const fs = require('fs');
 
 router.post('/getEmpresaByRuc', async (req, res, next) =>{
 
-    const {ruc, idEmpresa} = req.body;
+    const {ruc, idEmpresa, nombreBd} = req.body;
 
-    const resultQueryEmpresa = empresaRepository.getEmpresaByRuc(ruc, idEmpresa);
+    const resultQueryEmpresa = empresaRepository.getEmpresaByRuc(ruc, idEmpresa, nombreBd);
 
     resultQueryEmpresa.then(
         function(result){

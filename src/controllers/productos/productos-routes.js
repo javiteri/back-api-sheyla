@@ -6,7 +6,7 @@ const productosRepository = require('./data/ProductosRepository');
 
 router.get('/getProductosByIdEmp', async (req, res) => {
 
-    const productosByIdEmpresa = productosRepository.getListProductosByIdEmp(req.query.idEmp);
+    const productosByIdEmpresa = productosRepository.getListProductosByIdEmp(req.query.idEmp, req.query.nombreBd);
     productosByIdEmpresa.then(
         function(usuarios){
             res.status(200).send(usuarios);
@@ -33,7 +33,7 @@ router.get('/getProductosNoAnuladoByIdEmp', async (req, res) => {
 
 router.get('/getProductoByIdEmp', async (req, res) => {
 
-    const productoByIdEmpresa = productosRepository.getProductoByIdEmp(req.query.id, req.query.idEmp);
+    const productoByIdEmpresa = productosRepository.getProductoByIdEmp(req.query.id, req.query.idEmp, req.query.nombreBd);
     productoByIdEmpresa.then(
         function(proveedor){
             res.status(200).send(proveedor);
@@ -73,9 +73,9 @@ router.post('/update', async (req, res) => {
 
 router.post('/delete', async (req, res) => {
 
-    const {idEmpresa, idProducto} = req.body;
+    const {idEmpresa, idProducto, nombreBd} = req.body;
     
-    const deleteProductoPromise = productosRepository.deleteProducto(idEmpresa, idProducto);
+    const deleteProductoPromise = productosRepository.deleteProducto(idEmpresa, idProducto, nombreBd);
 
     deleteProductoPromise.then(
         function(result){
@@ -89,7 +89,7 @@ router.post('/delete', async (req, res) => {
 
 router.get('/getCategoriasByIdEmp', async (req, res) => {
 
-    const categoriasProductoByIdEmpresa = productosRepository.getCategoriasByIdEmp(req.query.idEmp);
+    const categoriasProductoByIdEmpresa = productosRepository.getCategoriasByIdEmp(req.query.idEmp, req.query.nombreBd);
     categoriasProductoByIdEmpresa.then(
         function(usuarios){
             res.status(200).send(usuarios);
@@ -102,7 +102,7 @@ router.get('/getCategoriasByIdEmp', async (req, res) => {
 
 router.get('/getMarcasByIdEmp', async (req, res) => {
 
-    const marcasProductoByIdEmpresa = productosRepository.getMarcasByIdEmp(req.query.idEmp);
+    const marcasProductoByIdEmpresa = productosRepository.getMarcasByIdEmp(req.query.idEmp, req.query.nombreBd);
     marcasProductoByIdEmpresa.then(
         function(usuarios){
             res.status(200).send(usuarios);
@@ -114,7 +114,7 @@ router.get('/getMarcasByIdEmp', async (req, res) => {
 });
 
 router.get('/searchProductosByIdEmp', async (req, res) => {
-    const searchProductosByIdEmpPromise = productosRepository.searchProductosByIdEmp(req.query.idEmp, req.query.textSearch);
+    const searchProductosByIdEmpPromise = productosRepository.searchProductosByIdEmp(req.query.idEmp, req.query.textSearch, req.query.nombreBd);
 
     searchProductosByIdEmpPromise.then(
         function (clientes){
@@ -142,7 +142,7 @@ router.get('/searchProductosByIdEmpActivo', async (req, res) => {
 router.get('/getlistproductosexcel', async(req, res) => {
     
     
-    const getListProductosExcelPromise = productosRepository.getListProductosExcel(req.query.idEmp);
+    const getListProductosExcelPromise = productosRepository.getListProductosExcel(req.query.idEmp, req.query.nombreBd);
 
     getListProductosExcelPromise.then(
         function (clientes){

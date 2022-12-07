@@ -5,7 +5,7 @@ const proveedoresRepository = require('./data/ProveedoresRepository');
 
 router.get('/getProveedoresByIdEmp', async (req, res) => {
 
-    const proveedoresByIdEmpresa = proveedoresRepository.getListProveedoresByIdEmp(req.query.idEmp);
+    const proveedoresByIdEmpresa = proveedoresRepository.getListProveedoresByIdEmp(req.query.idEmp, req.query.nombreBd);
     proveedoresByIdEmpresa.then(
         function(usuarios){
             res.status(200).send(usuarios);
@@ -18,7 +18,7 @@ router.get('/getProveedoresByIdEmp', async (req, res) => {
 
 router.get('/getProveedorByIdEmp', async (req, res) => {
 
-    const proveedorByIdEmpresa = proveedoresRepository.getProveedorByIdEmp(req.query.id, req.query.idEmp);
+    const proveedorByIdEmpresa = proveedoresRepository.getProveedorByIdEmp(req.query.id, req.query.idEmp,req.query.nombreBd);
     proveedorByIdEmpresa.then(
         function(proveedor){
             res.status(200).send(proveedor);
@@ -58,9 +58,9 @@ router.post('/update', async (req, res) => {
 
 router.post('/delete', async (req, res) => {
 
-    const {idEmpresa, idProv} = req.body;
+    const {idEmpresa, idProv, nombreBd} = req.body;
     
-    const deleteProveedorPromise = proveedoresRepository.deleteProveedor(idEmpresa, idProv);
+    const deleteProveedorPromise = proveedoresRepository.deleteProveedor(idEmpresa, idProv, nombreBd);
 
     deleteProveedorPromise.then(
         function(result){
@@ -74,7 +74,7 @@ router.post('/delete', async (req, res) => {
 
 
 router.get('/searchProveedorByIdEmp', async (req, res) => {
-    const searchProveedorByIdEmpPromise = proveedoresRepository.searchProveedoresByIdEmp(req.query.idEmp, req.query.textSearch);
+    const searchProveedorByIdEmpPromise = proveedoresRepository.searchProveedoresByIdEmp(req.query.idEmp, req.query.textSearch, req.query.nombreBd);
 
     searchProveedorByIdEmpPromise.then(
         function (clientes){
@@ -89,7 +89,7 @@ router.get('/searchProveedorByIdEmp', async (req, res) => {
 router.get('/getlistproveedoresexcel', async(req, res) => {
     
     
-    const getListClientesExcelPromise = proveedoresRepository.getListProveedoresExcel(req.query.idEmp);
+    const getListClientesExcelPromise = proveedoresRepository.getListProveedoresExcel(req.query.idEmp,req.query.nombreBd);
 
     getListClientesExcelPromise.then(
         function (clientes){

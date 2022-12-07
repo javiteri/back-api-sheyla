@@ -5,13 +5,12 @@ const dashboardRepository = require('./data/DashboardRepository');
 
 router.get('/getinfoventadiaria', async (req, res) => {
 
-    console.log('inside');
-
     const idEmp = req.query.idEmp;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
-    const getInfoVentaPromise = dashboardRepository.getInfoVentaDiaria(idEmp,fechaIni,fechaFin);
+    const getInfoVentaPromise = dashboardRepository.getInfoVentaDiaria(idEmp,fechaIni,fechaFin, nombreBd);
 
     getInfoVentaPromise.then(
         function(result) {
@@ -28,8 +27,9 @@ router.get('/getinfoventamensual', async (req, res) => {
     const idEmp = req.query.idEmp;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
-    const getInfoVentaMensualPromise = dashboardRepository.getInfoVentaMensual(idEmp,fechaIni,fechaFin);
+    const getInfoVentaMensualPromise = dashboardRepository.getInfoVentaMensual(idEmp,fechaIni,fechaFin, nombreBd);
 
     getInfoVentaMensualPromise.then(
         function(result) {
@@ -44,9 +44,9 @@ router.get('/getinfoventamensual', async (req, res) => {
 router.get('/getinfoclientesregistrados', async (req, res) => {
 
     const idEmp = req.query.idEmp;
+    const nombreBd = req.query.nombreBd;
 
-
-    const getInfoVentaMensualPromise = dashboardRepository.getInfoClientesRegistrados(idEmp);
+    const getInfoVentaMensualPromise = dashboardRepository.getInfoClientesRegistrados(idEmp, nombreBd);
 
     getInfoVentaMensualPromise.then(
         function(result) {
@@ -61,7 +61,7 @@ router.get('/getinfoclientesregistrados', async (req, res) => {
 router.get('/getinfoproductosregistrados', async (req, res) => {
 
     const idEmp = req.query.idEmp;
-
+    const nombreBd = req.query.nombreBd;
 
     const getInfoProductosRegistradosPromise = dashboardRepository.getInfoProdctosRegistrados(idEmp);
 
@@ -78,9 +78,9 @@ router.get('/getinfoproductosregistrados', async (req, res) => {
 router.get('/getnumdocslicencedays', async (req, res) => {
 
     const rucEmpresa = req.query.rucEmp;
+    const nombreBd = req.query.nombreBd;
 
-
-    const getNumDocsAndLicenceDay = dashboardRepository.getDocEmitidosAndLicenceDays(rucEmpresa);
+    const getNumDocsAndLicenceDay = dashboardRepository.getDocEmitidosAndLicenceDays(rucEmpresa, nombreBd);
 
     getNumDocsAndLicenceDay.then(
         function(result) {
@@ -97,8 +97,9 @@ router.get('/getproductosdelmes', async (req, res) => {
     const idEmp = req.query.idEmp;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
-    const getProductosDelMesProm = dashboardRepository.getProductosDelMesByIdEmp(idEmp,fechaIni,fechaFin);
+    const getProductosDelMesProm = dashboardRepository.getProductosDelMesByIdEmp(idEmp,fechaIni,fechaFin,nombreBd);
 
     getProductosDelMesProm.then(
         function(result) {
@@ -114,8 +115,9 @@ router.get('/getclientesdelmes', async (req, res) => {
     const idEmp = req.query.idEmp;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
-    const getClientesDelMesPromise = dashboardRepository.getClientesDelMesByIdEmp(idEmp,fechaIni,fechaFin);
+    const getClientesDelMesPromise = dashboardRepository.getClientesDelMesByIdEmp(idEmp,fechaIni,fechaFin,nombreBd);
 
     getClientesDelMesPromise.then(
         function(result) {
@@ -132,8 +134,9 @@ router.get('/getventasdeldiaformapago', async (req, res) => {
     const idEmp = req.query.idEmp;
     const fechaIni = req.query.fechaIni;
     const fechaFin = req.query.fechaFin;
+    const nombreBd = req.query.nombreBd;
 
-    const getVentasDelDiaFormaPagoPromise = dashboardRepository.getVentasDiaFormaPagoByIdEmp(idEmp,fechaIni,fechaFin);
+    const getVentasDelDiaFormaPagoPromise = dashboardRepository.getVentasDiaFormaPagoByIdEmp(idEmp,fechaIni,fechaFin,nombreBd);
 
     getVentasDelDiaFormaPagoPromise.then(
         function(result) {

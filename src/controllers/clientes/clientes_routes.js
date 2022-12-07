@@ -49,7 +49,7 @@ router.get('/', async (req, res) => {
 }) 
 
 router.get('/getClienteIdEmp', async (req, res) => {
-    const clienteByIdEmp = clienteRepository.getClienteByIdEmp(req.query.idCliente, req.query.idEmp);
+    const clienteByIdEmp = clienteRepository.getClienteByIdEmp(req.query.idCliente, req.query.idEmp, req.query.nombreBd);
 
     clienteByIdEmp.then(
         function (clientes){
@@ -63,7 +63,7 @@ router.get('/getClienteIdEmp', async (req, res) => {
 
 router.get('/getClientesIdEmp', async (req, res) => {
 
-    const clientesByIdEmp = clienteRepository.getListClientesByIdEmp(req.query.idEmp);
+    const clientesByIdEmp = clienteRepository.getListClientesByIdEmp(req.query.idEmp, req.query.nombreBd);
 
     clientesByIdEmp.then(
         function (clientes){
@@ -104,9 +104,9 @@ router.post('/update', async (req, res) => {
 
 router.post('/delete', async (req, res) => {
 
-    const {idEmpresa, idCliente} = req.body;
+    const {idEmpresa, idCliente, nombreBd} = req.body;
     
-    const deleteClientePromise = clienteRepository.deleteCliente(idEmpresa, idCliente);
+    const deleteClientePromise = clienteRepository.deleteCliente(idEmpresa, idCliente, nombreBd);
 
     deleteClientePromise.then(
         function(result){
@@ -119,7 +119,7 @@ router.post('/delete', async (req, res) => {
 });
 
 router.get('/searchClienteByIdEmp', async (req, res) => {
-    const searchClientesByIdEmpPromise = clienteRepository.searchClientesByIdEmp(req.query.idEmp, req.query.textSearch);
+    const searchClientesByIdEmpPromise = clienteRepository.searchClientesByIdEmp(req.query.idEmp, req.query.textSearch, req.query.nombreBd);
 
     searchClientesByIdEmpPromise.then(
         function (clientes){
@@ -133,7 +133,7 @@ router.get('/searchClienteByIdEmp', async (req, res) => {
 
 router.get('/getlistclientesexcel', async(req, res) => {
     
-    const getListClientesExcelPromise = clienteRepository.getListClientesExcel(req.query.idEmp);
+    const getListClientesExcelPromise = clienteRepository.getListClientesExcel(req.query.idEmp, req.query.nombreBd);
 
     getListClientesExcelPromise.then(
         function (clientes){

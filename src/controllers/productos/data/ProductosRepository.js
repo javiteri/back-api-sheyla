@@ -3,12 +3,12 @@ const excelJS = require("exceljs");
 const fs = require('fs');
 
 
-exports.getListProductosByIdEmp = async (idEmpresa) => {
+exports.getListProductosByIdEmp = async (idEmpresa, nombreBd) => {
 
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectProductosByIdEmp = 'SELECT * FROM productos WHERE prod_empresa_id = ? ORDER BY prod_id DESC ';
+            let querySelectProductosByIdEmp = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? ORDER BY prod_id DESC `;
             pool.query(querySelectProductosByIdEmp, [idEmpresa], function (error, results, fields){
 
                 if(error){
@@ -73,11 +73,11 @@ exports.getListProductosNoAnuladoByIdEmp = async (idEmpresa) => {
     });
 }
 
-exports.getProductoByIdEmp = async (idProducto, idEmpresa) => {
+exports.getProductoByIdEmp = async (idProducto, idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectProducto = `SELECT * FROM productos WHERE prod_empresa_id = ? AND prod_id = ? LIMIT 1`
+            let querySelectProducto = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_id = ? LIMIT 1`
             
             pool.query(querySelectProducto, [idEmpresa, idProducto], (err, results) => {
 
@@ -121,9 +121,9 @@ exports.insertPoducto = async (datosProducto) => {
 
             const {idEmpresa, codigo, codigoBarras, nombre, pvp, 
                 costo, utilidad, stock, unidadMedida, iva, activo, 
-                categoria, marca, observacion, tipoProducto} = datosProducto;
+                categoria, marca, observacion, tipoProducto, nombreBd} = datosProducto;
             
-            let queryInsertProducto = `INSERT INTO productos (prod_empresa_id, prod_codigo, prod_codigo_barras, 
+            let queryInsertProducto = `INSERT INTO ${nombreBd}.productos (prod_empresa_id, prod_codigo, prod_codigo_barras, 
                                         prod_nombre, prod_costo, prod_utilidad, prod_pvp, prod_iva_si_no, prod_stock,prod_unidad_medida, 
                                         prod_observaciones, pro_categoria, prod_marca, prod_activo_si_no, prod_fisico) 
                                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
@@ -169,17 +169,15 @@ exports.updateProducto = async (datosProducto) => {
 
             const {idEmpresa, idProducto, codigo, codigoBarras, nombre, pvp,
                 costo, utilidad, stock, unidadMedida, iva, activo,
-                categoria, marca, observacion, tipoProducto} = datosProducto;
+                categoria, marca, observacion, tipoProducto, nombreBd} = datosProducto;
             
-            let queryUpdateProducto = `UPDATE productos SET prod_codigo = ?, 
+            let queryUpdateProducto = `UPDATE ${nombreBd}.productos SET prod_codigo = ?, 
                                         prod_codigo_barras = ?, prod_nombre = ?, prod_costo = ?, prod_utilidad = ?, 
                                         prod_pvp = ?, prod_iva_si_no = ?, prod_stock = ?, prod_unidad_medida = ?, 
                                         prod_observaciones = ?, pro_categoria = ?, prod_marca = ?, prod_activo_si_no = ?,
                                         prod_fisico = ?           
                                         WHERE prod_id = ? AND prod_empresa_id = ?`;
             
-            console.log('codigo barras');
-            console.log(codigoBarras);
             pool.query(queryUpdateProducto, [codigo, codigoBarras?codigoBarras:'', nombre, 
                 costo, utilidad, pvp, iva, stock?stock:'0', unidadMedida, observacion, categoria, marca, 
                 activo,tipoProducto, idProducto, idEmpresa], 
@@ -216,10 +214,10 @@ exports.updateProducto = async (datosProducto) => {
     });
 }
 
-exports.deleteProducto = async (idEmpresa, idProducto) => {
+exports.deleteProducto = async (idEmpresa, idProducto, nombreBd) => {
     return new Promise((resolve, reject) => {
         try {
-            let queryDeleteProducto = 'DELETE FROM productos WHERE  prod_empresa_id = ? AND prod_id = ? LIMIT 1';
+            let queryDeleteProducto = `DELETE FROM ${nombreBd}.productos WHERE  prod_empresa_id = ? AND prod_id = ? LIMIT 1`;
 
             pool.query(queryDeleteProducto, [idEmpresa, idProducto], function(error, results, fields){
                 if(error){
@@ -262,11 +260,11 @@ exports.deleteProducto = async (idEmpresa, idProducto) => {
     });
 }
 
-exports.getCategoriasByIdEmp = async (idEmpresa) => {
+exports.getCategoriasByIdEmp = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectCategoriasProducto = `SELECT DISTINCT pro_categoria FROM productos WHERE prod_empresa_id = ? AND pro_categoria IS NOT NULL 
+            let querySelectCategoriasProducto = `SELECT DISTINCT pro_categoria FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND pro_categoria IS NOT NULL 
                                                 ORDER BY pro_categoria`
             
             pool.query(querySelectCategoriasProducto, [idEmpresa], (err, results) => {
@@ -305,11 +303,11 @@ exports.getCategoriasByIdEmp = async (idEmpresa) => {
 
 }
 
-exports.getMarcasByIdEmp = async (idEmpresa) => {
+exports.getMarcasByIdEmp = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySelectMarcasProducto = `SELECT DISTINCT prod_marca FROM productos WHERE prod_empresa_id = ? AND prod_marca IS NOT NULL 
+            let querySelectMarcasProducto = `SELECT DISTINCT prod_marca FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_marca IS NOT NULL 
                                                 ORDER BY prod_marca`
             
             pool.query(querySelectMarcasProducto, [idEmpresa], (err, results) => {
@@ -348,11 +346,11 @@ exports.getMarcasByIdEmp = async (idEmpresa) => {
 
 }
 
-exports.searchProductosByIdEmp = async (idEmpresa, textSearch) => {
+exports.searchProductosByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySearchClientes = `SELECT * FROM productos WHERE prod_empresa_id = ? AND (prod_nombre LIKE ? || prod_codigo LIKE ?)
+            let querySearchClientes = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND (prod_nombre LIKE ? || prod_codigo LIKE ?)
                                          ORDER BY prod_id DESC`
             
             pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
@@ -414,10 +412,10 @@ exports.searchProductosByIdEmpActivo = async (idEmpresa, textSearch) => {
 
 }
 
-exports.getListProductosExcel = async (idEmpresa) => {
+exports.getListProductosExcel = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
-            const valueResultPromise = createExcelFileProductos(idEmpresa);
+            const valueResultPromise = createExcelFileProductos(idEmpresa, nombreBd);
             valueResultPromise.then( 
                 function (data) {
                     resolve(data);
@@ -432,12 +430,12 @@ exports.getListProductosExcel = async (idEmpresa) => {
     });
 }
 
-function createExcelFileProductos(idEmp){
+function createExcelFileProductos(idEmp, nombreBd){
 
     return new Promise((resolve, reject) => {
         try{
 
-            let querySelectProducto = `SELECT * FROM productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC`
+            let querySelectProducto = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC`
             
             pool.query(querySelectProducto, [idEmp, 1], (err, results) => {
 
