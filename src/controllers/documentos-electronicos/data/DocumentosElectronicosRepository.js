@@ -1084,6 +1084,12 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                                                 if(errorUp){
                                                                     return;
                                                                 }
+
+                                                                //DELETE XML FILE GENERATED
+                                                                fs.unlink(pathFile, function(){
+                                                                    console.log("File was deleted")
+                                                                });
+
                                                                 prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo, nombreBd);
 
                                                             });
@@ -1095,10 +1101,20 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                                             if(errorUp){
                                                                 return;
                                                             }
-                            
+                                                            
+                                                            //DELETE XML FILE GENERATED
+                                                            fs.unlink(pathFile, function(){
+                                                                console.log("File was deleted")
+                                                            });
+
                                                             sendDataToWorkerAutorizacion(claveActivacion, results[0].empresa_id,
                                                                                             datosEmpresa[0],clienteResponse[0],ventaResponse[0], nombreBd);
 
+                                                        });
+                                                    }else{
+                                                        //DELETE XML FILE GENERATED
+                                                        fs.unlink(pathFile, function(){
+                                                            console.log("File was deleted")
                                                         });
                                                     }
         
@@ -1161,7 +1177,6 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
     const queryDatosEmpresaById = `SELECT * FROM ${nombreBd}.empresas WHERE emp_id = ?`;
     const querySelectCliente = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
     
-    console.log(nombreBd);
     pool.query(queryDatosEmpresaById,[idEmp], (err, empResponse) => {
         if(err){
             return;
@@ -1215,7 +1230,6 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
                             return {isSucess: false, message:'error consultando plan'};
                         }
                         if(resultPlan[0].isSucess == 1){
-                            console.log('plan is success');
                             if(results.length <= 0){
                                 // no existe en la tabla autorizaciones
                                 //enviar otra vez el xml al servicio
