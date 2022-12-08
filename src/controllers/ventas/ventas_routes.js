@@ -111,7 +111,7 @@ router.get('/getNextNumeroSecuencialByIdEmp', async(req,res,next) => {
 
 router.get('/getNoPuntoVentaByIdUsr', async(req,res,next) => {
     const {idEmp, tipoDoc, idUsuario, nombreBd} = req.query;
-    console.log(req.query);
+    
     const nextSecuencialProm = 
             ventasRepository.getNoPuntoVentaSecuencialByIdusuarioAndEmp(idEmp,tipoDoc,idUsuario,nombreBd);
     nextSecuencialProm.then(

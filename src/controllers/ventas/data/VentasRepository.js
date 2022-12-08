@@ -768,7 +768,6 @@ function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc
                         [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
                         fechaIni,fechaFin], (error, results) => {
                 
-                console.log(error);
                 if(error){
                     reject({
                         isSucess: false,
