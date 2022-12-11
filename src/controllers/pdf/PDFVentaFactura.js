@@ -382,11 +382,11 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosCo
 
     let stream = fs.createWriteStream(`${path}${nameFile}`);
     pdfDoc.pipe(stream).on('finish', function () {
-        resolve({
+      stream.end();
+      resolve({
             pathFile: path + nameFile
-        });
+      });
     });
-
     pdfDoc.end();
 }
 
@@ -844,12 +844,8 @@ async function getImagenByRucEmp(rucEmp){
 
             }else{
                 const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
-
                 client.close();
                 
-                console.log('response client download image in FTP');
-                console.log(response);
-
                 return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
             }
 

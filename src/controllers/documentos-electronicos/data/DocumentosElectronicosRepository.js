@@ -689,7 +689,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
 
 }
 
-function removeAccentDiactricsFromString(texto){    
+function removeAccentDiactricsFromString(texto){
     let textoNormlizeAccent = texto.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
     let textoFinal = textoNormlizeAccent.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '')
 

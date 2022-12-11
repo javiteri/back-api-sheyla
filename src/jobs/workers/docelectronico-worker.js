@@ -264,6 +264,8 @@ async function createXMLSendFTP(stringXmlAutorizado, claveAcceso){
         s.push(null);
 
         await client.uploadFrom(s,`${claveAcceso}.xml`);
+        s._readableState.buffer.clear();
+        s._readableState.length = 0;
     }catch(exception){
         console.log(exception)
     }
