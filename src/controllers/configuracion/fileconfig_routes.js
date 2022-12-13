@@ -50,8 +50,6 @@ router.post('/insertfilefirmaelec',async (req, res) => {
 
         }else{
             if(req.body.claveFirma){
-                console.log('dentro clave firma');
-                console.log(req.body.claveFirma);
                 configRepository.insertFileNameFirmaElec(req.body.claveFirma,req.body.ruc,``).then(
                     function(result){
                         res.send(result);
