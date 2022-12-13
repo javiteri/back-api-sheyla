@@ -150,6 +150,7 @@ async function sendFileLogoToFtp(pathFile, nombrePdf){
             password: "m10101418M"
         })
         const response = await client.uploadFrom(pathFile,`logos/${nombrePdf}` );
+        console.log(response);
     }catch(exception){
         console.log(err)
     }
@@ -166,18 +167,9 @@ function deleteImageFileByPath(pathImageLogo){
 
 exports.getImagenLogoByRucEmp = function(rucEmp){
     return new Promise( async (resolve, reject) => {
-      
-        //CONNECT TO FTP SERVER
-        const client = new ftp.Client()
 
         try {
-            await  client.access({
-                host: "sheyla2.dyndns.info",
-                user: "firmas",
-                password: "m10101418M"
-            })
-
-            let pathRemoteFile = `logos/${rucEmp}.png`
+            let pathRemoteFile = `logos/${rucEmp}.png`;
             let path = `./filesTMP/${rucEmp}`;
 
             if(!fs.existsSync(`${path}`)){
@@ -188,9 +180,8 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
 
                     try{
                         
-                        const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
-                        client.close();
-                        console.log('inside');
+                        await downloadImagenFileFromFtp(pathRemoteFile, `${path}/${rucEmp}.png`);
+                        
                         resolve({
                             isSucess: true,
                             message: 'imagen descargada',
@@ -199,7 +190,6 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
 
                     }catch(error){
                         console.log('error obteniendo archivo imagen ftp');
-                        client.close();
                         console.log(error);
                         reject({
                             isSucess: false,
@@ -210,8 +200,7 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
             }else{
 
                 try{
-                    const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
-                    client.close();
+                    await downloadImagenFileFromFtp(pathRemoteFile, `${path}/${rucEmp}.png`);
                     resolve({
                         isSucess: true,
                         message: 'imagen descargada',
@@ -219,7 +208,6 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
                     });
                 }catch(error){
                     console.log('error obteniendo archivo imagen ftp');
-                    client.close();
                     reject({
                         isSucess: false,
                         message: 'ocurrio un error obteniendo logo'
@@ -228,7 +216,6 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
             }
 
         }catch(exception){
-            client.close();
             reject({
                 isSucess: false,
                 message: 'ocurrio un error obteniendo logo'
@@ -237,6 +224,38 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
         }
 
     });
+}
+
+async function downloadImagenFileFromFtp(pathRemoteFile, pathDestFile){
+    //CONNECT TO FTP SERVER
+    const client = new ftp.Client();
+    try{
+
+        await  client.access({
+            host: "sheyla2.dyndns.info",
+            user: "firmas",
+            password: "m10101418M"
+        });
+    
+        const fileNameWithoutExt = pathRemoteFile.split('.')[0].split('/')[1];
+        const listFilesInDir = await client.list('logos');
+        let extensionRemoteFile = '.png';
+    
+        listFilesInDir.forEach(function(file){
+            if(file.name.split('.')[0] === fileNameWithoutExt){
+                extensionRemoteFile = file.name.split('.').pop();
+                return;
+            }
+        });
+        
+        await client.downloadTo(pathDestFile, `${pathRemoteFile.split('.')[0]}.${extensionRemoteFile}`);
+    
+        client.close();
+
+    }catch(ex){
+        throw new Error(ex);
+    }
+
 }
 
 
