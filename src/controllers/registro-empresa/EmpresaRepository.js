@@ -67,7 +67,7 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
 
             const {idEmpresa, ruc, nombreEmpresa, razonSocial, fechaInicio, eslogan, 
                 web, email, telefonos, direccionMatriz, sucursal1, sucursal2, 
-                sucursal3, propietario, comentario, img_base64} = datosEmpresa;
+                sucursal3, propietario, comentario, img_base64, extensionFile} = datosEmpresa;
 
             //IF EXIST, SEND IMAGE LOGO TO FTP 
             if(img_base64){
@@ -80,25 +80,25 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
                         if (err) {
                             return console.error(err);
                         }
-                        fs.writeFile(`${path}/${ruc}.png`, base64Image,{encoding: 'base64'}, function(error){
+                        fs.writeFile(`${path}/${ruc}.${extensionFile}`, base64Image,{encoding: 'base64'}, function(error){
                             if(error){
                                 console.log('inside error');
                                 console.log(error);
                             }
 
-                            sendFileLogoToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
+                            sendFileLogoToFtp(`${path}/${ruc}.${extensionFile}`, `${ruc}.${extensionFile}`);
 
                         });
                     });
                 }else{
-                    fs.writeFile(`${path}/${ruc}.png`, base64Image,{encoding: 'base64'}, function(error){
+                    fs.writeFile(`${path}/${ruc}.${extensionFile}`, base64Image,{encoding: 'base64'}, function(error){
                         if(error){
                             console.log('inside error');
                             console.log(error);
                             return;
                         }
 
-                        sendFileLogoToFtp(`${path}/${ruc}.png`, `${ruc}.png`);
+                        sendFileLogoToFtp(`${path}/${ruc}.${extensionFile}`, `${ruc}.${extensionFile}`);
 
                     });
                 }
