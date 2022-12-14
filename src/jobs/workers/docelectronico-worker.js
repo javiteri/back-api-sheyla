@@ -127,51 +127,6 @@ module.exports = async (job, done) => {
     }
 };
 
-//---------------------------------------------------------------------------------------------------------------------
-function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, nombreBd){
-
-    return new Promise((resolve, reject) => {
-        try{
-            const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
-
-            mysql.query(queryUpdateVentaEstado,[estado,mensaje,ventaId], function(errorUp, resultUpdateVentaEstado){
-
-                if(errorUp){
-                    console.log('error insertando en estado venta');
-                    reject(errorUp);
-                }
-                resolve('ok');
-            });
-
-        }catch(exception){
-            reject('error actalizando estado venta');
-        }
-    });
-
-}
-
-//UPDATE IN ONE PLAN ENVIADOS DOCUMENTO
-function updatePlanEnviadosDocumentoElectronico(rucEmp){    
-    return new Promise((resolve, reject) => {
-        try{
-            const queryUpdatePlanWebEnviado = `UPDATE empresas SET EMPRESA_WEB_PLAN_ENVIADOS = EMPRESA_WEB_PLAN_ENVIADOS + 1 WHERE EMPRESA_RUC = ?`;
-
-            mysqlEFactura.query(queryUpdatePlanWebEnviado,[rucEmp], function(error, resultUpdatePlanEviado){
-
-                if(error){
-                    console.log('error actualizando plan enviado');
-                    reject(error);
-                }
-                resolve('ok');
-            });
-
-        }catch(exception){
-            reject('error actualizando plan enviado');
-        }
-    });
-
-}
-
 
 //---------------------------------------------------------------------------------------------------------------------
 function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
@@ -347,4 +302,50 @@ function sendEmailToClient(claveAcceso, jobData, done){
     }else{
         done(null,jobData);
     }
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, nombreBd){
+
+    return new Promise((resolve, reject) => {
+        try{
+            const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
+
+            mysql.query(queryUpdateVentaEstado,[estado,mensaje,ventaId], function(errorUp, resultUpdateVentaEstado){
+
+                if(errorUp){
+                    console.log('error insertando en estado venta');
+                    reject(errorUp);
+                }
+                resolve('ok');
+            });
+
+        }catch(exception){
+            reject('error actalizando estado venta');
+        }
+    });
+
+}
+
+//UPDATE IN ONE PLAN ENVIADOS DOCUMENTO
+function updatePlanEnviadosDocumentoElectronico(rucEmp){    
+    return new Promise((resolve, reject) => {
+        try{
+            const queryUpdatePlanWebEnviado = `UPDATE empresas SET EMPRESA_WEB_PLAN_ENVIADOS = EMPRESA_WEB_PLAN_ENVIADOS + 1 WHERE EMPRESA_RUC = ?`;
+
+            mysqlEFactura.query(queryUpdatePlanWebEnviado,[rucEmp], function(error, resultUpdatePlanEviado){
+
+                if(error){
+                    console.log('error actualizando plan enviado');
+                    reject(error);
+                }
+                resolve('ok');
+            });
+
+        }catch(exception){
+            reject('error actualizando plan enviado');
+        }
+    });
+
 }
