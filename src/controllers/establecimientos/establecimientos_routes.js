@@ -21,6 +21,23 @@ router.post('/guardarestablecimiento', async (req, res, next) => {
     );
 });
 
+router.post('/actualizarestablecimiento', async (req, res, next) => {
+
+    const resultQueryUpdateEmpresa = establecimientoRepository.actualizarDatosEstablecimiento(req.body);
+
+    resultQueryUpdateEmpresa.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            console.log('inside error update datos establecimiento: ' + error);
+            res.status(500).send({
+                isSucess: false,
+                error: error 
+            });
+        }
+    );
+});
 
 router.get('/getEstablecimientosByIdEmp', async (req, res) => {
 
@@ -34,5 +51,54 @@ router.get('/getEstablecimientosByIdEmp', async (req, res) => {
         }
     );
 });
+
+router.get('/getEstablecimientoByIdEmp', async (req, res) => {
+
+    const establecimientoByIdEmpresa = establecimientoRepository.getEstablecimientoByIdEmp(req.query.idEmp, req.query.idEst, req.query.nombreBd);
+    establecimientoByIdEmpresa.then(
+        function(proveedor){
+            res.status(200).send(proveedor);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+
+});
+
+
+router.get('/getimagenlogobyrucempresaestablec', async(req, res, next) =>{
+    const getImageLogoByRucEmpresa = establecimientoRepository.getImagenLogoByRucEmp(req.query.ruc);
+    getImageLogoByRucEmpresa.then(
+        function(data){
+            res.download(data['path'],((error) => {
+
+                fs.unlink(data['path'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.post('/delete', async (req, res) => {
+
+    const {idEmpresa, idEstablecimiento, nombreBd} = req.body;
+    
+    const deleteEstablecimientoPromise = establecimientoRepository.deleteEstablecimiento(idEmpresa, idEstablecimiento, nombreBd);
+
+    deleteEstablecimientoPromise.then(
+        function(result){
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(200).send(error);
+        }
+    );
+});
+
 
 module.exports = router;

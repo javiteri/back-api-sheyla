@@ -1,7 +1,7 @@
-var mysql = require('mysql')
-var util = require('util')
+const mysql = require('mysql');
+const util = require('util');
 
-var pool = mysql.createPool({
+const pool = mysql.createPool({
     connectionLimit: 10,
     host: process.env.hostDb,
     user: process.env.dbUsername,
@@ -26,9 +26,9 @@ pool.getConnection((err, connection) => {
         console.error('Error al conectar: ' + err);
     }
 
-    if(connection) connection.release()
+    if(connection) connection.release();
 
-    return
+    return;
 })
 
 pool.query = util.promisify(pool.query).bind(pool)

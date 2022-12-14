@@ -6,7 +6,6 @@ const xmlBuilder = require('xmlbuilder');
 const pdfGenerator = require('../../pdf/PDFGenerator');
 const sharedFunctions = require('../../../util/sharedfunctions');
 
-
 const {docElectronicoQueue} = require('../../../jobs/queue');
 
 const codDoc = [
@@ -922,6 +921,7 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
             const sqlQuerySelectVentaByIdEmp = `SELECT ventas.*, usu_nombres FROM ${nombreBd}.ventas, ${nombreBd}.usuarios WHERE venta_usu_id = usu_id AND venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
             const sqlQuerySelectVentaDetallesByIdVenta = `SELECT ventas_detalles.*, prod_codigo FROM ${nombreBd}.ventas_detalles, ${nombreBd}.productos WHERE 
                                                             ventad_prod_id = prod_id AND ventad_venta_id = ? `;
+
             pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%'], (er, datosConfig) => {
                 if(er){
                     console.log('error obteniendo configs');
@@ -1338,10 +1338,6 @@ function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmpresa, 
             delay: 60000
         }
     });
-}
-
-function deleteVentaFromAutorizacionesTableByClaveAcceso(claveAcceso){
-
 }
 
 function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId){

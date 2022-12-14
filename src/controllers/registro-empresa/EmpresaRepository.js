@@ -172,48 +172,31 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
             let pathRemoteFile = `logos/${rucEmp}.png`;
             let path = `./filesTMP/${rucEmp}`;
 
-            if(!fs.existsSync(`${path}`)){
-                fs.mkdir(`${path}`,{recursive: true}, async (err) => {
-                    if (err) {
-                        return console.error(err);
+            fs.mkdir(`${path}`,{recursive: true}, async (err) => {
+                if (err) {
+                     // Si existe un error, comprueba si se debe a que el directorio ya existe
+                     if(!err.code === 'EEXIST'){ 
+                        reject('error al crear directorio: ' + err);
+                        return;
                     }
-
-                    try{
-                        
-                        await downloadImagenFileFromFtp(pathRemoteFile, `${path}/${rucEmp}.png`);
-                        
-                        resolve({
-                            isSucess: true,
-                            message: 'imagen descargada',
-                            path: `${path}/${rucEmp}.png`
-                        });
-
-                    }catch(error){
-                        console.log('error obteniendo archivo imagen ftp');
-                        console.log(error);
-                        reject({
-                            isSucess: false,
-                            message: 'ocurrio un error obteniendo logo'
-                        });
-                    }
-                });
-            }else{
+                }
 
                 try{
-                    await downloadImagenFileFromFtp(pathRemoteFile, `${path}/${rucEmp}.png`);
+                    const extensionFile = await downloadImagenFileFromFtp(pathRemoteFile, `${path}/${rucEmp}`);
+
                     resolve({
                         isSucess: true,
                         message: 'imagen descargada',
-                        path: `${path}/${rucEmp}.png`
+                        path: `${path}/${rucEmp}.${extensionFile}`
                     });
+
                 }catch(error){
-                    console.log('error obteniendo archivo imagen ftp');
                     reject({
                         isSucess: false,
                         message: 'ocurrio un error obteniendo logo'
                     });
                 }
-            }
+            });
 
         }catch(exception){
             reject({
@@ -248,14 +231,17 @@ async function downloadImagenFileFromFtp(pathRemoteFile, pathDestFile){
             }
         });
         
-        await client.downloadTo(pathDestFile, `${pathRemoteFile.split('.')[0]}.${extensionRemoteFile}`);
+        await client.downloadTo(`${pathDestFile}.${extensionRemoteFile}`, `${pathRemoteFile.split('.')[0]}.${extensionRemoteFile}`);
     
         client.close();
-
+        return extensionRemoteFile;
+        
     }catch(ex){
+        client.close();
         throw new Error(ex);
     }
 
 }
+
 
 
