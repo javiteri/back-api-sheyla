@@ -39,6 +39,19 @@ router.post('/actualizarestablecimiento', async (req, res, next) => {
     );
 });
 
+router.get('/getEstablecimientoByIdEmpNumeroEst', async (req, res) => {
+
+    const establecimientosByIdEmpresa = establecimientoRepository.getEstablecimientosByIdEmp(req.query.idEmp, req.query.nombreBd);
+    establecimientosByIdEmpresa.then(
+        function(proveedor){
+            res.status(200).send(proveedor);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 router.get('/getEstablecimientosByIdEmp', async (req, res) => {
 
     const establecimientosByIdEmpresa = establecimientoRepository.getEstablecimientosByIdEmp(req.query.idEmp, req.query.nombreBd);

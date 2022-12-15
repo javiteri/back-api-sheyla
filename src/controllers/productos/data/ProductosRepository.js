@@ -38,19 +38,20 @@ exports.getListProductosByIdEmp = async (idEmpresa, nombreBd) => {
     });
 }
 
-exports.getListProductosNoAnuladoByIdEmp = async (idEmpresa) => {
+exports.getListProductosNoAnuladoByIdEmp = async (idEmpresa, nombreBd) => {
 
     return new Promise((resolve, reject) => {
         try {
             
-            let querySelectProductosByIdEmp = 'SELECT * FROM productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC ';
+            let querySelectProductosByIdEmp = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC`;
             pool.query(querySelectProductosByIdEmp, [idEmpresa, 1], function (error, results, fields){
 
                 if(error){
+                    console.log(error);
                     reject({
                         isSucess: false,
                         code: 400,
-                        messageError: err
+                        messageError: error
                     });
                     return;
                 }
@@ -379,11 +380,11 @@ exports.searchProductosByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
 
 }
 
-exports.searchProductosByIdEmpActivo = async (idEmpresa, textSearch) => {
+exports.searchProductosByIdEmpActivo = async (idEmpresa, textSearch, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySearchClientes = `SELECT * FROM productos WHERE prod_empresa_id = ? AND (prod_nombre LIKE ? || prod_codigo LIKE ?) AND prod_activo_si_no = ?
+            let querySearchClientes = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND (prod_nombre LIKE ? || prod_codigo LIKE ?) AND prod_activo_si_no = ?
                                          ORDER BY prod_id DESC`
             
             pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%', 1], (err, results) => {

@@ -128,8 +128,9 @@ exports.insertConfigsListFacElec = async (datosConfig) => {
     return new Promise((resolve, reject ) => {
         try{
             
-            let queryDeleteFacElectronicaConfig = `DELETE FROM config WHERE con_nombre_config LIKE ? AND con_empresa_id = ?`;
-            let queryInsertConfig = `INSERT INTO config (con_empresa_id,con_nombre_config,con_valor) VALUES ?`;
+            let nombreBd = datosConfig.nombreBd;            
+            let queryDeleteFacElectronicaConfig = `DELETE FROM ${nombreBd}.config WHERE con_nombre_config LIKE ? AND con_empresa_id = ?`;
+            let queryInsertConfig = `INSERT INTO ${nombreBd}.config (con_empresa_id,con_nombre_config,con_valor) VALUES ?`;
 
             pool.getConnection(function(error, connection){
                 connection.beginTransaction(function(err){
@@ -141,15 +142,16 @@ exports.insertConfigsListFacElec = async (datosConfig) => {
                         });
                     }
 
-                    connection.query(queryDeleteFacElectronicaConfig, ['%FAC_ELECTRONICA%', datosConfig[0][0]], function(error, results){
+                    
+                    connection.query(queryDeleteFacElectronicaConfig, ['%FAC_ELECTRONICA%', datosConfig.datos[0][0]], function(error, results){
                         
                         if(error){
+                            console.log(error);
                             connection.rollback(function(){ connection.release()});
                             reject('error insertando List Config');
                             return;
                         }
-
-                        connection.query(queryInsertConfig, [datosConfig], function(err, resultss){
+                        connection.query(queryInsertConfig, [datosConfig.datos], function(err, resultss){
                             if(err){
                                 connection.rollback(function(){ connection.release()});
                                 reject('error insertando List Config');
@@ -180,6 +182,7 @@ exports.insertConfigsListFacElec = async (datosConfig) => {
             });
 
         }catch(error){
+            console.log(error);
             reject({
                 isSucess: false,
                 code: 400,

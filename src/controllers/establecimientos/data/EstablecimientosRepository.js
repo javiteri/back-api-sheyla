@@ -36,40 +36,6 @@ exports.guardarDatosEstablecimiento = async function (datosEstablecimiento){
 
                     });
                 });
-                /*if(!fs.existsSync(`${path}`)){
-                    fs.mkdir(`${path}`,{recursive: true}, (err) => {
-                        if (err) {
-                            // Si existe un error, comprueba si se debe a que el directorio ya existe
-                            if(!err.code === 'EEXIST'){ 
-                                reject('error al crear directorio: ' + err);
-                                return;
-                            }
-
-
-                        }
-                        fs.writeFile(`${path}/${ruc}.${extensionFile}`, base64Image,{encoding: 'base64'}, function(error){
-                            if(error){
-                                console.log(error);
-                                reject('error al escribir imagen establecimiento: ' + error);
-                                return;
-                            }
-
-                            sendFileLogoToFtp(`${path}/${ruc}.${extensionFile}`, `${ruc}.${extensionFile}`);
-
-                        });
-                    });
-                }else{
-                    fs.writeFile(`${path}/${ruc}.${extensionFile}`, base64Image,{encoding: 'base64'}, function(error){
-                        if(error){
-                            console.log(error);
-                            reject('error al escribir imagen establecimiento: ' + error);
-                            return;
-                        }
-
-                        sendFileLogoToFtp(`${path}/${ruc}.${extensionFile}`, `${ruc}.${extensionFile}`);
-
-                    });
-                }*/
             }
 
             queryInsertDatosEstablecimiento = ` INSERT INTO ${nombreBd}.config_establecimientos (cone_empresa_id, cone_establecimiento, cone_nombre_establecimiento, 
@@ -212,6 +178,7 @@ exports.getEstablecimientosByIdEmp = async (idEmpresa, nombreBd) => {
     });    
 }
 
+
 exports.getEstablecimientoByIdEmp = async (idEmpresa, idEstablecimiento,nombreBd) => {
     return new Promise((resolve, reject) => {
         
@@ -219,6 +186,48 @@ exports.getEstablecimientoByIdEmp = async (idEmpresa, idEstablecimiento,nombreBd
             let querySelectEstablecimiento = `SELECT * FROM ${nombreBd}.config_establecimientos WHERE cone_empresa_id = ? AND cone_id = ? LIMIT 1`
             
             poolMysql.query(querySelectEstablecimiento, [idEmpresa, idEstablecimiento], (err, results) => {
+
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        message: err
+                    });
+                    return;
+                }
+                
+                if(!results | results == undefined | results == null | !results.length){
+                    resolve({
+                        isSucess: true,
+                        code: 400,
+                        message: 'no se encontro establecimiento'
+                    });
+
+                    return;
+                }
+
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results
+                });
+
+            });
+
+        }catch(e){
+            reject('error: ' + e);
+        }
+    });    
+
+}
+
+exports.getEstablecimientosByIdEmpNumEstab = async (idEmpresa, numeroEstablecimiento,nombreBd) => {
+    return new Promise((resolve, reject) => {
+        
+        try{
+            let querySelectEstablecimiento = `SELECT * FROM ${nombreBd}.config_establecimientos WHERE cone_empresa_id = ? AND cone_establecimiento = ? LIMIT 1`
+            
+            poolMysql.query(querySelectEstablecimiento, [idEmpresa, numeroEstablecimiento], (err, results) => {
 
                 if(err){
                     reject({

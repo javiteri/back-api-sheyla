@@ -100,11 +100,11 @@ exports.getInfoClientesRegistrados = async (idEmpresa, nombreBd) => {
 
 }
 
-exports.getInfoProdctosRegistrados = async (idEmpresa) => {
+exports.getInfoProdctosRegistrados = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let queryInfoProductosRegistrados = `SELECT COUNT(*) AS 'total' FROM productos WHERE prod_empresa_id=? AND
+            let queryInfoProductosRegistrados = `SELECT COUNT(*) AS 'total' FROM ${nombreBd}.productos WHERE prod_empresa_id=? AND
                                                     prod_activo_si_no=1`
             
             pool.query(queryInfoProductosRegistrados, [idEmpresa], (err, results) => {

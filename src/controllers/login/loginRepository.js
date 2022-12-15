@@ -93,13 +93,16 @@ exports.loginValidateExistEmpresaRucBd1 = function(ruc){
 exports.loginAndValidateEmp = function(ruc, username, password){
     return new Promise((resolve, reject) => {
         try{
-
             getNameBdByRuc(ruc).then(
                 function(result){
+                
                     if(!result.existEmp){
                         resolve(result);
                         return;
                     }
+
+                    const dbName = result.value;
+
                     // CONSULTAR SI EXISTE EL USUARIO Y CONTRASENA
                     let queryNumDocAndLicenceDays = `SELECT empresa_web_plan_enviados as emitidos,empresa_fecha_fin_facturacion as finfactura FROM
                         efactura_web.empresas,efactura_factura.empresas WHERE efactura_web.empresas.EMP_RUC
@@ -118,13 +121,14 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                         }
                         
                         const dateActual = new Date();
-                        const dateInit = new Date(results[0].finfactura); 
+                        const dateInit = new Date(results[0].finfactura);
 
                         let time = dateInit.getTime() - dateActual.getTime(); 
                         let days = time / (1000 * 3600 * 24); //Diference in Days
 
                         let diasLicenciaValue = Number(days).toFixed(0);
 
+                        console.log('inside dias licencia expira');
                         if(diasLicenciaValue <= 0){ 
                             resolve({
                                 isSuccess: true,
@@ -135,12 +139,13 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                             return;
                         }
 
-                        let queryEmpresas = "SELECT * FROM empresas WHERE emp_ruc = ? LIMIT 1";
-                        let query = 'SELECT * FROM usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1';
+                        let queryEmpresas = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? LIMIT 1`;
+                        let query = `SELECT * FROM ${dbName}.usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1`;
                         
                         poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
 
                             if(err){
+                                console.log(err);
                                 reject('error en BD2');
                                 return;
                             }
@@ -180,7 +185,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                                     idUsuario = row.usu_id;
                                     nombreUsuario = row.usu_nombres;
                                 });
-                                
+
                                 resolve({
                                     isSuccess: true,
                                     existUser: true,

@@ -2,17 +2,17 @@ const pdfVentaFactura = require('./PDFVentaFactura');
 const pdfVentaFacturaGeneric = require('./PDFVentaFacturaGeneric');
 
 exports.generatePdfFromVenta = (datosEmpresa, datosCliente, 
-                                datosVenta, isPdfNormal, datosConfig) => {
+                                datosVenta, isPdfNormal, datosConfig, responseDatosEstablecimiento) => {
 
     return new Promise((resolve, reject) => {
         try{
 
           if(isPdfNormal && datosVenta[0].venta_tipo.toUpperCase() == 'FACTURA'){
-            pdfVentaFactura.generatePdfFromVentaFactura(datosEmpresa, datosCliente, datosVenta,datosConfig, 
+            pdfVentaFactura.generatePdfFromVentaFactura(datosEmpresa, datosCliente, datosVenta,datosConfig,responseDatosEstablecimiento,
                                                         resolve, reject);
           }else{
             pdfVentaFacturaGeneric.generatePdfFromVentaFacturaGeneric(datosEmpresa, datosCliente, 
-                                                                      datosVenta,datosConfig, resolve, reject);
+                                                                      datosVenta,datosConfig, responseDatosEstablecimiento,resolve, reject);
           }
         }catch(exception){
             reject(

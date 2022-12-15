@@ -18,8 +18,7 @@ router.get('/getProductosByIdEmp', async (req, res) => {
 });
 
 router.get('/getProductosNoAnuladoByIdEmp', async (req, res) => {
-
-    const productosByIdEmpresa = productosRepository.getListProductosNoAnuladoByIdEmp(req.query.idEmp);
+    const productosByIdEmpresa = productosRepository.getListProductosNoAnuladoByIdEmp(req.query.idEmp, req.query.nombreBd);
     productosByIdEmpresa.then(
         function(usuarios){
             res.status(200).send(usuarios);
@@ -29,7 +28,6 @@ router.get('/getProductosNoAnuladoByIdEmp', async (req, res) => {
         }
     );
 });
-
 
 router.get('/getProductoByIdEmp', async (req, res) => {
 
@@ -127,7 +125,7 @@ router.get('/searchProductosByIdEmp', async (req, res) => {
 });
 
 router.get('/searchProductosByIdEmpActivo', async (req, res) => {
-    const searchProductosByIdEmpPromise = productosRepository.searchProductosByIdEmpActivo(req.query.idEmp, req.query.textSearch);
+    const searchProductosByIdEmpPromise = productosRepository.searchProductosByIdEmpActivo(req.query.idEmp, req.query.textSearch,req.query.nombreBd);
 
     searchProductosByIdEmpPromise.then(
         function (clientes){

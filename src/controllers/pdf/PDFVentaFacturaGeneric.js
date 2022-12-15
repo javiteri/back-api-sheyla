@@ -1,15 +1,15 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const ftp = require("basic-ftp");
+const util = require('util');
 const sharedFunctions = require('../../util/sharedfunctions');
 
-exports.generatePdfFromVentaFacturaGeneric = (datosEmpresa, datosCliente, datosVenta,datosConfig,
+exports.generatePdfFromVentaFacturaGeneric = (datosEmpresa, datosCliente, datosVenta,datosConfig,responseDatosEstablecimiento,
                                                resolve, reject) => {
 
     try{
         //GENERATE PDF FROM VENTA
         const path = `./files/pdf`;
-
         let doc = new PDFDocument({margin: 50, size: 'A4'});
         
         if(!fs.existsSync(`${path}`)){
@@ -17,10 +17,10 @@ exports.generatePdfFromVentaFacturaGeneric = (datosEmpresa, datosCliente, datosV
                 if (err) {
                     return console.error(err);
                 }
-                generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, resolve, reject);
+                generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, responseDatosEstablecimiento,resolve, reject);
             });
         }else{
-            generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, resolve, reject);
+            generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig,responseDatosEstablecimiento, resolve, reject);
         }
 
     }catch(exception){
@@ -35,13 +35,11 @@ exports.generatePdfFromVentaFacturaGeneric = (datosEmpresa, datosCliente, datosV
 }
 
 
-async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosConfig, resolve, reject){
+async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosConfig, responseDatosEstablecimiento,resolve, reject){
     const path = `./files/pdf`;
     const nameFile = `/${Date.now()}_pdf_venta.pdf`;
 
-    console.log('inside generic pdf');
-
-    await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig);
+    await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig, responseDatosEstablecimiento);
     await generateInvoiceTable(pdfDoc,datosVenta, datosCliente);
 
     let stream = fs.createWriteStream(`${path}${nameFile}`);
@@ -54,7 +52,7 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosCo
     pdfDoc.end();
 }
 
-async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,datosConfig){
+async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,datosConfig, responseDatosEstablecimiento){
 
   
     let contribuyenteEspecial = '';
@@ -66,7 +64,7 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
         datosConfig.forEach((element) => {
             
             if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
-              if(element.con_valor.toUpperCase() != 'NO'){
+              if(element.con_valor.trim().toUpperCase() != 'NO'){
                 contribuyenteEspecial = element.con_valor;
               }
             }
@@ -74,7 +72,7 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
                 obligadoContabilidad = element.con_valor === '1';
             }
             if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
-              if(element.con_valor.toUpperCase() != 'NO'){
+              if(element.con_valor.trim().toUpperCase() != 'NO'){
                 agenteDeRetencion = element.con_valor;
               }
             }
@@ -84,7 +82,13 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
         });
     }
 
-    let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
+    let pathImagen = '';
+    if(responseDatosEstablecimiento[0]){
+      pathImagen = await getImagenByRucEmp(`${datosEmpresa[0]['EMP_RUC']}${responseDatosEstablecimiento[0].cone_establecimiento}`);
+    }else{
+      pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
+    }
+    //let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
   
     if(!pathImagen){
         pathImagen = './src/assets/logo_default_sheyla.png';
@@ -96,11 +100,21 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
     if(pathImagen){
         pdfDoc.image(pathImagen,200,50,{fit: [150, 100],align: 'center', valign: 'center'});
     }
-    
+
+    if(pathImagen.includes('filesTMP')){
+      fs.unlink(pathImagen, function(){
+        console.log('imagen, eliminada');
+      });
+    }
+
     pdfDoc.fontSize(9);
     pdfDoc.font(fontBold).text(datosEmpresa[0]['EMP_RAZON_SOCIAL'], 20, 170, {width: 250});
     pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 190,{width: 250});
-    pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, 20, 210,{width: 250});
+
+    if(responseDatosEstablecimiento[0]){
+      pdfDoc.text(`DIRECCIÓN SUCURSAL: ${responseDatosEstablecimiento[0]['cone_direccion_sucursal']}`, {width: 250});
+    }
+    //pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, 20, 210,{width: 250});
 
     if(obligadoContabilidad){
       pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: SI`, 20, 240,{width: 250});
@@ -139,13 +153,13 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     doc,
     invoiceTableTop,
     "Cod Principal",
-    "Description",
+    "Descripcion",
     "Cant",
     "Precio Unitario",
     "Precio Total"
   );
 
-  generateHr(doc, invoiceTableTop + 20);
+  generateHr(doc, invoiceTableTop + 10);
   doc.font("Helvetica");
 
   let index = 0;
@@ -157,7 +171,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
 
     index++;
 
-    if(position > 800){
+    if(position > 780){
         index = 0
         invoiceTableTop = 5;
         position = invoiceTableTop + (index + 1) * 30;
@@ -165,7 +179,9 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
         doc.addPage();
     }
 
-    generateTableRow(
+    const heightString = doc.heightOfString(item.ventad_producto,{width: 200});
+
+    generateTableRow1(
         doc,
         position,
         item.prod_codigo,
@@ -176,7 +192,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
       );
 
     
-    generateHr(doc, position + 20);
+    generateHr(doc, position + (heightString - 10));
   }
 
   if(position >= 600){
@@ -274,7 +290,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     let yposition6 = yposition5 + 10;
     pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
 
-    //pdfDoc.rect(pdfDoc.x - 10,yposition + 15,500, 100).stroke();
+    pdfDoc.rect(pdfDoc.x - 10,yposition + 30,280, 100).stroke();
 
 
     pdfDoc.lineCap('butt')
@@ -295,7 +311,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
 
 function row(doc, heigth) {
     doc.lineJoin('miter')
-      .rect(10, heigth, 250, 20)
+      .rect(10, heigth, 280, 20)
       .stroke()
     return doc
 }
@@ -372,6 +388,27 @@ function generateTableRow(
 
 }
 
+function generateTableRow1(
+  doc,
+  y,
+  item,
+  description,
+  unitCost,
+  quantity,
+  lineTotal
+) {
+  let yAxisValue = y - 11;
+
+  doc
+    .fontSize(8)
+    .text(item, 20, yAxisValue)
+    .text(description, 150, yAxisValue ,{ width: 200})
+    .text(unitCost, 280, yAxisValue, { width: 90, align: "right" })
+    .text(quantity, 370, yAxisValue, { width: 90, align: "right" })
+    .text(lineTotal, 0, yAxisValue, { align: "right" });
+
+}
+
 function generateHr(doc, y) {
     doc
       .strokeColor("#aaaaaa")
@@ -388,48 +425,48 @@ function formatCurrency(cents) {
 
 async function getImagenByRucEmp(rucEmp){
 
-        //CONNECT TO FTP SERVER
-        const client = new ftp.Client()
+  try{
+    let pathRemoteFile = `logos/${rucEmp}`
+    let path = `./filesTMP/${rucEmp}`;
 
-        try {
-            await  client.access({
-                host: "sheyla2.dyndns.info",
-                user: "firmas",
-                password: "m10101418M"
-            })
-            let pathRemoteFile = `logos/${rucEmp}.png`
-            let path = `./filesTMP/${rucEmp}`;
-            
-            if(!fs.existsSync(`${path}`)){
-              fs.mkdirSync(`${path}`,{recursive: true});
-              if(fs.existsSync(`${path}`)){
+    // Convert callback based methods to promise
+    // based methods
+    const makeDir = util.promisify(fs.mkdir);  
 
-                try{
-                  const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
+    await makeDir(`${path}`,{recursive: true});
 
-                  client.close();
-
-                  return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
-
-                }catch(errorInside){
-                  return '';
-                }
-
-              }
-
-            }else{
-                const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
-
-                client.close();
-                return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
+    //CONNECT TO FTP SERVER
+    const client = new ftp.Client();
+    try{
+        await  client.access({
+            host: "sheyla2.dyndns.info",
+            user: "firmas",
+            password: "m10101418M"
+        });
+        
+        //const fileNameWithoutExt = pathRemoteFile.split('.')[0].split('/')[1];
+        const listFilesInDir = await client.list('logos');
+        let extensionRemoteFile = 'png';
+        
+        listFilesInDir.forEach(function(file){
+            if(file.name.split('.')[0] === rucEmp){
+                extensionRemoteFile = file.name.split('.').pop();
+                return;
             }
-
-        }catch(exception){
-            client.close();
-            return '';
-        }
-
+        });
+        
+        let response = await client.downloadTo(`${path}/${rucEmp}.${extensionRemoteFile}`, `${pathRemoteFile}.${extensionRemoteFile}`);
+    
         client.close();
-
+        return (response.code == 505) ? '' : `${path}/${rucEmp}.${extensionRemoteFile}`;
+        
+    }catch(ex){
+        client.close();
+        console.log(ex);
+        return '';
+    }
+  }catch(error){
+    return '';
+  }  
 }
 

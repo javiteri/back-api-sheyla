@@ -61,7 +61,7 @@ router.get('/generatepdffromventa', async(req, res) => {
                 if(error){
                 }
                 fs.unlink(response['generatePath'], function(){
-                    console.log("File was deleted") // Callback
+                    console.log("File was deleted") 
                 });
             }));
 

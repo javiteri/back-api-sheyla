@@ -433,13 +433,13 @@ exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fe
 };
 
 
-exports.getOrCreateConsFinalByIdEmp = async (idEmp) => {
+exports.getOrCreateConsFinalByIdEmp = async (idEmp, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
             const consumidorFinalName = 'CONSUMIDOR FINAL';
 
-            const queryGetConsumidorFinal = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_nombres_natural LIKE ? LIMIT 1`;
-            const insertDefaultConsumidorFinal = `INSERT INTO clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
+            const queryGetConsumidorFinal = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_nombres_natural LIKE ? LIMIT 1`;
+            const insertDefaultConsumidorFinal = `INSERT INTO ${nombreBd}.clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
                                                     cli_nombres_natural, cli_teleono, cli_direccion) VALUES (?,?,?,?,?,?,?)`
 
             pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`], (error, results) => {
@@ -505,6 +505,7 @@ exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002,no
 
     return new Promise((resolve, reject) => {
         try{
+            console.log(tipoDoc);
             const queryNextSecencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) as numero FROM ${nombreBd}.ventas WHERE venta_001 = ? AND venta_002 = ? AND venta_tipo = ?  
                                         AND venta_empresa_id = ?`;
             pool.query(queryNextSecencial, [fac001,fac002,tipoDoc,idEmp], function(error, results){

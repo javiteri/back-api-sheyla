@@ -118,7 +118,7 @@ exports.getListCuadreCajaMovimientosGrupo = async (idEmp, idUsuario,fechaIni,fec
                     if(results.length > 0){
                         const arrayResults = Array.from(results);
                        
-                        getDataDetalleCuadreCaja(arrayResults,idEmp,fechaIni,fechaFin,idUsuario).then(function(returnedData){
+                        getDataDetalleCuadreCaja(arrayResults,idEmp,fechaIni,fechaFin,idUsuario, nombreBd).then(function(returnedData){
 
                             resolve({
                                 isSucess: true,
@@ -160,10 +160,10 @@ exports.getListCuadreCajaMovimientosGrupo = async (idEmp, idUsuario,fechaIni,fec
     });
 };
 
-async function getDataDetalleCuadreCaja(listGrupos,idEmp,fechaIni,fechaFin,idUser){
+async function getDataDetalleCuadreCaja(listGrupos,idEmp,fechaIni,fechaFin,idUser, nombreBd){
     let returnData = {};
     for(let i = 0; i < listGrupos.length; i++){
-            await getListDetalleCuadreCajaByGrupo(idEmp,fechaIni,fechaFin,listGrupos[i].grupo,idUser).then(
+            await getListDetalleCuadreCajaByGrupo(idEmp,fechaIni,fechaFin,listGrupos[i].grupo,idUser, nombreBd).then(
                 function(data) {
                     listGrupos[i]['listDetalle'] = data;
                 }
@@ -172,7 +172,7 @@ async function getDataDetalleCuadreCaja(listGrupos,idEmp,fechaIni,fechaFin,idUse
     return returnData;
 }
 
-function getListDetalleCuadreCajaByGrupo(idEmp, fechaIni,fechaFin,grupo,idUser){
+function getListDetalleCuadreCajaByGrupo(idEmp, fechaIni,fechaFin,grupo,idUser, nombreBd){
 
     let queryByUsu = ``;
     if(idUser == "0"){
@@ -182,7 +182,7 @@ function getListDetalleCuadreCajaByGrupo(idEmp, fechaIni,fechaFin,grupo,idUser){
     }
 
     const sqlQuerySelectListVentasByGroup = `SELECT bc_Fecha_hora AS fecha, bc_monto AS monto, bc_concepto AS grupo FROM 
-                    bitacora_caja WHERE bc_empresa_id = ? ${queryByUsu}
+                    ${nombreBd}.bitacora_caja WHERE bc_empresa_id = ? ${queryByUsu}
                     AND bc_Fecha_hora BETWEEN ? AND ? AND ie_grupo = ?`;
 
     return new Promise((resolve, reject) => {

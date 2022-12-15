@@ -63,7 +63,7 @@ router.get('/getinfoproductosregistrados', async (req, res) => {
     const idEmp = req.query.idEmp;
     const nombreBd = req.query.nombreBd;
 
-    const getInfoProductosRegistradosPromise = dashboardRepository.getInfoProdctosRegistrados(idEmp);
+    const getInfoProductosRegistradosPromise = dashboardRepository.getInfoProdctosRegistrados(idEmp, nombreBd);
 
     getInfoProductosRegistradosPromise.then(
         function(result) {
