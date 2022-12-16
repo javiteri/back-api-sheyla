@@ -797,7 +797,7 @@ function generateTableRow(
     
     doc
       .fontSize(10)
-      .text(item, 20)
+      .text(item, 20, y)
       .text(description, 150, y,{ width: 200})
       .text(unitCost, 280, y, { width: 90, align: "right" })
       .text(quantity, 370, y, { width: 90, align: "right" })
