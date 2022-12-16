@@ -388,6 +388,7 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosCo
       });
     });
     pdfDoc.end();
+    
 }
 
 async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig, responseDatosEstablecimiento){

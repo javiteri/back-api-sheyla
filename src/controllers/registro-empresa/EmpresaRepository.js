@@ -67,7 +67,7 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
 
             const {idEmpresa, ruc, nombreEmpresa, razonSocial, fechaInicio, eslogan, 
                 web, email, telefonos, direccionMatriz, sucursal1, sucursal2, 
-                sucursal3, propietario, comentario, img_base64, extensionFile} = datosEmpresa;
+                sucursal3, propietario, comentario, img_base64, extensionFile, nombreBd} = datosEmpresa;
 
             //IF EXIST, SEND IMAGE LOGO TO FTP 
             if(img_base64){
@@ -104,7 +104,7 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
                 }
             }
 
-            queryInsertDatosEmpresa = ` UPDATE empresas SET EMP_NOMBRE = ?, EMP_RAZON_SOCIAL = ?, EMP_FECHA_INICIO = ?, EMP_SLOGAN = ?, 
+            queryInsertDatosEmpresa = ` UPDATE ${nombreBd}.empresas SET EMP_NOMBRE = ?, EMP_RAZON_SOCIAL = ?, EMP_FECHA_INICIO = ?, EMP_SLOGAN = ?, 
                                             EMP_WEB = ?, EMP_MAIL = ?, EMP_TELEFONOS = ?, EMP_DIRECCION_MATRIZ = ?, EMP_DIRECCION_SUCURSAL1 = ?,
                                             EMP_DIRECCION_SUCURSAL2 = ?, EMP_DIRECCION_SUCURSAL3 = ?, EMP_PROPIETARIO = ?,
                                             EMP_COMENTARIOS = ? WHERE EMP_ID = ? `;
