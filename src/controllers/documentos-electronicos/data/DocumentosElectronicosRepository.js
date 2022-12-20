@@ -561,7 +561,6 @@ function getCodigoFormaPago(formaPago){
 exports.getListDocElectronicosExcel = async (datosFiltro) => {
     return new Promise((resolve, reject) => {
         try{
-
             const promiseGetListDocs = createExcelDocumentosElectronicos(datosFiltro);
             promiseGetListDocs.then(
                 function(documentos){
@@ -571,7 +570,6 @@ exports.getListDocElectronicosExcel = async (datosFiltro) => {
                     return reject(error);
                 }
             );
-
         }catch(exception){
             reject('error creando excel');
         }
