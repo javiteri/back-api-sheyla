@@ -29,27 +29,6 @@ router.get('/getlistdocumentoselectronicosnoautorizados', async (req, res) => {
     );
 });
 
-router.get('/autorizardocumentoelectronico', async (req, res) => {
-
-    const {idEmp, idVentaCompra,identificacion,tipo, estado} = req.query;
-    
-    const documentosElectronicosProm = 
-        documentosElectronicosRepository.atorizarDocumentoElectronico(idEmp, idVentaCompra,identificacion,tipo,estado);
-    documentosElectronicosProm.then(
-        function(result) {
-            if(result.pathFile){
-                fs.unlink(result.pathFile, function(){
-                    res.status(200).send(result);
-                });
-            }else{
-                res.status(200).send(result);
-            }      
-        },
-        function(error) {
-            res.status(400).send(error);
-        }
-    );
-});
 
 router.get('/generatepdffromventa', async(req, res) => {
     const {idEmp,idVentaCompra,identificacion, nombreBd} = req.query;

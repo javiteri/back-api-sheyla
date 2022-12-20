@@ -200,192 +200,6 @@ exports.getDocumentosElectronicosByIdEmpNoAutorizados = async(datosFiltrar) => {
 
 
 //------------------------------------------------------------------------------------------------------------------------
-exports.atorizarDocumentoElectronico = async (idEmp, idVentaCompra,identificacion,tipo,estado) => {
-    return new Promise(async (resolve,reject) => {
-        /*try{
-            if(estado == 0){
-                prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,tipo, resolve, reject);
-            }else{
-                await queryStateDocumentoElectronicoError(idEmp, idVentaCompra,identificacion,tipo); 
-                resolve({
-                    isSucess: true,
-                    message: 'se envio para su autorizacion'
-                });
-            }
-            
-        }catch(exception){            
-            reject({
-                isSucess: false,
-                message: 'Error enviando documento electronico'
-            });
-        }*/
-    });
-};
-
-/*function prepareAndSendDocumentoElectronico(idEmp, idVentaCompra,identificacion,tipo, resolve, reject){
-    // VERIFICAR SI ES UNA COMPRA O VENTA POR QUE DE ESO 
-    // CONSULTAR Y OBTENER LOS DATOS DE - DATOS CLIENTE O PROVEEDOR
-    // - DATOS DE LA VENTA - DATOS DETALLE DE LA VENTA O COMPRA
-    // CON ESOS DATOS GENERAR EL XML Y POR AHORA GUARDARLO EN UNA CARPETA EN EL SERVER
-    // OBTENER LOS DATOS DEL EMISOR (LA EMPRESA) QUE ENVIA EL DOCUMENTO ELECTRONICO
-    const querySelectConfigFactElectr = `SELECT * FROM config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
-    const querySelectCliente = `SELECT * FROM clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
-    const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
-    const querySelectVentasDetalles = `SELECT ventas_detalles.* ,productos.prod_codigo, productos.prod_nombre FROM ventas_detalles, productos WHERE 
-            ventad_prod_id = prod_id AND ventad_venta_id = ?`;
-    const queryDatosEmpresaById = `SELECT * FROM empresas WHERE emp_id = ?`;
-
-    pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%'], (er, datosConfig) => {
-        if(er){
-            return reject(err);
-        }
-        pool.query(queryDatosEmpresaById,[idEmp], (err, datosEmpresa) => {
-            if(err){
-                return reject(err);
-            }
-    
-            pool.query(querySelectCliente, [idEmp, identificacion], (error, clienteResponse) => {
-                if(error){
-                    return reject(error);
-                }
-                    
-                pool.query(querySelectVenta, [idEmp, idVentaCompra], (errorr, ventaResponse) => {
-                    if(errorr){
-                        return reject(errorr);
-                    }
-        
-                    pool.query(querySelectVentasDetalles, [idVentaCompra], (erro, ventaDetalleResponse) => {
-                        if(erro){
-                            return reject(erro);
-                        }
-                        
-                        const valorGenerateXmlResponse = 
-                                        generateXmlDocumentoElectronicoVenta(clienteResponse[0],ventaResponse[0],ventaDetalleResponse,datosEmpresa[0],datosConfig);
-                        valorGenerateXmlResponse.then(
-                            function(data){
-                                const pathFile = data.pathFile;
-                                const claveActivacion = data.claveAct;
-
-                                //INSERT XML FILE IN DB BLOB 
-                                const sqlQuerySelectEmpresa = `SELECT empresa_id FROM empresas WHERE empresa_ruc = ? LIMIT 1`;
-                                const sqlQueryInsertXmlBlob = `INSERT INTO autorizaciones (auto_id_empresa,auto_clave_acceso, auto_xml) VALUES (?,?,?)`;
-                                const sqlQueryExistXmlInsert = `SELECT * FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
-                                const queryPlanEnviados = `SELECT EMPRESA_WEB_PLAN_CANTIDAD, EMPRESA_WEB_PLAN_ENVIADOS,
-                                    CASE WHEN EMPRESA_WEB_PLAN_ENVIADOS >= EMPRESA_WEB_PLAN_CANTIDAD THEN 0 
-                                    ELSE 1 END AS isSucess
-                                    FROM empresas WHERE EMPRESA_RUC = ?`;
-
-                                poolEFactra.query(sqlQuerySelectEmpresa,[datosEmpresa[0].EMP_RUC], function(error, results) {
-                                    if(error){
-                                        return reject({isSucess: false, message:'error buscando empresa'});
-                                    }
-                                    
-                                    poolEFactra.query(queryPlanEnviados, [datosEmpresa[0].EMP_RUC], function(errorPlan, resultPlan){
-                                        if(errorPlan){
-                                            return reject({isSucess: false, message:'error consultando plan'});
-                                        }
-                                        
-                                        if(resultPlan[0].isSucess == 1){
-                                            poolEFactra.query(sqlQueryExistXmlInsert,[claveActivacion], function(errorExist,resultExistDoc){
-                                                if(errorExist){
-                                                    return reject({isSucess: false, message:'error consultando existe archivo xml autorizaciones'});
-                                                }
-        
-                                                // SI EXISTE XML EN LA TABLA AUTORIZACIONES ENTONCES HACER OTRAS VALIDACIONES, CASO CONTRARIO SEGUIR CON LA INSERCION
-                                                if(Object.entries(resultExistDoc).length > 0){
-                                                    
-                                                    // VERIFICAR SI ES UN ERROR O YA SE AUTORIZO PARA REALIZAR EL PROCESO CORRESPONDIENTE 
-                                                    // SE OBTENIENE EL ESTADO DE LA FACTRUA EN LA TABLA AUTORIZACION
-                                                    // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
-                                                    const queryUpdateFacAutorizacion = `DELETE FROM autorizaciones WHERE auto_clave_acceso = ?`;
-                                                    const queryUpdateVentaEstado = `UPDATE ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
-                                                    //2.-ERROR
-                                                    if(resultExistDoc[0].auto_estado == 2){
-                                                        poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion], function(errorUpdate, resultsUpdate){
-                                                            if(errorUpdate){
-                                                                return;
-                                                            }
-                            
-                                                            pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra], function(errorUp, resultUpdateVentaEstado){
-                                                                if(errorUp){
-                                                                    return;
-                                                                }
-                                                                
-                                                                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo);
-                                                                
-                                                                resolve(data);
-                                                            });
-                            
-                                                        });
-                                                    }else if(resultExistDoc[0].auto_estado == 1){
-                                                        // YA SE AUTORIZO EL DOCUMENTO DEBO ACTUALIZAR ESE ESTADO EN LA VENTA
-                                                        pool.query(queryUpdateVentaEstado,[2,resultExistDoc[0].auto_mensaje,idVentaCompra], function(errorUp, resultUpdateVentaEstado){
-                                                            if(errorUp){
-                                                                return;
-                                                            }
-                            
-                                                            sendDataToWorkerAutorizacion(claveActivacion, results[0].empresa_id,
-                                                                                            datosEmpresa[0],clienteResponse[0],ventaResponse[0]);
-                                                            
-                                                            resolve(data);
-                                                        });
-                                                    }
-        
-        
-                                                }else{
-                                                    // READ XML FILE AS STRING
-                                                    let stream  = fs.createReadStream(pathFile);
-                                                    stream.setEncoding('utf-8');
-                                                    let xmlString = '';
-
-                                                    stream.on('data',function(chunk){
-                                                        xmlString += chunk;
-                                                    });
-
-                                                    stream.on('end', function() {
-                                                        let str = xmlString.replace(/[\n\r\t]+/g, '');
-                                                        poolEFactra.query(sqlQueryInsertXmlBlob,[results[0].empresa_id,claveActivacion, str], function(errores, resultss) {
-                                                            if(errores){
-                                                                return;
-                                                            }
-
-                                                            sendDataToWorkerAutorizacion(claveActivacion, results[0].empresa_id,
-                                                                                            datosEmpresa[0],clienteResponse[0],ventaResponse[0]);
-
-                                                            resolve(data);
-                                                        });
-
-                                                    })
-                                                }
-                                                
-                                            });
-                                        }else{
-                                            return reject({
-                                                isSucess: false, 
-                                                message:'no cuenta con documentos para autorizar',
-                                                isAllowAutorizar: false
-                                            });
-                                        }
-
-                                        
-                                    });                                    
-
-                                });
-
-                            },
-                            function(error){
-                                reject(error);
-                            }
-                        );
-                    });
-                });
-            });
-    
-        });
-
-    });
-}*/
-
 
 function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVentaDetalle,datosEmpresa, datosConfig,responseDatosEstablecimiento){
 
@@ -810,7 +624,6 @@ function createExcelDocumentosElectronicos(datosFiltro){
                 }
 
                 const arrayData = Array.from(results);
-
                 const workBook = new excelJS.Workbook(); // Create a new workbook
                 const worksheet = workBook.addWorksheet("Lista Documentos Electronicos");
                 const path = `./files/${idEmp}`;
@@ -825,7 +638,6 @@ function createExcelDocumentosElectronicos(datosFiltro){
                     {header: 'Clave de Acceso', key:'claveacceso',width: 50}
                 ];
             
-                
                 arrayData.forEach(valor => {
 
                     const now = new Date(valor.fecha);
@@ -910,8 +722,6 @@ function createExcelDocumentosElectronicos(datosFiltro){
                 }
 
             });
-
-
         }catch(exception){
             reject({
                 isSucess: false,
@@ -1097,7 +907,8 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
 
 
 async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identificacion, tipo, nombreBd){
-    const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ${nombreBd}.ventas, usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
+   
+    const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ${nombreBd}.ventas, ${nombreBd}.usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
     const queryDatosEmpresaById = `SELECT * FROM ${nombreBd}.empresas WHERE emp_id = ?`;
     const querySelectCliente = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
     
@@ -1262,26 +1073,4 @@ function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmpresa, 
             delay: 60000
         }
     });
-}
-
-function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId){
-
-    return new Promise((resolve, reject) => {
-        try{
-            const queryUpdateVentaEstado = `UPDATE ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
-
-            mysql.query(queryUpdateVentaEstado,[estado,mensaje,ventaId], function(errorUp, resultUpdateVentaEstado){
-
-                if(errorUp){
-                    console.log('error insertando en estado venta');
-                    reject(errorUp);
-                }                
-                resolve('ok');
-            });
-
-        }catch(exception){
-            reject('error actalizando estado venta');
-        }
-    });
-
 }
