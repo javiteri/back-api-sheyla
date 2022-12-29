@@ -81,6 +81,7 @@ router.get('/searchProveedorByIdEmp', async (req, res) => {
             res.status(200).send(clientes);
         },
         function(error){
+            console.log(error);
             res.status(400).send(error);
         }
     );

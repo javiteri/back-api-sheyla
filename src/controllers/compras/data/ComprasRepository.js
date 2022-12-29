@@ -34,12 +34,10 @@ exports.verifyListProductXml = async (idEmpresa, listProductosXml, nombreBd) => 
                     resultProductsExist.push(elementTmp);
 
                 }else{
-
                     elementTmp['codigoXml'] = elemento.codigoPrincipal;
                     elementTmp['exist'] = (!results | results == undefined | results == null | !results.length) ? false : true;
 
                     resultProductsExist.push(elementTmp);
-
                 }
 
                 if(resultProductsExist.length == listProductosXml.length){

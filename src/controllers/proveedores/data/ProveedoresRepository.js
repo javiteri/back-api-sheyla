@@ -295,11 +295,11 @@ exports.deleteProveedor = async (idEmpresa, idProv) => {
     });
 }
 
-exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch) => {
+exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySearchClientes = `SELECT * FROM proveedores WHERE pro_empresa_id = ? AND (pro_nombre_natural LIKE ? || pro_documento_identidad LIKE ?)
+            let querySearchClientes = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND (pro_nombre_natural LIKE ? || pro_documento_identidad LIKE ?)
                                          ORDER BY pro_id DESC`
             
             pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
