@@ -166,7 +166,6 @@ exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
                                 const cantidad = ventaDetalle.ventad_cantidad;
                                 const prodId = ventaDetalle.ventad_prod_id;
                                 
-                                
                                 connection.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId], function(errorrr, results){
                                     if(errorrr){
                                         connection.rollback(function(){ connection.release()});
@@ -194,16 +193,18 @@ exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
 
                             });
 
-
                         });
 
-                    });                    
+                    });
                 });
             });
 
         }catch(exp){
-            console.log('error actualizando update estado venta');
-            console.log(exp);
+            reject({
+                isSucess: false,
+                code: 400,
+                message: 'error actualizando update estado venta'
+            });
         }
     });
 }
@@ -325,8 +326,11 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
             });
 
         }catch(exception){
-            console.log('error eliminando venta');
-            console.log(exception);
+            reject({
+                isSucess: false,
+                code: 400,
+                message: 'error eliminando venta'
+            });
         }
     });
 }
@@ -376,8 +380,12 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
             });
 
         }catch(exception){
-            console.log('error obteniendo lista de ventas');
-            console.log(exception);
+            
+            reject({
+                isSucess: false,
+                code: 400,
+                messageError: 'error obteniendo lista de ventas'
+            });
         }
     });
 }
@@ -426,76 +434,59 @@ exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fe
             });
 
         }catch(exception){
-            console.log('error obteniendo lista resumen ventas');
-            console.log(exception);
+            reject({
+                isSucess: false,
+                code: 400,
+                messageError: 'error obteniendo lista resumen ventas'
+            });
         }
     });
 };
 
 
 exports.getOrCreateConsFinalByIdEmp = async (idEmp, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async(resolve, reject) => {
         try{
             const consumidorFinalName = 'CONSUMIDOR FINAL';
-
             const queryGetConsumidorFinal = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_nombres_natural LIKE ? LIMIT 1`;
             const insertDefaultConsumidorFinal = `INSERT INTO ${nombreBd}.clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
-                                                    cli_nombres_natural, cli_teleono, cli_direccion) VALUES (?,?,?,?,?,?,?)`
+                                                    cli_nombres_natural, cli_teleono, cli_direccion) VALUES (?,?,?,?,?,?,?)`;
 
-            pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`], (error, results) => {
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
+            const responseConsumidorFinal = await pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`]);
+
+            if(!responseConsumidorFinal[0] | responseConsumidorFinal == undefined | responseConsumidorFinal == null){
+
+                const respInsertDefaultConsumidorFinal = await pool.query(insertDefaultConsumidorFinal, [idEmp,'Ecuador','9999999999','CI',
+                                                                            'CONSUMIDOR FINAL','0999999999',consumidorFinalName] );
+
+                const idInserted = respInsertDefaultConsumidorFinal.insertId;
+                const resultData = {
+                    cli_id: idInserted,
+                    cli_documento_identidad: '9999999999',
+                    cli_nombres_natural: 'CONSUMIDOR FINAL',
+                    cli_teleono: '0999999999'
                 }
 
-                if(!results[0] | results == undefined | results == null){
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: resultData
+                });
 
-                    pool.query(insertDefaultConsumidorFinal, [idEmp,'Ecuador','9999999999','CI',
-                                'CONSUMIDOR FINAL','0999999999',consumidorFinalName], (error, resultado) => {
-                        if(error){
-                            reject({
-                                isSucess: false,
-                                code: 400,
-                                messageError: 'error insertando consumidor final'
-                            });
-                            return;
-                        }
-
-                        const idInserted = resultado.insertId;
-                        const resultData = {
-                            cli_id: idInserted,
-                            cli_documento_identidad: '9999999999',
-                            cli_nombres_natural: 'CONSUMIDOR FINAL',
-                            cli_teleono: '0999999999'
-                        }
-
-                        resolve({
-                            isSucess: true,
-                            code: 200,
-                            data: resultData
-                        });
-
-                    });
-
-                }else{
-                    resolve({
-                        isSucess: true,
-                        code: 200,
-                        data: results[0]
-                    });
-                }
-
-                
-            });
+            }else{
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: responseConsumidorFinal[0]
+                });
+            }
 
         }catch(exception){
-            console.log('error obteniendo lista de ventas');
-            console.log(exception);
-            reject('error obteniendo el consumidor final');
+            reject({
+                isSucess: false,
+                code: 400,
+                messageError: 'error obteniendo el consumidor final'
+            });
         }
     });
 }
@@ -503,41 +494,31 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp, nombreBd) => {
 
 exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002,nombreBd) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async(resolve, reject) => {
         try{
-            console.log(tipoDoc);
+            console.log('next secuencial by id Emp');
             const queryNextSecencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) as numero FROM ${nombreBd}.ventas WHERE venta_001 = ? AND venta_002 = ? AND venta_tipo = ?  
                                         AND venta_empresa_id = ?`;
-            pool.query(queryNextSecencial, [fac001,fac002,tipoDoc,idEmp], function(error, results){
-                if(error){
-                    console.log('error consultando siguiente secuencial');
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
-                }
+            const responseSecuencial = await pool.query(queryNextSecencial, [fac001,fac002,tipoDoc,idEmp]);
 
-                if(!results[0].numero){
-                    console.log('no existe numero');
-                }
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results[0].numero ? Number(results[0].numero) + 1 : 1
-                });
-
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: responseSecuencial[0].numero ? Number(responseSecuencial[0].numero) + 1 : 1
             });
+
         }catch(exception){
-            console.log('error obteniendo siguiente secuencial');
-            reject('error obteniendo siguiente secuencial');
+            reject({
+                isSucess: false,
+                code: 400,
+                messageError: 'error obteniendo siguiente secuencial'
+            });
         }
     });
 }
 
 exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsuario, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             const querySelectVenta1And2 = `SELECT CAST(venta_001 AS UNSIGNED ) AS valoruno,CAST(venta_002 AS UNSIGNED) AS valordos 
@@ -545,64 +526,46 @@ exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsu
             const querySelectNextSecuencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) AS numero FROM ${nombreBd}.ventas WHERE CAST(venta_001 AS UNSIGNED) = ?
                                                 AND CAST(venta_002 AS UNSIGNED) = ? AND venta_empresa_id = ?`;
 
-            pool.query(querySelectVenta1And2, [tipoDoc,idEmp,idUsuario], function(error, results) {
-                if(error){
-                    console.log('error consultando punto de venta y comprobante');
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
-                }
+            const respSelectVenta = await pool.query(querySelectVenta1And2, [tipoDoc,idEmp,idUsuario]);
 
-                if(results.length <= 0){
-                    resolve({
-                        isSucess: true,
-                        valor001: 1,
-                        valor002: 1,
-                        secuencial: 1
-                    });
-                    return;
-                }
+            if(respSelectVenta.length <= 0){
+                resolve({
+                    isSucess: true,
+                    valor001: 1,
+                    valor002: 1,
+                    secuencial: 1
+                });
+                return;
+            }
 
-                valor001 = results[0].valoruno;
-                valor002 = results[0].valordos;
+            valor001 = respSelectVenta[0].valoruno;
+            valor002 = respSelectVenta[0].valordos;
 
-                if((valor001 != null && valor001 > 0) && (valor002 != null && valor002 > 0)){
+            if((valor001 != null && valor001 > 0) && (valor002 != null && valor002 > 0)){
+                const respNextSecuencial = await pool.query(querySelectNextSecuencial, [valor001,valor002,idEmp]);
 
-                    pool.query(querySelectNextSecuencial, [valor001,valor002,idEmp], function(errorr, resultss) {
-                        if(errorr){
-                            reject({
-                                isSucess: false,
-                                code: 400,
-                                messageError: 'ocurrio un error'
-                            });
-                            return;
-                        }
+                resolve({
+                    isSucess: true,
+                    valor001: valor001,
+                    valor002: valor002,
+                    secuencial: (respNextSecuencial[0].numero + 1)
+                });
 
-                        resolve({
-                            isSucess: true,
-                            valor001: valor001,
-                            valor002: valor002,
-                            secuencial: (resultss[0].numero + 1)
-                        });
-                    });
-
-                }else{
-                    resolve({
-                        isSucess: true,
-                        valor001: 1,
-                        valor002: 1,
-                        secuencial: 1
-                    });
-                }
-
-            });
+            }else{
+                resolve({
+                    isSucess: true,
+                    valor001: 1,
+                    valor002: 1,
+                    secuencial: 1
+                });
+            }
 
         }catch(exception){
-            console.log('exception');
-            reject('error obteniendo datos punto de venta y secuencial');
+            reject({
+                isSucess: false,
+                code: 400,
+                messageError: 'error obteniendo datos punto de venta y secuencial'
+            });
         }
     });
 }
@@ -613,9 +576,9 @@ exports.getDataByIdVenta = async (idVenta, idEmp, ruc, nombreBd) => {
         try{
 
             const queryListVentaDelleByIdVenta = `SELECT ventad_cantidad,ventad_descuento,ventad_id,ventad_iva,
-            ventad_prod_id,ventad_producto,ventad_venta_id,ventad_vt,ventad_vu,prod_codigo 
-            FROM ${nombreBd}.ventas_detalles, ${nombreBd}.productos 
-            WHERE ventad_prod_id = prod_id AND ventad_venta_id = ?`;
+                                                    ventad_prod_id,ventad_producto,ventad_venta_id,ventad_vt,ventad_vu,prod_codigo 
+                                                    FROM ${nombreBd}.ventas_detalles, ${nombreBd}.productos 
+                                                    WHERE ventad_prod_id = prod_id AND ventad_venta_id = ?`;
             const queryGetListaVentas = `SELECT venta_id as id, venta_fecha_hora AS fechaHora, venta_tipo AS documento,venta_001 AS venta001,venta_002 AS venta002, venta_numero AS numero,
                                          venta_anulado as anulado, venta_total AS total, venta_subtotal_12 AS subtotal12, venta_subtotal_0 AS subtotal0, venta_valor_iva AS valorIva,
                                          usu_username AS usuario,cli_nombres_natural AS cliente,cli_id as clienteId,cli_teleono as clienteTele,
@@ -696,8 +659,11 @@ exports.getDataByIdVenta = async (idVenta, idEmp, ruc, nombreBd) => {
             });
 
         }catch(exception){
-            console.log('error obteniendo lista de ventas');
-            console.log(exception);
+            reject({
+                isSucess: false,
+                code: 400,
+                messageError: 'error obteniendo lista de ventas'
+            });
         }
     });
 }

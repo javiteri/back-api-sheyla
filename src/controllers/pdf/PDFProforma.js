@@ -2,6 +2,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const util = require('util');
 const ftp = require("basic-ftp");
+const sharedFunctions = require('../../util/sharedfunctions');
 
 exports.generatePdfFromProforma = (datosEmpresa,datosCliente,datosProforma) => {
     return new Promise((resolve, reject) => {
@@ -50,163 +51,55 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente, datosProforma,res
     
 }
 
-async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosProforma){
+async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosProforma){
 
-  let fechaAutorizacion = ''
-  let isAutorizado = false;
-
-  /*if(datosVenta[0].venta_electronica_observacion.includes('AUTORIZADO') && datosVenta[0].venta_electronica_estado == 2){
-    try{
-      isAutorizado = true;
-      fechaAutorizacion = (datosVenta[0].venta_electronica_observacion.split(' - '))[2]
-    }catch(exception){
-      isAutorizado = false;
-      fechaAutorizacion = '';
-    }
-  }*/
-
-    /*let contribuyenteEspecial = '';
-    let obligadoContabilidad = false;
-    let perteneceRegimenRimpe = false;
-    let agenteDeRetencion = '';
-
-    if(datosConfig && datosConfig.length > 0){
-        datosConfig.forEach((element) => {
-            
-            if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
-              if(element.con_valor.trim().toUpperCase() != 'NO'){
-                contribuyenteEspecial = element.con_valor;
-              }
-            }
-            if(element.con_nombre_config == 'FAC_ELECTRONICA_OBLIGADO_LLEVAR_CONTABILIDAD'){
-                obligadoContabilidad = element.con_valor === '1';
-            }
-            if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
-              if(element.con_valor.trim().toUpperCase() != 'NO'){
-                agenteDeRetencion = element.con_valor;
-              }
-            }
-            if(element.con_nombre_config == 'FAC_ELECTRONICA_PERTENECE_REGIMEN_RIMPE'){
-                perteneceRegimenRimpe = element.con_valor === '1';
-            }
-        });
-    }*/
-
-    let pathImagen = '';
-    if(responseDatosEstablecimiento[0]){
-      pathImagen = await getImagenByRucEmp(`${datosEmpresa[0]['EMP_RUC']}${responseDatosEstablecimiento[0].cone_establecimiento}`);
-    }else{
-      pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
-    }
-
+    let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);;
+  
     if(!pathImagen){
         pathImagen = './src/assets/logo_default_sheyla.png';
     }
 
     let fontNormal = 'Helvetica';
     let fontBold = 'Helvetica-Bold';
-    
+
     if(pathImagen){
-      pdfDoc.image(pathImagen,50,50,{fit: [150, 100],align: 'center', valign: 'center'});
+        pdfDoc.image(pathImagen,200,10,{fit: [150, 100],align: 'center', valign: 'center'});
     }
+
     if(pathImagen.includes('filesTMP')){
       fs.unlink(pathImagen, function(){
         console.log('imagen, eliminada');
       });
-
     }
 
     pdfDoc.fontSize(9);
-    pdfDoc.font(fontBold).text(datosEmpresa[0]['EMP_RAZON_SOCIAL'], 20, 170, {width: 250});
-    
-    pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, {width: 250});
-    
-    /*if(responseDatosEstablecimiento[0]){
-      pdfDoc.text(`DIRECCIÓN SUCURSAL: ${responseDatosEstablecimiento[0]['cone_direccion_sucursal']}`, {width: 250});
-    }*/
-    /*if(!(datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1'] === '')){
-      pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, {width: 250});
-    }*/
+    pdfDoc.font(fontBold).text(datosEmpresa[0]['EMP_RAZON_SOCIAL'], 20, 130, {width: 250});
+    pdfDoc.font(fontNormal).text(`DIRECCIÓN MATRIZ: ${datosEmpresa[0]['EMP_DIRECCION_MATRIZ']}`, 20, 150,{width: 250});
 
-    /*if(!(contribuyenteEspecial === '')){
-      pdfDoc.text(`Contribuyente Especial Nro: ${contribuyenteEspecial}`, 20, 230,{width: 250});
-    }
+    pdfDoc.rect(pdfDoc.x - 10, 130 - 5, 250, pdfDoc.y - 100).stroke();
 
-    if(obligadoContabilidad){
-      pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: SI`, 20, 240,{width: 250});
-    }else{
-      pdfDoc.text(`OBLIGADO A LLEVAR CONTABILIDAD: NO`, 20, 240,{width: 250});
-    }
+    pdfDoc.text(`RUC: ${datosEmpresa[0]['EMP_RUC']}`, 280, 130,{width: 250});
+    pdfDoc.font(fontBold).text('PROFORMA', 280, 150);
+    pdfDoc.font(fontNormal).text(`NO:${datosProforma[0]['prof_numero']}`, 280, 170);
 
-    if(perteneceRegimenRimpe){
-      pdfDoc.text(`CONTRIBUYENTE RÉGIMEN RIMPE`, 20, 260,{width: 250});
-    }
 
-    if(agenteDeRetencion && agenteDeRetencion.length > 0){
-      pdfDoc.text(`Agente de Retención Resolucion No. ${agenteDeRetencion}`, 20, 270,{width: 250});
-    }*/
-
-    pdfDoc.rect(pdfDoc.x - 10,170 - 5,250,pdfDoc.y - 150).stroke();
-
-    pdfDoc.text(`RUC: ${datosEmpresa[0]['EMP_RUC']}`, 280, 60,{width: 250});
-    pdfDoc.font(fontBold).text(`PROFORMA No.`, 280, 80);
-    let numeroProforma = (datosProforma[0].prof_numero).toString().padStart(9,'0');
-    //pdfDoc.font(fontNormal).text(`${datosVenta[0]['venta_001']}-${datosVenta[0]['venta_002']}-${secuencial}`, 280, 95);
-    pdfDoc.font(fontNormal).text(`${numeroProforma}`, 280, 95);
-
-    /*pdfDoc.text(`NUMERO DE AUTORIZACION`, 280, 120);
-    const dateVenta = new Date(datosVenta[0].venta_fecha_hora);
+    const dateVenta = new Date(datosProforma[0].prof_fecha_hora);
     const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
     const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
-    const yearVenta = dateVenta.getFullYear().toString();*/
+    const yearVenta = dateVenta.getFullYear().toString();
 
-    let rucEmpresa = datosEmpresa[0].EMP_RUC;
-    //let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta[0].venta_tipo);
-    //let tipoAmbiente = '2';//PRODUCCION
-    //let serie = `${datosVenta[0]['venta_001']}${datosVenta[0]['venta_002']}`;
-    //let codigoNumerico = '12174565';
-    //let tipoEmision = 1;
+    pdfDoc.rect(pdfDoc.x - 10,130 - 5,300,pdfDoc.y - 105).stroke();
 
-    //let digit48 = 
-    //`${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
+    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${datosCliente[0]['cli_nombres_natural']}`, 20, 230 );
+    pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20, 250);
+    pdfDoc.text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, 270);
 
-    //let claveActivacion = modulo11(digit48);
-    //let claveActivacion = sharedFunctions.modulo11(digit48);
-
-    //pdfDoc.text(`${claveActivacion}`, 280, 130);
-
-    /*if(isAutorizado){
-      pdfDoc.text(`FECHA Y HORA DE AUTORIZACION`, 280, 150);
-      pdfDoc.text(`${fechaAutorizacion}`, 280, 160);
-    }*/
-
-    //let claveEncoder = new encoder();
-
-    /*pdfDoc.text(`AMBIENTE: PRODUCCION`, 280, 180);
-    pdfDoc.text(`EMISION: NORMAL`, 280, 200);
-    pdfDoc.text(`CLAVE DE ACCESO`, 280, 220);
-    pdfDoc.font('./src/assets/font/LibreBarcode128-Regular.ttf')
-            .fontSize(27).text(claveEncoder.encode(`${claveActivacion}`) ,{
-              lineGap: -7,
-              align: 'justify',
-            });
-    pdfDoc.font(fontNormal).fontSize(9).text(`${claveActivacion}`, 280);*/
-
-    pdfDoc.rect(pdfDoc.x - 10,50,300,pdfDoc.y - 25).stroke();
-
-    //pdfDoc.rect(290,110,250,150).stroke();
-
-    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${datosCliente[0]['cli_nombres_natural']}`, 20, 315 );
-    pdfDoc.text(`Identificacion: ${datosCliente[0]['cli_documento_identidad']}`, 20, 330 );
-    pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20, 345);
-    pdfDoc.text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, 360);
-
-    pdfDoc.rect(pdfDoc.x - 10, 320 - 10, 560, 80).stroke();
+    pdfDoc.rect(pdfDoc.x - 10, 230 - 10, 560, 80).stroke();
 }
 
 async function generateInvoiceTable(doc, datosProforma, datosCliente){
   let i;
-  let invoiceTableTop = 420;
+  let invoiceTableTop = 330;
 
   doc.font("Helvetica-Bold");
  
@@ -220,28 +113,27 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     "Precio Total"
   );
 
-  generateHr(doc, invoiceTableTop + 15);
+  generateHr(doc, invoiceTableTop + 10);
   doc.font("Helvetica");
 
   let index = 0;
   let position = 0;
   for (i = 0; i < datosProforma.listProformasDetalles.length; i++) {
 
-    const item = datosVdatosProformaenta.listProformasDetalles[i];
+    const item = datosProforma.listProformasDetalles[i];
     position = invoiceTableTop + (index + 1) * 30;
-    //position = invoiceTableTop + 1 * 30;
+
     index++;
 
     if(position > 780){
         index = 0
         invoiceTableTop = 5;
         position = invoiceTableTop + (index + 1) * 30;
-        //position = invoiceTableTop + 1 * 30;
         index++;
         doc.addPage();
     }
 
-    const heightString = doc.heightOfString(item.ventad_producto,{width: 200});
+    const heightString = doc.heightOfString(item.profd_producto,{width: 200});
 
     generateTableRow1(
         doc,
@@ -249,9 +141,11 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
         item.prod_codigo,
         item.profd_producto,
         item.profd_cantidad,
-        formatCurrency(item.pprofd_vt)
+        formatCurrency(item.profd_vu),
+        formatCurrency(item.profd_vt)
       );
 
+    
     generateHr(doc, position + (heightString - 10));
   }
 
@@ -259,9 +153,11 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     index = 0
     invoiceTableTop = 5;
     doc.addPage();
-  }
+}
+
 
   const subtotalPosition = invoiceTableTop + (index + 1) * 30;
+  
   generateTableRow(
     doc,
     subtotalPosition,
@@ -280,12 +176,10 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     "",
     "Subtotal 0%",
     "",
-    formatCurrency(datosProforma[0].profd_subtotal_0)
+    formatCurrency(datosProforma[0].prof_subtotal_0)
   );
 
   const duePosition = paidToDatePosition + 25;
-
-  let subtotalSinImpuestos = (Number(datosProforma[0].prof_subtotal_0) + Number(datosProforma[0].prof_subtotal_12)).toString();
   generateTableRow(
     doc,
     duePosition,
@@ -293,10 +187,12 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     "",
     "Subtotal Sin Impuestos",
     "",
-    formatCurrency(subtotalSinImpuestos)
+    formatCurrency(0.00)
   );
 
 
+  //const icePosition = duePosition + 25;
+  
   doc.font("Helvetica");
 
   const iva12Position = duePosition + 25;
@@ -322,54 +218,48 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
   );
 
   doc.font("Helvetica");
-  
-  generateFooterTable(doc, datosCliente, datosProforma, subtotalPosition);
+
+  generateFooterTable(doc, datosCliente, datosProforma, subtotalPosition - 25);
 
 };
 
 async function generateFooterTable(pdfDoc, datosCliente, datosProforma, yposition){
     let fontNormal = 'Helvetica';
     let fontBold = 'Helvetica-Bold';
+
     pdfDoc.fontSize(9);
     
     let ypositionzero = yposition + 20;
     pdfDoc.font(fontBold).text('Informacion Adicional', 20, ypositionzero , {width: 250});
     let yposition1 = ypositionzero + 10;
     //pdfDoc.font(fontNormal).text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, yposition1 , {width: 250});
-    /*pdfDoc.font(fontNormal).text(`Direccion: ${datosCliente[0]['cli_direccion']}`, {width: 250});
-    let yposition2 = yposition1 + 20;
-    pdfDoc.text(`FORMA PAGO: ${datosVenta[0]['venta_forma_pago']}`, 20, yposition2 , {width: 250});
+    let yposition2 = yposition1 + 10;
+    pdfDoc.font(fontNormal).text(`FORMA PAGO: ${datosProforma[0]['prof_forma_pago']}`, 20, yposition2 , {width: 250});
     let yposition3 = yposition2 + 10;
-    //pdfDoc.text(`RESPONSABLE: ${datosVenta[0]['usu_nombres']}`, 20, yposition3 , {width: 250});
-    pdfDoc.text(`RESPONSABLE: ${datosVenta[0]['usu_nombres']}`, {width: 250});
+    pdfDoc.text(`RESPONSABLE: ${datosProforma[0]['usu_nombres']}`, 20, yposition3 , {width: 250});
     let yposition4 = yposition3 + 10;
-    //pdfDoc.text(`EMAIL: ${datosCliente[0]['cli_email']}`, 20, yposition4, {width: 250});
-    pdfDoc.text(`EMAIL: ${datosCliente[0]['cli_email']}`, {width: 250});
+    pdfDoc.text(`EMAIL: ${datosCliente[0]['cli_email']}`, 20, yposition4, {width: 250});
     let yposition5 = yposition4 + 10;
-    //pdfDoc.text(`TELEFONO: ${datosCliente[0]['cli_teleono']}`, 20, yposition5 , {width: 250});
-    pdfDoc.text(`TELEFONO: ${datosCliente[0]['cli_teleono']}`, {width: 250});
+    pdfDoc.text(`TELEFONO: ${datosCliente[0]['cli_teleono']}`, 20, yposition5 , {width: 250});
     let yposition6 = yposition5 + 10;
-    //pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
-    pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, {width: 250});*/
+    pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
 
-    if(datosProforma[0]['prof_observaciones'] && datosProforma[0]['prof_observaciones'].length > 0){
-      pdfDoc.text(`Obs: ${datosProforma[0]['prof_observaciones']}`, {width: 250});
-    }
     pdfDoc.rect(pdfDoc.x - 10,yposition + 30,280, 100).stroke();
 
+
     pdfDoc.lineCap('butt')
-    .moveTo(210, yposition1 + 50)
-    .lineTo(210, yposition1 + 90)
+    .moveTo(200, yposition6 + 50)
+    .lineTo(200, yposition6 + 90)
     .stroke()
   
-    row(pdfDoc, yposition1 + 50);
-    row(pdfDoc, yposition1 + 70);
+    row(pdfDoc, yposition6 + 50);
+    row(pdfDoc, yposition6 + 70);
 
-    textInRowFirst(pdfDoc,'Forma de Pago', yposition1 + 60);
-    textInRowFirstValor(pdfDoc,'Valor', yposition1 + 60);
-    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosProforma[0].prof_total), yposition1 + 80)
-    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosProforma[0].prof_forma_pago),yposition1 + 80);
-    
+    textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 60);
+    textInRowFirstValor(pdfDoc,'Valor', yposition6 + 60);
+    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosProforma[0].prof_total), yposition6 + 80)
+    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosProforma[0].prof_forma_pago),yposition6 + 80);
+
     //textInRowFirst(pdfDoc, yposition6 + 60);
 }
 
@@ -392,9 +282,10 @@ function textInRowFirst(doc, text, heigth) {
   });
   return doc
 }
+
 function textInRowFirstValor(doc, text, heigth) {
   doc.y = heigth;
-  doc.x = 200 + 25;
+  doc.x = 200;
   doc.fillColor('black')
   doc.text(text, {
     paragraphGap: 5,
@@ -408,7 +299,7 @@ function textInRowFirstValor(doc, text, heigth) {
 function textInRowFirstValorTotal(doc, text, heigth) {
   doc.fontSize(8);
   doc.y = heigth;
-  doc.x = 225;
+  doc.x = 220;
   doc.fillColor('black')
   doc.text(text, {
     paragraphGap: 5,
@@ -441,12 +332,10 @@ function generateTableRow(
     quantity,
     lineTotal
   ) {
-    //let descriptionCut = (description.length > 60)? description.slice(0,59)  : description;
-    
     doc
       .fontSize(10)
       .text(item, 20, y)
-      .text(description, 150, y,{ width: 200})
+      .text(description, 150, y)
       .text(unitCost, 280, y, { width: 90, align: "right" })
       .text(quantity, 370, y, { width: 90, align: "right" })
       .text(lineTotal, 0, y, { align: "right" });
@@ -462,7 +351,6 @@ function generateTableRow1(
   quantity,
   lineTotal
 ) {
-  //let descriptionCut = (description.length > 60)? description.slice(0,59)  : description;
   let yAxisValue = y - 11;
 
   doc
@@ -475,18 +363,18 @@ function generateTableRow1(
 
 }
 
-
 function generateHr(doc, y) {
     doc
       .strokeColor("#aaaaaa")
       .lineWidth(1)
-      .moveTo(20, y )
-      .lineTo(550, y )
+      .moveTo(20, y)
+      .lineTo(550, y)
       .stroke();
 }
- 
+
 function formatCurrency(cents) {
-  return "$" + Number((cents)).toFixed(2);
+    //return "$" + (cents / 100).toFixed(2);
+    return "$" + Number((cents)).toFixed(2);
 }
 
 async function getImagenByRucEmp(rucEmp){
@@ -522,7 +410,7 @@ async function getImagenByRucEmp(rucEmp){
         });
         
         let response = await client.downloadTo(`${path}/${rucEmp}.${extensionRemoteFile}`, `${pathRemoteFile}.${extensionRemoteFile}`);
-        
+    
         client.close();
         return (response.code == 505) ? '' : `${path}/${rucEmp}.${extensionRemoteFile}`;
         
@@ -533,6 +421,5 @@ async function getImagenByRucEmp(rucEmp){
     }
   }catch(error){
     return '';
-  }
-
+  }  
 }

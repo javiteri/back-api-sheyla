@@ -98,10 +98,10 @@ router.get('/getlistproformasexcel', async(req, res) => {
 });
 
 router.get('/generatepdffromproforma', async(req, res) => {
-    const {idEmp,idVentaCompra,identificacion, nombreBd} = req.query;
-    const generatePdfVentaPromise = documentosElectronicosRepository.generateDownloadPdfFromVenta(idEmp,idVentaCompra,identificacion, true, nombreBd);
+    const {idEmp,idProforma,identificacion, nombreBd} = req.query;
+    const generatePdfProformaPromise = proformaRepository.generateDownloadPdfFromProforma(idEmp,idProforma,identificacion,nombreBd);
 
-    generatePdfVentaPromise.then(
+    generatePdfProformaPromise.then(
         function(response){
             res.download(response['generatePath'],((error) => {
                 if(error){
@@ -111,6 +111,24 @@ router.get('/generatepdffromproforma', async(req, res) => {
                 });
             }));
 
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.get('/getDataByIdProforma',async(req,res,next) => {
+    const idProforma = req.query.id;
+    const idEmp = req.query.idEmp;
+    const ruc = req.query.ruc;
+    const nombreBd = req.query.nombreBd;
+
+    const getDataByIdProformaPromise = 
+            proformaRepository.getDataByIdProforma(idProforma, idEmp, ruc, nombreBd);
+    getDataByIdProformaPromise.then(
+        function(results){
+            res.status(200).send(results);
         },
         function(error){
             res.status(400).send(error);
