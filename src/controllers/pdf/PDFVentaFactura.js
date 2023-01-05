@@ -858,9 +858,9 @@ async function getImagenByRucEmp(rucEmp){
     const client = new ftp.Client();
     try{
         await  client.access({
-            host: "sheyla2.dyndns.info",
-            user: "firmas",
-            password: "m10101418M"
+            host: process.env.hostFtpFirmas,
+            user: process.env.userFtpFirmas,
+            password: process.env.passFtpFirmas
         });
         
         //const fileNameWithoutExt = pathRemoteFile.split('.')[0].split('/')[1];

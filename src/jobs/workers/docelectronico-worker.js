@@ -9,7 +9,6 @@ const documentosElectronicosRepository = require('../../controllers/documentos-e
 
 module.exports = async (job, done) => {
     try{
-
         const sqlQueryAutoMessage = `SELECT auto_mensaje, auto_estado FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
         const queryClienteIfExist = `SELECT * FROM clientes WHERE CLI_RUC = ? AND CLI_EMPRESA_ID = ? LIMIT 1`;
         const sqlInsertCliente = `INSERT INTO clientes (CLI_RUC, CLI_NOMBRE,CLI_EMPRESA_ID,CLI_CLAVE) VALUES (?,?,?,?)`;
@@ -63,10 +62,8 @@ module.exports = async (job, done) => {
                     }
                 );
             }else{
-
                 // SUMA EN 1 A LA PROPIEDAD EMRESAS_WEB_PLAN_ENVIADOS
                 updatePlanEnviadosDocumentoElectronico(rucEmpresa);
-
 
                 // SI EL CLIENTE ES CONSUMIDOR FINAL ENTONCES TERMINAR EL PROCESO
                 if(rucCliente == '9999999999'){
@@ -114,7 +111,6 @@ module.exports = async (job, done) => {
                         }
 
                     });
-
                 }
 
             }

@@ -51,21 +51,11 @@ async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta, resolv
 
 async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta){
 
-    //let pathImagen = await getImagenByRucEmp(datosEmpresa[0]['EMP_RUC']);
-  
-    /*if(!pathImagen){
-        pathImagen = './src/assets/logo_default_sheyla.png';
-    }*/
-
     let fontNormal = 'Helvetica';
     let fontBold = 'Helvetica-Bold';
     
     console.log('path image');
     console.log(pathImagen);
-
-    /*if(pathImagen){
-        pdfDoc.image(pathImagen,200,50,{fit: [150, 100],align: 'center', valign: 'center'});
-    }*/
     
     pdfDoc.fontSize(9);
     pdfDoc.font(fontBold).text(datosEmpresa[0]['EMP_RAZON_SOCIAL'], 20, 170, {width: 250});
@@ -337,9 +327,9 @@ async function getImagenByRucEmp(rucEmp){
 
         try {
             await  client.access({
-                host: "sheyla2.dyndns.info",
-                user: "firmas",
-                password: "m10101418M"
+                host: process.env.hostFtpFirmas,
+                user: process.env.userFtpFirmas,
+                password: process.env.passFtpFirmas
             })
             let pathRemoteFile = `logos/${rucEmp}.png`
             let path = `./filesTMP/${rucEmp}`;
@@ -349,19 +339,13 @@ async function getImagenByRucEmp(rucEmp){
                     if (err) {
                         return console.error(err);
                     }
-
                     const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
-
                     client.close();
-
-                    console.log('inside imagen');
 
                     return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
                 });
             }else{
-                const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);
-
-                console.log('inside imagen');
+                const response = await client.downloadTo(`${path}/${rucEmp}.png`,pathRemoteFile);                
 
                 client.close();
                 return (response.code == 505) ? '' : `${path}/${rucEmp}.png`;
