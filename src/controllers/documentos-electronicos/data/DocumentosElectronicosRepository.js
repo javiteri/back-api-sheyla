@@ -431,8 +431,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             if(datosCliente.cli_direccion.length > 0){
                 rootElement.ele('campoAdicional',{'nombre':'DIRECCION'},removeAccentDiactricsFromString(datosCliente.cli_direccion)).up();
             }
-            rootElement.ele('campoAdicional',{'nombre':'DIRECCION'},removeAccentDiactricsFromString(datosCliente.cli_direccion)).up()
-            .ele('campoAdicional',{'nombre':'FORMA DE PAGO'},removeAccentDiactricsFromString(datosVenta.venta_forma_pago)).up()
+            rootElement.ele('campoAdicional',{'nombre':'FORMA DE PAGO'},removeAccentDiactricsFromString(datosVenta.venta_forma_pago)).up()
             .ele('campoAdicional',{'nombre':'RESPONSABLE'}, removeAccentDiactricsFromString(datosVenta.usu_nombres)).up()
 
 
