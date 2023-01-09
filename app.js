@@ -37,7 +37,6 @@ const arenaConfig = Arena({
       hostId: 'Cola de Envios Documentos Electronicos'
     },
   ],
-
 },
 {
   // Make the arena dashboard become available at {my-site.com}/arena.
@@ -88,7 +87,9 @@ app.use(function(req, res, next) {
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+  //res.locals.error = req.app.get('env') === 'development' ? err : {};
+  console.log('error en app js error handler');
+  console.log(err.message);
 
   console.log(err);
   console.log('error found route')
