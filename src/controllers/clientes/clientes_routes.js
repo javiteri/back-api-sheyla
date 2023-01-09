@@ -89,6 +89,20 @@ router.post('/insertar', async (req, res) => {
     );
 });
 
+router.post('/importlistclientes', async (req, res) => {
+
+    const insertClientePromise = clienteRepository.importListClientes(req.body.listClientes, req.body.nombreBd, req.body.idEmp);
+
+    insertClientePromise.then(
+        function(result) {
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 router.post('/update', async (req, res) => {
     const updateCliente = clienteRepository.updateCliente(req.body);
 

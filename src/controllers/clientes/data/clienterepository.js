@@ -98,6 +98,103 @@ exports.insertCliente = async (datosCliente) => {
     });
 }
 
+exports.importListClientes = async (listClientes, nombreBd, idEmpresa) => {
+    return new Promise((resolve, reject ) => {
+        try{
+
+            let listClientsWithError = [];
+
+            const selectExistClient = `SELECT COUNT(*) FROM ${nombreBd}.clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ?`;
+            const queryInsertUserDefaultEmpresa = `INSERT INTO ${nombreBd}.clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
+                cli_nombres_natural, cli_razon_social , cli_observacion , cli_fecha_nacimiento , 
+                cli_teleono, cli_celular, cli_email, cli_direccion, cli_profesion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            
+            listClientes.forEach( cliente => {
+                console.log(cliente);
+            });
+            
+            resolve({
+                isSucess: true,
+                message: 'Clientes Insertados Correctamente'
+            });
+
+            /*const {idEmpresa, nacionalidad, documentoIdentidad, tipoIdentificacion, nombreNatural, 
+                    razonSocial, comentario, fechaNacimiento, telefonos,
+                    celular, email, direccion, profesion, nombreBd} = datosCliente;
+            
+            let queryExistClient = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ?`;
+            let queryInsertUserDefaultEmpresa = `INSERT INTO ${nombreBd}.clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
+                                                cli_nombres_natural, cli_razon_social , cli_observacion , cli_fecha_nacimiento , 
+                                                cli_teleono, cli_celular, cli_email, cli_direccion, cli_profesion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            
+            pool.query(queryExistClient, [idEmpresa, documentoIdentidad], function(error, result, fields){
+                if(error){
+                    
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: error
+                    });
+                    return;
+                }
+
+                const cantClients = result[0].CANT;
+                if(cantClients >= 1){
+                    
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: 'ya existe el cliente',
+                        duplicate: true
+                    });
+                    return;
+                }
+                pool.query(queryInsertUserDefaultEmpresa, [idEmpresa, nacionalidad, documentoIdentidad, tipoIdentificacion, nombreNatural, razonSocial ? razonSocial : '', 
+                                        comentario ? comentario : '', fechaNacimiento, telefonos ? telefonos : '', celular ? celular : '', email ? email : '', 
+                                        direccion ? direccion : '', profesion ? profesion : ''], 
+                    function (error, result){
+
+                        if(error){
+                            console.log(error);
+                        reject({
+                            isSucess: false,
+                            code: 400,
+                            messageError: error
+                        });
+                        return;
+                        }
+
+                        const insertId = result.insertId;
+                        let insertClienteResponse = {}
+                        if(insertId > 0){
+                            insertClienteResponse['isSucess'] = true;
+                        }else{
+                            insertClienteResponse['isSucess'] = false;
+                            insertClienteResponse['message'] = 'error al insertar cliente';
+                        }
+                        insertClienteResponse['data'] = {
+                            id: insertId,
+                            ciRuc: documentoIdentidad,
+                            nombre: nombreNatural,
+                            email: email ? email : ''
+                        }
+
+                        resolve(insertClienteResponse);
+                });
+
+            });*/
+
+        }catch(error){
+            reject({
+                isSucess: false,
+                code: 400,
+                messageError: error
+            });
+        }
+    });
+}
+
+
 exports.getListClientesByIdEmp = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         

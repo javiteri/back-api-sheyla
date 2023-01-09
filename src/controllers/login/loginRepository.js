@@ -128,7 +128,6 @@ exports.loginAndValidateEmp = function(ruc, username, password){
 
                         let diasLicenciaValue = Number(days).toFixed(0);
 
-                        console.log('inside dias licencia expira');
                         if(diasLicenciaValue <= 0){ 
                             resolve({
                                 isSuccess: true,
