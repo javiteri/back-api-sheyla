@@ -162,6 +162,7 @@ router.get('/getlistclientesexcel', async(req, res) => {
         }
     );
 });
+
 router.get('/gettemplateclientesexcel', async(req, res) => {
     const getTemplateClientesExcelPromise = clienteRepository.getTemplateClientesExcel(req.query.idEmp, req.query.nombreBd);
 
@@ -178,7 +179,7 @@ router.get('/gettemplateclientesexcel', async(req, res) => {
             res.status(400).send(error);
         }
     );
-})
+});
 
 
 module.exports = router;

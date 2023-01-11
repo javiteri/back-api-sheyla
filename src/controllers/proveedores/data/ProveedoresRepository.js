@@ -129,15 +129,15 @@ exports.insertProveedor = async (datosProveedor) => {
                         }
 
                         const insertId = result.insertId;
-                        let insertClienteResponse = {}
+                        let insertproveedorResponse = {}
                         if(insertId > 0){
-                            insertClienteResponse['isSucess'] = true;
+                            insertproveedorResponse['isSucess'] = true;
                         }else{
-                            insertClienteResponse['isSucess'] = false;
-                            insertClienteResponse['message'] = 'error al insertar Proveedor';
+                            insertproveedorResponse['isSucess'] = false;
+                            insertproveedorResponse['message'] = 'error al insertar Proveedor';
                         }
 
-                        insertClienteResponse['data'] = {
+                        insertproveedorResponse['data'] = {
                             id: insertId,
                             ciRuc: documentoIdentidad,
                             nombre: nombreNatural,
@@ -146,11 +146,79 @@ exports.insertProveedor = async (datosProveedor) => {
                             telefono: telefono ? telefono : ''
                         }
 
-                        resolve(insertClienteResponse);
+                        resolve(insertproveedorResponse);
                 });
 
             });
 
+        }catch(error){
+            reject({
+                isSucess: false,
+                code: 400,
+                messageError: error
+            });
+        }
+    });
+}
+
+exports.importListProveedores = async (listProveedores, nombreBd, idEmpresa) => {
+    return new Promise(async (resolve, reject ) => {
+        try{
+            let listProveedoresWithError = [];
+
+            const selectExistProveedor = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.proveedores WHERE pro_documento_identidad = ? AND pro_empresa_id = ?`;
+            const queryInsertProveedor = `INSERT INTO ${nombreBd}.proveedores (pro_empresa_id, pro_tipo_documento_identidad, pro_documento_identidad, 
+                pro_nombre_natural, pro_razon_social, pro_observacion, pro_telefono, pro_celular, pro_email, 
+                pro_pagina_web, pro_direccion, pro_cedula_representante, pro_nombre_presentante, pro_telefonos_representante, 
+                pro_direccion_representante, pro_mail_representante) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            
+            for(let index=0; index<listProveedores.length; index++){
+                try{
+
+                    let proveedor = listProveedores[index];
+                    let existProveedorResult = await pool.query(selectExistProveedor, [proveedor.pro_documento_identidad, proveedor.pro_empresa_id]);
+                    
+                    const cantProveedores = existProveedorResult[0].CANT;
+                    if(cantProveedores >= 1){
+                        let proveedorRes = proveedor;
+                        proveedorRes.messageError = 'ya existe el proveedor';
+                        proveedorRes.pro_error_server = true;
+                        listProveedoresWithError.push(proveedorRes);
+                    }else{
+                        let responseInsertproveedor =  await pool.query(queryInsertProveedor, [
+                            idEmpresa, proveedor.pro_tipo_documento_identidad, proveedor.pro_documento_identidad, proveedor.pro_nombre_natural, 
+                            proveedor.pro_razon_social, 
+                            proveedor.pro_observacion, proveedor.pro_telefono, proveedor.pro_celular, proveedor.pro_email, proveedor.pro_pagina_web, 
+                            proveedor.pro_direccion, 
+                            proveedor.pro_cedula_representante, proveedor.pro_nombre_presentante, proveedor.pro_telefonos_representante, 
+                            proveedor.pro_direccion_representante, proveedor.pro_mail_representante
+                        ]);
+                    }
+                    
+                    if(listProveedores.length - 1 == index){
+                        resolve({
+                            isSucess: true,
+                            message: 'Proveedors Insertados Correctamente',
+                            listProveedoresWithError: listProveedoresWithError
+                        });
+                    }
+
+                }catch(exception){
+                    let proveedorRes = proveedor;
+                    proveedorRes.messageError = 'error al insertar proveedor';
+                    proveedorRes.cli_error_server = true;
+                    listProveedoresWithError.push(proveedorRes);
+
+                    if(listProveedores.length - 1 == index){
+                        resolve({
+                            isSucess: true,
+                            message: 'Proveedores Insertados Correctamente',
+                            listProveedoresWithError: listProveedoresWithError
+                        });
+                    }
+                }
+            }
+            
         }catch(error){
             reject({
                 isSucess: false,
@@ -186,8 +254,8 @@ exports.updateProveedor = async (datosProveedor) => {
                     return;
                 }
 
-                const cantClients = result[0].CANT;
-                if(cantClients == 0){
+                const cantProveedores = result[0].CANT;
+                if(cantProveedores == 0){
                     reject({
                         isSucess: false,
                         code: 400,
@@ -197,7 +265,7 @@ exports.updateProveedor = async (datosProveedor) => {
                     return;
                 }
 
-                if(cantClients == 1){
+                if(cantProveedores == 1){
                     
                     pool.query(queryUpdateProveedor, [tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
                         observacion, telefono, celular, email, paginaWeb, direccion, identificacionRepre ? identificacionRepre : '', nombreRepre, telefonoRepre, 
@@ -216,15 +284,15 @@ exports.updateProveedor = async (datosProveedor) => {
                             }
     
                             const insertId = result.affectedRows;
-                            let insertClienteResponse = {}
+                            let insertproveedorResponse = {}
                             if(insertId > 0){
-                                insertClienteResponse['isSucess'] = true;
+                                insertproveedorResponse['isSucess'] = true;
                             }else{
-                                insertClienteResponse['isSucess'] = false;
-                                insertClienteResponse['message'] = 'error al actualizar proveedor';
+                                insertproveedorResponse['isSucess'] = false;
+                                insertproveedorResponse['message'] = 'error al actualizar proveedor';
                             }
     
-                            resolve(insertClienteResponse);
+                            resolve(insertproveedorResponse);
                             return;
                     });
                 }else{
@@ -249,7 +317,7 @@ exports.updateProveedor = async (datosProveedor) => {
     });
 }
 
-exports.deleteProveedor = async (idEmpresa, idProv) => {
+exports.deleteProveedor = async (idEmpresa, idProv, nombreBd) => {
     return new Promise((resolve, reject) => {
         try {
             let queryDeleteProveedor = `DELETE FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_id = ? LIMIT 1`;
@@ -299,10 +367,10 @@ exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
     return new Promise((resolve, reject) => {
         
         try{
-            let querySearchClientes = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND (pro_nombre_natural LIKE ? || pro_documento_identidad LIKE ?)
+            let querySearchproveedors = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND (pro_nombre_natural LIKE ? || pro_documento_identidad LIKE ?)
                                          ORDER BY pro_id DESC`
             
-            pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
+            pool.query(querySearchproveedors, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
 
                 if(err){
                     reject({
@@ -326,6 +394,24 @@ exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
         }
     });    
 
+}
+
+exports.getTemplateProveedoresExcel = async (idEmpresa, nombreBd) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const valueResultPromise = createTemplateProveedoresExcel(idEmpresa, nombreBd);
+            valueResultPromise.then( 
+                function (data) {
+                    resolve(data);
+                },
+                function (error) {
+                    resolve(error);
+                }
+            );
+        }catch(exception){
+            reject('error creando excel');
+        }
+    });
 }
 
 exports.getListProveedoresExcel = async (idEmpresa, nombreBd) => {
@@ -451,6 +537,81 @@ function createExcelFileProveedores(idEmp, nombreBd){
             reject({
                 isSucess: false,
                 error: 'error creando archivo, reintente'
+            });
+        }
+    });
+
+}
+
+function createTemplateProveedoresExcel(idEmp, nombreBd){
+
+    return new Promise((resolve, reject) => {
+        try{
+
+            const workBook = new excelJS.Workbook(); // Create a new workbook
+            const worksheet = workBook.addWorksheet("Lista Proveedores");
+            const path = `./files/${idEmp}`;
+
+            worksheet.columns = [
+                {header: 'identificacion', key:'identificacion', width: 20},
+                {header: 'nombres', key:'nombres',width: 50},
+                {header: 'razon_social', key:'razonsocial',width: 20},
+                {header: 'direccion', key:'direccion',width: 20},
+                {header: 'telefono', key:'telefono',width: 20},
+                {header: 'email', key:'email',width: 20},
+            ];
+
+            worksheet.getRow(1).eachCell((cell) => {
+                cell.font = {bold: true},
+                cell.border = {
+                    top: {style:'thin'},
+                    left: {style:'thin'},
+                    bottom: {style:'thin'},
+                    right: {style:'thin'}
+                }
+            });
+
+            try{
+
+                const nameFile = `/${Date.now()}_proveedores_template.xlsx`;
+        
+                if(!fs.existsSync(`${path}`)){
+                    fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                        if (err) {
+                            return console.error(err);
+                        }
+        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+
+                        });
+                    });
+                }else{
+                    
+                    workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                        resolve({
+                            isSucess: true,
+                            message: 'archivo creado correctamente',
+                            pathFile: `${path}${nameFile}`
+                        });
+                    });
+                }
+        
+            }catch(exception){        
+                reject({
+                    isSucess: false,
+                    error: 'error creando archivo, reintente'
+                });
+            }
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo plantilla, reintente'
             });
         }
     });

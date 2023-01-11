@@ -43,6 +43,20 @@ router.post('/insertar', async (req, res) => {
 
 });
 
+router.post('/importlistproveedores', async (req, res) => {
+
+    const insertProveedoresPromise = proveedoresRepository.importListProveedores(req.body.listProveedores, req.body.nombreBd, req.body.idEmp);
+
+    insertProveedoresPromise.then(
+        function(result) {
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 router.post('/update', async (req, res) => {
     const updateProveedorPromise = proveedoresRepository.updateProveedor(req.body);
 
@@ -93,6 +107,24 @@ router.get('/getlistproveedoresexcel', async(req, res) => {
     const getListClientesExcelPromise = proveedoresRepository.getListProveedoresExcel(req.query.idEmp,req.query.nombreBd);
 
     getListClientesExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+})
+
+router.get('/gettemplateproveedoressexcel', async(req, res) => {
+    const getTemplateProveedoresExcelPromise = proveedoresRepository.getTemplateProveedoresExcel(req.query.idEmp, req.query.nombreBd);
+
+    getTemplateProveedoresExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
 

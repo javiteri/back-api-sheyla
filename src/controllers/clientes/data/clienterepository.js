@@ -124,7 +124,6 @@ exports.importListClientes = async (listClientes, nombreBd, idEmpresa) => {
                             cliente.cli_razon_social, cliente.cli_observacion, cliente.cli_fecha_nacimiento, cliente.cli_teleono, cliente.cli_celular,
                             cliente.cli_email, cliente.cli_direccion, cliente.cli_profesion
                         ]);
-                        console.log(responseInsertCliente);
                     }
 
                     if(listClientes.length - 1 == index){
