@@ -399,7 +399,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
 
                 detallesNode = detallesNode.ele('detalle').ele('codigoPrincipal',removeAccentDiactricsFromString(listVentaDetalle[i].prod_codigo)).up()
                 .ele('codigoAuxiliar',listVentaDetalle[i].prod_codigo).up().ele('descripcion',removeAccentDiactricsFromString(listVentaDetalle[i].prod_nombre)).up()
-                .ele('cantidad',listVentaDetalle[i].ventad_cantidad).up().ele('precioUnitario',Number(listVentaDetalle[i].ventad_vu).toFixed(2)).up()
+                .ele('cantidad',Number(listVentaDetalle[i].ventad_cantidad).toFixed(2)).up().ele('precioUnitario',Number(listVentaDetalle[i].ventad_vu).toFixed(2)).up()
 
                 if(listVentaDetalle[i].ventad_descuento && listVentaDetalle[i].ventad_descuento > 0){
                     detallesNode.ele('descuento',valorDescuentoTmp.toFixed(2)).up()

@@ -101,89 +101,58 @@ exports.insertCliente = async (datosCliente) => {
 exports.importListClientes = async (listClientes, nombreBd, idEmpresa) => {
     return new Promise((resolve, reject ) => {
         try{
-
             let listClientsWithError = [];
 
-            const selectExistClient = `SELECT COUNT(*) FROM ${nombreBd}.clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ?`;
+            const selectExistClient = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ?`;
             const queryInsertUserDefaultEmpresa = `INSERT INTO ${nombreBd}.clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
                 cli_nombres_natural, cli_razon_social , cli_observacion , cli_fecha_nacimiento , 
                 cli_teleono, cli_celular, cli_email, cli_direccion, cli_profesion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-            
-            listClientes.forEach( cliente => {
-                console.log(cliente);
-            });
-            
-            resolve({
-                isSucess: true,
-                message: 'Clientes Insertados Correctamente'
-            });
-
-            /*const {idEmpresa, nacionalidad, documentoIdentidad, tipoIdentificacion, nombreNatural, 
-                    razonSocial, comentario, fechaNacimiento, telefonos,
-                    celular, email, direccion, profesion, nombreBd} = datosCliente;
-            
-            let queryExistClient = `SELECT COUNT(*) AS CANT FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ?`;
-            let queryInsertUserDefaultEmpresa = `INSERT INTO ${nombreBd}.clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
-                                                cli_nombres_natural, cli_razon_social , cli_observacion , cli_fecha_nacimiento , 
-                                                cli_teleono, cli_celular, cli_email, cli_direccion, cli_profesion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-            
-            pool.query(queryExistClient, [idEmpresa, documentoIdentidad], function(error, result, fields){
-                if(error){
+                
+            listClientes.forEach(async (cliente, index) => {
+                try{
+                    let existClientResult = await pool.query(selectExistClient, [cliente.cli_documento_identidad, cliente.cli_empresa_id]);
                     
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: error
-                    });
-                    return;
-                }
+                    const cantClients = existClientResult[0].CANT;
+                    if(cantClients >= 1){
+                        let clienteRes = cliente;
+                        clienteRes.messageError = 'ya existe el cliente';
+                        clienteRes.cli_error_server = true;
+                        listClientsWithError.push(clienteRes);
+                    }else{
+                        let responseInsertCliente = await pool.query(queryInsertUserDefaultEmpresa, [
+                            idEmpresa, 'Ecuador', cliente.cli_documento_identidad, cliente.cli_tipo_documento_identidad, cliente.cli_nombres_natural,
+                            cliente.cli_razon_social, cliente.cli_observacion, cliente.cli_fecha_nacimiento, cliente.cli_teleono, cliente.cli_celular,
+                            cliente.cli_email, cliente.cli_direccion, cliente.cli_profesion
+                        ]);
+                        console.log(responseInsertCliente);
+                    }
 
-                const cantClients = result[0].CANT;
-                if(cantClients >= 1){
-                    
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ya existe el cliente',
-                        duplicate: true
-                    });
-                    return;
-                }
-                pool.query(queryInsertUserDefaultEmpresa, [idEmpresa, nacionalidad, documentoIdentidad, tipoIdentificacion, nombreNatural, razonSocial ? razonSocial : '', 
-                                        comentario ? comentario : '', fechaNacimiento, telefonos ? telefonos : '', celular ? celular : '', email ? email : '', 
-                                        direccion ? direccion : '', profesion ? profesion : ''], 
-                    function (error, result){
-
-                        if(error){
-                            console.log(error);
-                        reject({
-                            isSucess: false,
-                            code: 400,
-                            messageError: error
+                    if(listClientes.length - 1 == index){
+                        resolve({
+                            isSucess: true,
+                            message: 'Clientes Insertados Correctamente',
+                            listClientesWithError: listClientsWithError
                         });
-                        return;
-                        }
+                    }
 
-                        const insertId = result.insertId;
-                        let insertClienteResponse = {}
-                        if(insertId > 0){
-                            insertClienteResponse['isSucess'] = true;
-                        }else{
-                            insertClienteResponse['isSucess'] = false;
-                            insertClienteResponse['message'] = 'error al insertar cliente';
-                        }
-                        insertClienteResponse['data'] = {
-                            id: insertId,
-                            ciRuc: documentoIdentidad,
-                            nombre: nombreNatural,
-                            email: email ? email : ''
-                        }
+                }catch(exception){
 
-                        resolve(insertClienteResponse);
-                });
+                    let clienteRes = cliente;
+                    clienteRes.messageError = 'error al insertar cliente';
+                    clienteRes.cli_error_server = true;
+                    listClientsWithError.push(clienteRes);
 
-            });*/
+                    if(listClientes.length - 1 == index){
+                        resolve({
+                            isSucess: true,
+                            message: 'Clientes Insertados Correctamente',
+                            listClientesWithError: listClientsWithError
+                        });
+                    }
+                }
 
+            });
+            
         }catch(error){
             reject({
                 isSucess: false,
@@ -433,6 +402,24 @@ exports.searchClientesByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
 
 }
 
+exports.getTemplateClientesExcel = async (idEmpresa, nombreBd) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const valueResultPromise = createTemplateClientesExcel(idEmpresa, nombreBd);
+            valueResultPromise.then( 
+                function (data) {
+                    resolve(data);
+                },
+                function (error) {
+                    resolve(error);
+                }
+            );
+        }catch(exception){
+            reject('error creando excel');
+        }
+    });
+}
+
 exports.getListClientesExcel = async (idEmpresa, nombreBd) => {
     return new Promise((resolve, reject) => {
         try{
@@ -564,4 +551,182 @@ function createExcelFileClientes(idEmp, nombreBd){
 
 }
 
+
+function createTemplateClientesExcel(idEmp, nombreBd){
+
+    return new Promise((resolve, reject) => {
+        try{
+
+            const workBook = new excelJS.Workbook(); // Create a new workbook
+            const worksheet = workBook.addWorksheet("Lista Clientes");
+            const path = `./files/${idEmp}`;
+
+            worksheet.columns = [
+                {header: 'identificacion', key:'identificacion', width: 20},
+                {header: 'nombres', key:'nombres',width: 50},
+                {header: 'razonsocial', key:'razonsocial',width: 20},
+                {header: 'observacion', key:'observacion',width: 20},
+                {header: 'fechanacimiento', key:'fechanacimiento',width: 40},
+                {header: 'telefono', key:'telefono',width: 20},
+                {header: 'celular', key:'celular',width: 20},
+                {header: 'email', key:'email',width: 20},
+                {header: 'direccion', key:'direccion',width: 20}
+            ];
+
+            worksheet.getRow(1).eachCell((cell) => {
+                cell.font = {bold: true},
+                cell.border = {
+                    top: {style:'thin'},
+                    left: {style:'thin'},
+                    bottom: {style:'thin'},
+                    right: {style:'thin'}
+                }
+            });
+
+            try{
+
+                const nameFile = `/${Date.now()}_clientes_template.xlsx`;
+        
+                if(!fs.existsSync(`${path}`)){
+                    fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                        if (err) {
+                            return console.error(err);
+                        }
+        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+
+                        });
+                    });
+                }else{
+                    
+                    workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                        resolve({
+                            isSucess: true,
+                            message: 'archivo creado correctamente',
+                            pathFile: `${path}${nameFile}`
+                        });
+                    });
+                }
+        
+            }catch(exception){
+                console.log(`exception`);
+                console.log(exception);
+        
+                reject({
+                    isSucess: false,
+                    error: 'error creando archivo, reintente'
+                });
+            }
+
+            //let querySelectClientes = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? ORDER BY cli_id DESC `
+            
+            /*pool.query(querySelectClientes, [idEmp], (err, results) => {
+                
+                if(err){
+                    reject({
+                        isSucess: false,
+                        code: 400,
+                        messageError: err
+                    });
+                    return;
+                }
+                
+                  
+                const arrayData = Array.from(results);
+
+                const workBook = new excelJS.Workbook(); // Create a new workbook
+                const worksheet = workBook.addWorksheet("Lista Clientes");
+                const path = `./files/${idEmp}`;
+
+                worksheet.columns = [
+                    {header: 'Identificacion', key:'identificacion', width: 20},
+                    {header: 'Nombre', key:'nombre',width: 50},
+                    {header: 'Telefono', key:'telefono',width: 20},
+                    {header: 'Celular', key:'celular',width: 20},
+                    {header: 'Email', key:'email',width: 40},
+                    {header: 'Nacionalidad', key:'nacionalidad',width: 20}
+                ];
+            
+                
+                arrayData.forEach(valor => {
+                    let valorInsert = {
+                        identificacion: valor.cli_documento_identidad,
+                        nombre: valor.cli_nombres_natural,
+                        telefono: valor.cli_teleono,
+                        celular: valor.cli_celular,
+                        email: valor.cli_email,
+                        nacionalidad: valor.cli_nacionalidad
+                    }
+                    worksheet.addRow(valorInsert);
+                });
+
+                // Making first line in excel
+                worksheet.getRow(1).eachCell((cell) => {
+                    cell.font = {bold: true},
+                    cell.border = {
+                        top: {style:'thin'},
+                        left: {style:'thin'},
+                        bottom: {style:'thin'},
+                        right: {style:'thin'}
+                    }
+                });
+
+                try{
+
+                    const nameFile = `/${Date.now()}_clientes.xlsx`;
+            
+                    if(!fs.existsSync(`${path}`)){
+                        fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                            if (err) {
+                                return console.error(err);
+                            }
+            
+                            workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            
+                                resolve({
+                                    isSucess: true,
+                                    message: 'archivo creado correctamente',
+                                    pathFile: `${path}${nameFile}`
+                                });
+
+                            });
+                        });
+                    }else{
+                        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+                        });
+                    }
+            
+                }catch(exception){
+                    console.log(`exception`);
+                    console.log(exception);
+            
+                    reject({
+                        isSucess: false,
+                        error: 'error creando archivo, reintente'
+                    });
+                }
+
+            });*/
+
+
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo plantilla, reintente'
+            });
+        }
+    });
+
+}
 

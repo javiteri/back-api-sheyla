@@ -146,7 +146,6 @@ router.get('/searchClienteByIdEmp', async (req, res) => {
 });
 
 router.get('/getlistclientesexcel', async(req, res) => {
-    
     const getListClientesExcelPromise = clienteRepository.getListClientesExcel(req.query.idEmp, req.query.nombreBd);
 
     getListClientesExcelPromise.then(
@@ -162,9 +161,24 @@ router.get('/getlistclientesexcel', async(req, res) => {
             res.status(400).send(error);
         }
     );
+});
+router.get('/gettemplateclientesexcel', async(req, res) => {
+    const getTemplateClientesExcelPromise = clienteRepository.getTemplateClientesExcel(req.query.idEmp, req.query.nombreBd);
+
+    getTemplateClientesExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
 })
-
-
 
 
 module.exports = router;
