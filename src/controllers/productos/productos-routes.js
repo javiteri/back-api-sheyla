@@ -1,6 +1,6 @@
-var express = require('express');
-var router = express.Router();
-var fs = require('fs');
+let express = require('express');
+let router = express.Router();
+let fs = require('fs');
 const productosRepository = require('./data/ProductosRepository');
 
 
@@ -54,6 +54,20 @@ router.post('/insertar', async (req, res) => {
         }
     );
 
+});
+
+router.post('/importlistproductos', async (req, res) => {
+
+    const insertProductoPromise = productosRepository.importListProductos(req.body.listProductos, req.body.nombreBd, req.body.idEmp);
+
+    insertProductoPromise.then(
+        function(result) {
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
 });
 
 router.post('/update', async (req, res) => {
@@ -139,10 +153,27 @@ router.get('/searchProductosByIdEmpActivo', async (req, res) => {
 
 router.get('/getlistproductosexcel', async(req, res) => {
     
-    
     const getListProductosExcelPromise = productosRepository.getListProductosExcel(req.query.idEmp, req.query.nombreBd);
 
     getListProductosExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
+router.get('/gettemplateproductosexcel', async(req, res) => {
+    const getTemplateProductosExcelPromise = productosRepository.getTemplateProductosExcel(req.query.idEmp, req.query.nombreBd);
+
+    getTemplateProductosExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
 

@@ -1,6 +1,6 @@
-var express = require('express');
-var router = express.Router();
-var fs = require('fs');
+let express = require('express');
+let router = express.Router();
+let fs = require('fs');
 const clienteRepository = require('./data/clienterepository')
 
 /* GET clientes data. */
