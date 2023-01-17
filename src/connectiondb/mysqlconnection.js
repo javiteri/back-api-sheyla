@@ -6,8 +6,7 @@ const pool = mysql.createPool({
     host: process.env.hostDb,
     user: process.env.dbUsername,
     password: process.env.dbPassword,
-    //database: process.env.dbEFacturaWeb,
-    connectTimeout: 10000//'database_new_empresa'
+    connectTimeout: 10000
 })
 
 pool.getConnection((err, connection) => {
@@ -33,4 +32,4 @@ pool.getConnection((err, connection) => {
 
 pool.query = util.promisify(pool.query).bind(pool);
 
-module.exports = pool
+module.exports = pool;

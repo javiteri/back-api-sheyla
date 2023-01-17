@@ -194,4 +194,18 @@ router.get('/getlistresumenventasexcel', async(req, res) => {
     );
 });
 
+router.post('/importlistventas', async (req, res) => {
+
+    const insertVentaPromise = ventasRepository.importListVentas(req.body.listVentas, req.body.nombreBd, req.body.idEmp);
+
+    insertVentaPromise.then(
+        function(result) {
+            res.status(200).send(result);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 module.exports = router;
