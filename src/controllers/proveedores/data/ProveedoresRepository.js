@@ -4,29 +4,17 @@ const fs = require('fs');
 
 exports.getListProveedoresByIdEmp = async (idEmpresa,nombreBd) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             
-            let querySelectProveedoresByIdEmp = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? `;
-            pool.query(querySelectProveedoresByIdEmp, [idEmpresa], function (error, results, fields){
-
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
-
+            let querySelectProveedoresByIdEmp = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? ORDER BY pro_id DESC`;
+            let results = await pool.query(querySelectProveedoresByIdEmp, [idEmpresa]); 
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
+
         }catch(err) {
             reject({
                 isSucess: false,
@@ -38,38 +26,26 @@ exports.getListProveedoresByIdEmp = async (idEmpresa,nombreBd) => {
 }
 
 exports.getProveedorByIdEmp = async (idProv, idEmpresa, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySelectProveedor = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_id = ? LIMIT 1`
             
-            pool.query(querySelectProveedor, [idEmpresa, idProv], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: err
-                    });
-                    return;
-                }
-                
-                if(!results | results == undefined | results == null | !results.length){
-                    resolve({
-                        isSucess: true,
-                        code: 400,
-                        message: 'no se encontro proveedor'
-                    });
-
-                    return;
-                }
-
+            let results = await pool.query(querySelectProveedor, [idEmpresa, idProv]); 
+            if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
                 resolve({
                     isSucess: true,
-                    code: 200,
-                    data: results
+                    code: 400,
+                    message: 'no se encontro proveedor'
                 });
 
+                return;
+            }
+
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -80,7 +56,7 @@ exports.getProveedorByIdEmp = async (idProv, idEmpresa, nombreBd) => {
 }
 
 exports.insertProveedor = async (datosProveedor) => {
-    return new Promise((resolve, reject ) => {
+    return new Promise(async (resolve, reject ) => {
         try{
 
             const {idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
@@ -93,64 +69,44 @@ exports.insertProveedor = async (datosProveedor) => {
             pro_pagina_web, pro_direccion, pro_cedula_representante, pro_nombre_presentante, pro_telefonos_representante, 
             pro_direccion_representante, pro_mail_representante) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
                                         
-            pool.query(queryExistProveedor, [idEmpresa, documentoIdentidad], function(error, result, fields){
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: error
-                    });
-                    return;
-                }
+            let result = await pool.query(queryExistProveedor, [idEmpresa, documentoIdentidad]); 
 
-                const cantUsers = result[0].CANT;
-                if(cantUsers >= 1){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'Ya existe Proveedor',
-                        duplicate: true
-                    });
-                    return;
-                }
-
-                pool.query(queryInsertProveedor, [idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
-                                                    observacion?observacion : '', telefono, celular, email, paginaWeb, direccion?direccion:'', 
-                                                    identificacionRepre ? identificacionRepre : '', nombreRepre, telefonoRepre, direccionRepre, emailRepre], 
-                    function (error, result){
-                        console.log(error);
-                        if(error){
-                        reject({
-                            isSucess: false,
-                            code: 400,
-                            messageError: error
-                        });
-                        return;
-                        }
-
-                        const insertId = result.insertId;
-                        let insertproveedorResponse = {}
-                        if(insertId > 0){
-                            insertproveedorResponse['isSucess'] = true;
-                        }else{
-                            insertproveedorResponse['isSucess'] = false;
-                            insertproveedorResponse['message'] = 'error al insertar Proveedor';
-                        }
-
-                        insertproveedorResponse['data'] = {
-                            id: insertId,
-                            ciRuc: documentoIdentidad,
-                            nombre: nombreNatural,
-                            email: email ? email : '',
-                            direccion: direccion ? direccion : '',
-                            telefono: telefono ? telefono : ''
-                        }
-
-                        resolve(insertproveedorResponse);
+            const cantUsers = result[0][0].CANT;
+            if(cantUsers >= 1){
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    messageError: 'Ya existe Proveedor',
+                    duplicate: true
                 });
+                return;
+            }
 
-            });
+            let results = await pool.query(queryInsertProveedor, [idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
+                observacion?observacion : '', telefono, celular, email, paginaWeb, direccion?direccion:'', 
+                identificacionRepre ? identificacionRepre : '', nombreRepre, telefonoRepre, direccionRepre, emailRepre]);
 
+            const insertId = results[0].insertId;
+            let insertproveedorResponse = {}
+            if(insertId > 0){
+                insertproveedorResponse['isSucess'] = true;
+            }else{
+                insertproveedorResponse['isSucess'] = false;
+                insertproveedorResponse['message'] = 'error al insertar Proveedor';
+            }
+
+            insertproveedorResponse['data'] = {
+                id: insertId,
+                ciRuc: documentoIdentidad,
+                nombre: nombreNatural,
+                email: email ? email : '',
+                direccion: direccion ? direccion : '',
+                telefono: telefono ? telefono : ''
+            }
+
+            resolve(insertproveedorResponse);
+
+                
         }catch(error){
             reject({
                 isSucess: false,
@@ -173,19 +129,20 @@ exports.importListProveedores = async (listProveedores, nombreBd, idEmpresa) => 
                 pro_direccion_representante, pro_mail_representante) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
             
             for(let index=0; index<listProveedores.length; index++){
-                try{
 
-                    let proveedor = listProveedores[index];
+                let proveedor = listProveedores[index];
+
+                try{
                     let existProveedorResult = await pool.query(selectExistProveedor, [proveedor.pro_documento_identidad, proveedor.pro_empresa_id]);
                     
-                    const cantProveedores = existProveedorResult[0].CANT;
+                    const cantProveedores = existProveedorResult[0][0].CANT;
                     if(cantProveedores >= 1){
                         let proveedorRes = proveedor;
                         proveedorRes.messageError = 'ya existe el proveedor';
                         proveedorRes.pro_error_server = true;
                         listProveedoresWithError.push(proveedorRes);
                     }else{
-                        let responseInsertproveedor =  await pool.query(queryInsertProveedor, [
+                        await pool.query(queryInsertProveedor, [
                             idEmpresa, proveedor.pro_tipo_documento_identidad, proveedor.pro_documento_identidad, proveedor.pro_nombre_natural, 
                             proveedor.pro_razon_social, 
                             proveedor.pro_observacion, proveedor.pro_telefono, proveedor.pro_celular, proveedor.pro_email, proveedor.pro_pagina_web, 
@@ -230,7 +187,7 @@ exports.importListProveedores = async (listProveedores, nombreBd, idEmpresa) => 
 }
 
 exports.updateProveedor = async (datosProveedor) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             const {idProveedor, idEmpresa, tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
@@ -244,69 +201,46 @@ exports.updateProveedor = async (datosProveedor) => {
                                     pro_nombre_presentante = ?, pro_telefonos_representante = ?, 
                                     pro_direccion_representante = ?, pro_mail_representante = ? WHERE pro_empresa_id = ? AND pro_id = ?`;
             
-            pool.query(queryExistProveedor, [idEmpresa, documentoIdentidad], function(error, result, fields){
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: error.message
-                    });
-                    return;
-                }
+            let result = await pool.query(queryExistProveedor, [idEmpresa, documentoIdentidad]); 
+            
 
-                const cantProveedores = result[0].CANT;
-                if(cantProveedores == 0){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'No existe Proveedor',
-                        duplicate: true
-                    });
-                    return;
-                }
+            const cantProveedores = result[0][0].CANT;
+            if(cantProveedores == 0){
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    message: 'No existe Proveedor',
+                    duplicate: true
+                });
+                return;
+            }
 
-                if(cantProveedores == 1){
+            if(cantProveedores == 1){
                     
-                    pool.query(queryUpdateProveedor, [tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
+                    let result = await pool.query(queryUpdateProveedor, [tipoIdentificacion, documentoIdentidad, nombreNatural, razonSocial, 
                         observacion, telefono, celular, email, paginaWeb, direccion, identificacionRepre ? identificacionRepre : '', nombreRepre, telefonoRepre, 
-                        direccionRepre, emailRepre, idEmpresa, idProveedor], 
-                        function (error, result){
+                        direccionRepre, emailRepre, idEmpresa, idProveedor]);
     
-                            if(error){
-                                console.log(error);
-
-                                reject({
-                                    isSucess: false,
-                                    code: 400,
-                                    message: error
-                                });
-                                return;
-                            }
+                    const insertId = result[0].affectedRows;
+                    let insertproveedorResponse = {}
+                    if(insertId > 0){
+                        insertproveedorResponse['isSucess'] = true;
+                    }else{
+                        insertproveedorResponse['isSucess'] = false;
+                        insertproveedorResponse['message'] = 'error al actualizar proveedor';
+                    }
     
-                            const insertId = result.affectedRows;
-                            let insertproveedorResponse = {}
-                            if(insertId > 0){
-                                insertproveedorResponse['isSucess'] = true;
-                            }else{
-                                insertproveedorResponse['isSucess'] = false;
-                                insertproveedorResponse['message'] = 'error al actualizar proveedor';
-                            }
-    
-                            resolve(insertproveedorResponse);
-                            return;
-                    });
-                }else{
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'identificacion ya esta en uso',
-                        duplicate: true
-                    });
+                    resolve(insertproveedorResponse);
                     return;
-                }
-                
-            });
-
+            }else{
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    message: 'identificacion ya esta en uso',
+                    duplicate: true
+                });
+                return;
+            }
         }catch(error){
             reject({
                 isSucess: false,
@@ -318,23 +252,13 @@ exports.updateProveedor = async (datosProveedor) => {
 }
 
 exports.deleteProveedor = async (idEmpresa, idProv, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             let queryDeleteProveedor = `DELETE FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_id = ? LIMIT 1`;
 
-            pool.query(queryDeleteProveedor, [idEmpresa, idProv], function(error, results, fields){
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        tieneMovimientos: error.message.includes('a foreign key constraint fails') ? true : false
-                    });
-                    return;
-                }
-
-                const affectedRows = results.affectedRows;
+            let results = await pool.query(queryDeleteProveedor, [idEmpresa, idProv]);
+                const affectedRows = results[0].affectedRows;
                 if(affectedRows === 1){
-
                     const deleteProveedorResponse = {
                         'isSucess': true
                     }
@@ -351,9 +275,8 @@ exports.deleteProveedor = async (idEmpresa, idProv, nombreBd) => {
                     });
                     return;
                 }
-            });
-
         }catch(error){
+            console.log(error);
             reject({
                 isSucess: false,
                 code: 400,
@@ -364,31 +287,19 @@ exports.deleteProveedor = async (idEmpresa, idProv, nombreBd) => {
 }
 
 exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySearchproveedors = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND (pro_nombre_natural LIKE ? || pro_documento_identidad LIKE ?)
                                          ORDER BY pro_id DESC`
             
-            pool.query(querySearchproveedors, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
+            let results = await pool.query(querySearchproveedors, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%']);
                 
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
-
         }catch(e){
             reject('error: ' + e);
         }
@@ -434,25 +345,14 @@ exports.getListProveedoresExcel = async (idEmpresa, nombreBd) => {
 
 function createExcelFileProveedores(idEmp, nombreBd){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
 
             let querySelectProveedoresByIdEmp = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? `;
-            pool.query(querySelectProveedoresByIdEmp, [idEmp], function (error, results){
+            let results = await pool.query(querySelectProveedoresByIdEmp, [idEmp]);
 
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                
-                console.log(results);    
-                const arrayData = Array.from(results);
+                const arrayData = Array.from(results[0]);
 
                 const workBook = new excelJS.Workbook(); // Create a new workbook
                 const worksheet = workBook.addWorksheet("Lista Proveedores");
@@ -529,9 +429,6 @@ function createExcelFileProveedores(idEmp, nombreBd){
                         error: 'error creando archivo, reintente'
                     });
                 }
-
-            });
-
 
         }catch(exception){
             reject({

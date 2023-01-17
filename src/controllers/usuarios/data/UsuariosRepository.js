@@ -4,40 +4,27 @@ const excelJS = require("exceljs");
 const fs = require('fs');
 
 exports.getUsuarioByIdEmp = async (idUser, idEmpresa, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySelectClientes = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? AND usu_id = ? LIMIT 1`
             
-            pool.query(querySelectClientes, [idEmpresa, idUser], (err, results) => {
+            let usuarioResult = await pool.query(querySelectClientes, [idEmpresa, idUser]);
 
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: err
-                    });
-                    return;
-                }
-                
-                if(!results | results == undefined | results == null | !results.length){
-                    resolve({
-                        isSucess: true,
-                        code: 400,
-                        message: 'no se encontro usuario'
-                    });
-
-                    return;
-                }
-
+            if(!usuarioResult | usuarioResult == undefined | usuarioResult == null | !usuarioResult.length){
                 resolve({
                     isSucess: true,
-                    code: 200,
-                    data: results
+                    code: 400,
+                    message: 'no se encontro usuario'
                 });
+                return;
+            }
 
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: usuarioResult[0]
             });
-
         }catch(e){
             reject('error: ' + e);
         }
@@ -47,29 +34,18 @@ exports.getUsuarioByIdEmp = async (idUser, idEmpresa, nombreBd) => {
 
 exports.getListUsuariosByIdEmp = async (idEmpresa, nombreBd) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             
             let querySelectUsuariosByIdEmp = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? `;
-            pool.query(querySelectUsuariosByIdEmp, [idEmpresa], function (error, results, fields){
-
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: error
-                    });
-                    return;
-                }
-
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
-
+            let valorUsuarios = await pool.execute(querySelectUsuariosByIdEmp, [idEmpresa]);// function (error, results, fields){
+            
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: valorUsuarios[0]
             });
+
         }catch(err) {
             reject({
                 isSucess: false,
@@ -81,7 +57,7 @@ exports.getListUsuariosByIdEmp = async (idEmpresa, nombreBd) => {
 } 
 
 exports.insertUsuario = async (datosCliente) => {
-    return new Promise((resolve, reject ) => {
+    return new Promise(async (resolve, reject ) => {
         try{
 
             const {idEmpresa, identificacion, nombreNatural, telefono, direccion,
@@ -92,52 +68,32 @@ exports.insertUsuario = async (datosCliente) => {
                                         usu_fecha_nacimiento, usu_username, usu_password, usu_permiso_escritura) 
                                         VALUES (?,?,?,?,?,?,?,?,?,?)`;
             
-            pool.query(queryExistUsuario, [idEmpresa, identificacion], function(error, result, fields){
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: error
-                    });
-                    return;
-                }
 
-                const cantUsers = result[0].CANT;
-                if(cantUsers >= 1){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'Ya existe el Usuario',
-                        duplicate: true
-                    });
-                    return;
-                }
-
-                pool.query(queryInsertUser, [idEmpresa, nombreNatural, identificacion, telefono, direccion?direccion:'', email, fechaNacimiento, 
-                                            nombreUsuario, password, permisoEscritura], 
-                    function (error, result){
-                        if(error){
-                            reject({
-                                isSucess: false,
-                                code: 400,
-                                messageError: error
-                            });
-                            return;
-                        }
-
-                        const insertId = result.insertId;
-                        let insertClienteResponse = {}
-                        if(insertId > 0){
-                        insertClienteResponse['isSucess'] = true;
-                        }else{
-                        insertClienteResponse['isSucess'] = false;
-                        insertClienteResponse['message'] = 'error al insertar Usuario';
-                        }
-
-                        resolve(insertClienteResponse);
+            let usuario = await pool.query(queryExistUsuario, [idEmpresa, identificacion]);
+            const cantUsers = usuario[0].CANT;
+            if(cantUsers >= 1){
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    messageError: 'Ya existe el Usuario',
+                    duplicate: true
                 });
+                return;
+            }                
 
-            });
+            let insertUser = await pool.query(queryInsertUser, [idEmpresa, nombreNatural, identificacion, telefono, direccion?direccion:'', email, fechaNacimiento, 
+                                            nombreUsuario, password, permisoEscritura]);
+            
+            const insertId = insertUser[0].insertId;
+            let insertClienteResponse = {}
+            if(insertId > 0){
+                insertClienteResponse['isSucess'] = true;
+            }else{
+                insertClienteResponse['isSucess'] = false;
+                insertClienteResponse['message'] = 'error al insertar Usuario';
+            }
+
+            resolve(insertClienteResponse);
 
         }catch(error){
             reject({
@@ -150,7 +106,7 @@ exports.insertUsuario = async (datosCliente) => {
 }
 
 exports.updateUsuario = async (datosUsuarioUpdate) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             const {idUsuario, idEmpresa, identificacion, nombreNatural, telefono, direccion,
@@ -162,18 +118,10 @@ exports.updateUsuario = async (datosUsuarioUpdate) => {
                                                  usu_username = ?, usu_password = ?, usu_permiso_escritura = ? WHERE usu_empresa_id = ? AND usu_id = ?`;
             
                                                  console.log(queryUpdateUsuario);
-            pool.query(queryExistUser, [idEmpresa, idUsuario], function(error, result, fields){
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: error.message
-                    });
-                    return;
-                }
+            let updateUsuario = await pool.query(queryExistUser, [idEmpresa, idUsuario]);
 
-                const cantClients = result[0].CANT;
-                if(cantClients == 0){
+                const cantUsuarios = updateUsuario[0].CANT;
+                if(cantUsuarios == 0){
                     reject({
                         isSucess: false,
                         code: 400,
@@ -183,33 +131,23 @@ exports.updateUsuario = async (datosUsuarioUpdate) => {
                     return;
                 }
 
-                if(cantClients == 1){
+                if(cantUsuarios == 1){
                     
-                    pool.query(queryUpdateUsuario, [identificacion,idEmpresa, nombreNatural, telefono, direccion, email, fechaNacimiento,
-                        nombreUsuario, password, permisoEscritura, idEmpresa, idUsuario], 
-                        function (error, result){
+                    let updateUsuario = await pool.query(queryUpdateUsuario, [identificacion,idEmpresa, nombreNatural, telefono, direccion, email, fechaNacimiento,
+                        nombreUsuario, password, permisoEscritura, idEmpresa, idUsuario]);
+                        
     
-                            if(error){
-                                reject({
-                                    isSucess: false,
-                                    code: 400,
-                                    message: error
-                                });
-                                return;
-                            }
+                        const insertId = updateUsuario[0].affectedRows;
+                        let insertClienteResponse = {}
+                        if(insertId > 0){
+                            insertClienteResponse['isSucess'] = true;
+                        }else{
+                            insertClienteResponse['isSucess'] = false;
+                            insertClienteResponse['message'] = 'error al actualizar usuario';
+                        }
     
-                            const insertId = result.affectedRows;
-                            let insertClienteResponse = {}
-                            if(insertId > 0){
-                                insertClienteResponse['isSucess'] = true;
-                            }else{
-                                insertClienteResponse['isSucess'] = false;
-                                insertClienteResponse['message'] = 'error al actualizar usuario';
-                            }
-    
-                            resolve(insertClienteResponse);
-                            return;
-                    });
+                        resolve(insertClienteResponse);
+                        return;
                 }else{
                     reject({
                         isSucess: false,
@@ -220,8 +158,6 @@ exports.updateUsuario = async (datosUsuarioUpdate) => {
                     return;
                 }
                 
-            });
-
         }catch(error){
             reject({
                 isSucess: false,
@@ -233,75 +169,55 @@ exports.updateUsuario = async (datosUsuarioUpdate) => {
 }
 
 exports.deleteUsuario = async (idEmpresa, idUser,nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             let queryDeleteUsuario = `DELETE FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? AND usu_id = ? LIMIT 1`;
 
-            pool.query(queryDeleteUsuario, [idEmpresa, idUser], function(error, results, fields){
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        tieneMovimientos: error.message.includes('a foreign key constraint fails') ? true : false
-                    });
-                    return;
+            let deleteUsuario = await pool.query(queryDeleteUsuario, [idEmpresa, idUser]); 
+
+            const affectedRows = deleteUsuario[0].affectedRows;
+            if(affectedRows === 1){
+                const deleteUsuarioResponse = {
+                    'isSucess': true
                 }
-
-                const affectedRows = results.affectedRows;
-                if(affectedRows === 1){
-
-                    const deleteUsuarioResponse = {
-                        'isSucess': true
-                    }
     
-                    resolve(deleteUsuarioResponse);
-                    return;
+                resolve(deleteUsuarioResponse);
+                return;
 
-                }else{
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'error al eliminar usuario, reintente',
-                        duplicate: true
-                    });
-                    return;
-                }
-            });
+            }else{
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    message: 'error al eliminar usuario, reintente',
+                    duplicate: true
+                });
+
+                return;
+            }
 
         }catch(error){
             reject({
                 isSucess: false,
                 code: 400,
-                message: error.message
+                message: error.message,
+                tieneMovimientos: error.message.includes('a foreign key constraint fails') ? true : false
             });
         }
     });
 }
 
 exports.searchUsuariosByIdEmp = async (idEmpresa, textSearch,nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySearchUsuarios = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? AND (usu_nombres LIKE ? || usu_identificacion LIKE ?)
                                          ORDER BY usu_id DESC`
             
-            pool.query(querySearchUsuarios, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let usuariosSearch = await pool.query(querySearchUsuarios, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%']);
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: usuariosSearch[0]
             });
 
         }catch(e){
@@ -331,58 +247,48 @@ exports.getListUsersExcel = async (idEmpresa,nombreBd) => {
 
 function createExcelFileUsuarios(idEmp,nombreBd){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             let querySelectUsuariosByIdEmp = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? `;
-            pool.query(querySelectUsuariosByIdEmp, [idEmp], function (error, results){
+            let usuariosList = await pool.query(querySelectUsuariosByIdEmp, [idEmp]);
+            
+            const arrayData = Array.from(usuariosList[0]);
 
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
+            const workBook = new excelJS.Workbook(); // Create a new workbook
+            const worksheet = workBook.addWorksheet("Lista Usuarios");
+            const path = `./files/${idEmp}`;
+
+            worksheet.columns = [
+                {header: 'identificacion', key:'identificacion', width: 20},
+                {header: 'nombre', key:'nombre',width: 50},
+                {header: 'telefono', key:'telefono',width: 20},
+                {header: 'email', key:'email',width: 40},
+                {header: 'username', key:'username',width: 20}
+            ];
+            
+
+            arrayData.forEach(valor => {
+                let valorInsert = {
+                    identificacion: valor.usu_identificacion,
+                    nombre: valor.usu_nombres,
+                    telefono: valor.usu_telefonos,
+                    email: valor.usu_mail,
+                    username: valor.usu_username
                 }
-
-            
-                const arrayData = Array.from(results);
-
-                const workBook = new excelJS.Workbook(); // Create a new workbook
-                const worksheet = workBook.addWorksheet("Lista Usuarios");
-                const path = `./files/${idEmp}`;
-
-                worksheet.columns = [
-                    {header: 'identificacion', key:'identificacion', width: 20},
-                    {header: 'nombre', key:'nombre',width: 50},
-                    {header: 'telefono', key:'telefono',width: 20},
-                    {header: 'email', key:'email',width: 40},
-                    {header: 'username', key:'username',width: 20}
-                ];
-            
-
-                arrayData.forEach(valor => {
-                    let valorInsert = {
-                        identificacion: valor.usu_identificacion,
-                        nombre: valor.usu_nombres,
-                        telefono: valor.usu_telefonos,
-                        email: valor.usu_mail,
-                        username: valor.usu_username
-                    }
-                    worksheet.addRow(valorInsert);
-                });
+                worksheet.addRow(valorInsert);
+            });
 
                 // Making first line in excel
-                worksheet.getRow(1).eachCell((cell) => {
-                    cell.font = {bold: true},
-                    cell.border = {
-                        top: {style:'thin'},
-                        left: {style:'thin'},
-                        bottom: {style:'thin'},
-                        right: {style:'thin'}
-                    }
-                });
+            worksheet.getRow(1).eachCell((cell) => {
+                cell.font = {bold: true},
+                cell.border = {
+                    top: {style:'thin'},
+                    left: {style:'thin'},
+                    bottom: {style:'thin'},
+                    right: {style:'thin'}
+                }
+            });
 
                 try{
 
@@ -416,21 +322,17 @@ function createExcelFileUsuarios(idEmp,nombreBd){
                     }
             
                 }catch(exception){
-                    console.log(`exception`);
-                    console.log(exception);
-            
                     reject({
                         isSucess: false,
                         error: 'error creando archivo, reintente'
                     });
                 }
 
-            });
-
         }catch(exception){
             reject({
                 isSucess: false,
-                error: 'error creando archivo, reintente'
+                code: 400,
+                messageError: 'error creando archivo, reintente'
             });
         }
     });

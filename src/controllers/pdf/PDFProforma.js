@@ -118,6 +118,7 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
 
   let index = 0;
   let position = 0;
+    
   for (i = 0; i < datosProforma.listProformasDetalles.length; i++) {
 
     const item = datosProforma.listProformasDetalles[i];

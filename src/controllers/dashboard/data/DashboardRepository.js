@@ -1,31 +1,18 @@
 const pool = require('../../../connectiondb/mysqlconnection');
 
 exports.getInfoVentaDiaria = async (idEmpresa, fechaIni,fechaFin, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
 
         try{
             let querySelectVentaDiaria = `SELECT SUM(venta_total) AS 'total' FROM ${nombreBd}.ventas WHERE venta_empresa_id= ? AND
                                     venta_fecha_hora BETWEEN ? AND ? AND
                                     venta_anulado=0`
             
-            pool.query(querySelectVentaDiaria, [idEmpresa, fechaIni,fechaFin], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(querySelectVentaDiaria, [idEmpresa, fechaIni,fechaFin]);             
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -36,29 +23,18 @@ exports.getInfoVentaDiaria = async (idEmpresa, fechaIni,fechaFin, nombreBd) => {
 }
 
 exports.getInfoVentaMensual = async (idEmpresa, fechaIni,fechaFin, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySelectVentaMensual = `SELECT SUM(venta_total) AS 'total' FROM ${nombreBd}.ventas WHERE venta_empresa_id=? AND
                                             venta_fecha_hora BETWEEN ? AND ? AND
                                             venta_anulado=0`
             
-            pool.query(querySelectVentaMensual, [idEmpresa, fechaIni,fechaFin], (err, results) => {
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(querySelectVentaMensual, [idEmpresa, fechaIni,fechaFin]);
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -69,28 +45,16 @@ exports.getInfoVentaMensual = async (idEmpresa, fechaIni,fechaFin, nombreBd) => 
 }
 
 exports.getInfoClientesRegistrados = async (idEmpresa, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let queryInfoClientesRegistrados = `SELECT COUNT(*) AS 'total' FROM ${nombreBd}.clientes WHERE cli_empresa_id=?`
             
-            pool.query(queryInfoClientesRegistrados, [idEmpresa], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(queryInfoClientesRegistrados, [idEmpresa]); 
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -101,29 +65,16 @@ exports.getInfoClientesRegistrados = async (idEmpresa, nombreBd) => {
 }
 
 exports.getInfoProdctosRegistrados = async (idEmpresa, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let queryInfoProductosRegistrados = `SELECT COUNT(*) AS 'total' FROM ${nombreBd}.productos WHERE prod_empresa_id=? AND
                                                     prod_activo_si_no=1`
-            
-            pool.query(queryInfoProductosRegistrados, [idEmpresa], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(queryInfoProductosRegistrados, [idEmpresa]);
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -135,7 +86,7 @@ exports.getInfoProdctosRegistrados = async (idEmpresa, nombreBd) => {
 
 exports.getDocEmitidosAndLicenceDays = async(rucEmpresa, nombreBd) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let queryNumDocAndLicenceDays = `SELECT empresa_web_plan_enviados as emitidos,empresa_fecha_fin_facturacion as finfactura FROM
@@ -143,23 +94,11 @@ exports.getDocEmitidosAndLicenceDays = async(rucEmpresa, nombreBd) => {
                             = efactura_factura.empresas.EMPRESA_RUC AND
                             ${nombreBd}.empresas.EMP_RUC= ?`;
             
-            pool.query(queryNumDocAndLicenceDays, [rucEmpresa], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(queryNumDocAndLicenceDays, [rucEmpresa]);
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -171,7 +110,7 @@ exports.getDocEmitidosAndLicenceDays = async(rucEmpresa, nombreBd) => {
 
 exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let queryProductosDelMes = `SELECT COUNT(*) AS cantidad,ventad_producto, SUM(venta_total) AS total FROM
@@ -179,25 +118,13 @@ exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
                                         venta_fecha_hora BETWEEN ? AND ? AND
                                         venta_anulado=0 GROUP BY ventad_prod_id ORDER BY SUM(venta_total) LIMIT 10`;
             
-            pool.query(queryProductosDelMes, [idEmp,fechaIni,fechaFin], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(queryProductosDelMes, [idEmp,fechaIni,fechaFin]);
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
-
+        
         }catch(e){
             reject('error: ' + e);
         }
@@ -207,7 +134,7 @@ exports.getProductosDelMesByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
 
 exports.getClientesDelMesByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let queryClientesDelMes = `SELECT COUNT(*) AS cantidad,cli_nombres_natural,SUM(venta_total) AS total
@@ -215,23 +142,11 @@ exports.getClientesDelMesByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
                                     venta_fecha_hora BETWEEN ? AND ? AND
                                     venta_anulado=0 GROUP BY venta_cliente_id ORDER BY SUM(venta_total) LIMIT 10`;
             
-            pool.query(queryClientesDelMes, [idEmp,fechaIni,fechaFin], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(queryClientesDelMes, [idEmp,fechaIni,fechaFin]); 
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -243,32 +158,19 @@ exports.getClientesDelMesByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
 
 exports.getVentasDiaFormaPagoByIdEmp = async(idEmp,fechaIni,fechaFin,nombreBd) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let queryVentasDelDiaFormaPago = `SELECT COUNT(*) AS cantidad,venta_forma_pago,SUM(venta_total) AS total
                                 FROM ${nombreBd}.ventas WHERE venta_empresa_id= ? AND 
                                 venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 GROUP BY venta_forma_pago`;
             
-            pool.query(queryVentasDelDiaFormaPago, [idEmp,fechaIni,fechaFin], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(queryVentasDelDiaFormaPago, [idEmp,fechaIni,fechaFin]);
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
-
         }catch(e){
             reject('error: ' + e);
         }

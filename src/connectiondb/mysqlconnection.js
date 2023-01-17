@@ -1,4 +1,4 @@
-const mysql = require('mysql');
+const mysql = require('mysql2/promise');
 const util = require('util');
 
 const pool = mysql.createPool({
@@ -7,7 +7,7 @@ const pool = mysql.createPool({
     user: process.env.dbUsername,
     password: process.env.dbPassword,
     connectTimeout: 10000
-})
+});
 
 pool.getConnection((err, connection) => {
     if(err){
@@ -28,8 +28,8 @@ pool.getConnection((err, connection) => {
     if(connection) connection.release();
 
     return;
-})
+});
 
-pool.query = util.promisify(pool.query).bind(pool);
+//pool.query = util.promisify(pool.query).bind(pool);
 
 module.exports = pool;

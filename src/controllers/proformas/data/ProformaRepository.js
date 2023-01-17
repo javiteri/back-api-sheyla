@@ -5,7 +5,10 @@ const pdfGenerator = require('../../pdf/PDFProforma');
 
 exports.insertProforma = async (datosProforma) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+
+        let conexion = await pool.getConnection();
+
         try{
 
             const {empresaId,proformaNumero,proformaFechaHora, usuId,clienteId,subtotal12,subtotal0,valorIva,
@@ -24,83 +27,40 @@ exports.insertProforma = async (datosProforma) => {
             const sqlQueryInsertProformaDetalle = `INSERT INTO ${nombreBd}.proformas_detalles (profd_prof_id,profd_prod_id,profd_cantidad, 
                                                 profd_iva,profd_producto,profd_vu,profd_descuento,profd_vt) VALUES 
                                                 (?,?,?,?,?,?,?,?)`;
-                
-            pool.getConnection(function(error, connection){
+            
+            await conexion.beginTransaction();
+            let results = await conexion.query(sqlQueryInsertProforma, [empresaId,proformaNumero,
+                proformaFechaHora,usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,
+                formaPago,obs, `${empresaId}_${proformaNumero}`]);
+            
+            const idProformaGenerated = results[0].insertId;
 
-                connection.beginTransaction(function(err){
-                    if(err){
-                        connection.rollback(function(){
-                            connection.release();
-                            reject('error en conexion transaction');
-                            return;
-                        });
-                    }
+            const arrayListProformaDetalle = Array.from(proformaDetallesArray);
+            arrayListProformaDetalle.forEach(async (proformaDetalle, index) => {
+
+                const {prodId, cantidad,iva,nombreProd,valorUnitario,descuento,valorTotal} = proformaDetalle;
                     
-                    connection.query(sqlQueryInsertProforma, [empresaId,proformaNumero,
-                                    proformaFechaHora,usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,
-                                    formaPago,obs, `${empresaId}_${proformaNumero}`], function(erro, results){
-                        if(erro){
-                            
-                            connection.rollback(function(){ connection.release()});
-                            reject({
-                                isSuccess: false,
-                                error: 'error insertando Proforma',
-                                isDuplicate: 
-                                (erro.sqlMessage.includes('Duplicate entry') || erro.sqlMessage.includes('prof_unico'))
-                            });
-                            return;
-                        }
-
-                        const idProformaGenerated = results.insertId;
-
-                        const arrayListProformaDetalle = Array.from(proformaDetallesArray);
-                        arrayListProformaDetalle.forEach((proformaDetalle, index) => {
-
-                            const {prodId, cantidad,iva,nombreProd,valorUnitario,descuento,valorTotal} = proformaDetalle;
-                            
-                            connection.query(sqlQueryInsertProformaDetalle, [idProformaGenerated,prodId,
-                                            cantidad,iva,nombreProd,valorUnitario,
-                                            descuento,valorTotal], function(errorr, results){
-
-                                if(errorr){
-                                    connection.rollback(function(){ connection.release()});
-                                    reject('error insertando Proforma Detalle');
-                                    return;
-                                }
-
-                                if(index == arrayListProformaDetalle.length - 1){
-                                        
-                                    connection.commit(function(errorComit){
-                                        if(errorComit){
-                                            connection.rollback(function(){
-                                                connection.release();
-                                                reject('error insertando la proforma');
-                                                return;
-                                            });   
-                                        }
-            
-                                        connection.release();
-                                        resolve({
-                                            isSuccess: true,
-                                            message: 'proforma insertada correctamente',
-                                            proformaId: idProformaGenerated
-                                        })
-            
-                                    });
-                                }
-
-                            });
-                        });
-
-                    });
-
-                });
-
-            });
-            
+                await conexion.query(sqlQueryInsertProformaDetalle, [idProformaGenerated,prodId,
+                                    cantidad,iva,nombreProd,valorUnitario,
+                                    descuento,valorTotal]);
+                if(index == arrayListProformaDetalle.length - 1){
+                    await conexion.commit();
+                    resolve({
+                        isSuccess: true,
+                        message: 'proforma insertada correctamente',
+                        proformaId: idProformaGenerated
+                    })
+                }
+            });            
         }catch(exp){
-            console.log('error insertando proforma');
-            console.log(exp);
+            conexion.rollback();
+            conexion.release();
+            reject({
+                isSuccess: false,
+                error: 'error insertando Proforma',
+                isDuplicate: 
+                (exp.sqlMessage.includes('Duplicate entry') || exp.sqlMessage.includes('prof_unico'))
+            });
         }
     });
 }
@@ -136,7 +96,7 @@ exports.getListProformasByIdEmpresa = async(idEmpresa, nombreOrCiRuc, noDoc, fec
             resolve({
                 isSucess: true,
                 code: 200,
-                data: response
+                data: response[0]
             });
 
         }catch(exception){
@@ -150,44 +110,35 @@ exports.getListProformasByIdEmpresa = async(idEmpresa, nombreOrCiRuc, noDoc, fec
 }
 
 exports.getNoProformaSecuencialByIdusuarioAndEmp = async(idEmp, idUsuario, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             
             const querySelectNoProforma = `SELECT MAX(CAST(prof_numero as UNSIGNED)) AS numero FROM ${nombreBd}.proformas WHERE prof_empresa_id = ?`;
 
-            pool.query(querySelectNoProforma, [idEmp], function(error, results) {
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
-                }
+            let results = await pool.query(querySelectNoProforma, [idEmp]); 
+            
+            if(results[0].length <= 0){
+                resolve({
+                    isSucess: true,
+                    numeroProf: 1,
+                });
+                return;
+            }
 
-                if(results.length <= 0){
-                    resolve({
-                        isSucess: true,
-                        numeroProf: 1,
-                    });
-                    return;
-                }
+            let numeroProforma = results[0][0].numero;
 
-                let numeroProforma = results[0].numero;
+            if(numeroProforma != null && numeroProforma > 0){
+                resolve({
+                    isSucess: true,
+                    numeroProf: numeroProforma + 1,
+                });
+            }else{
+                resolve({
+                    isSucess: true,
+                    numeroProf: 1,
+                });
+            }
 
-                if(numeroProforma != null && numeroProforma > 0){
-                    resolve({
-                        isSucess: true,
-                        numeroProf: numeroProforma + 1,
-                    });
-                }else{
-                    resolve({
-                        isSucess: true,
-                        numeroProf: 1,
-                    });
-                }
-
-            });
 
         }catch(exception){
             console.log('exception');
@@ -197,28 +148,19 @@ exports.getNoProformaSecuencialByIdusuarioAndEmp = async(idEmp, idUsuario, nombr
 }
 
 exports.deleteProformaEstadoAnuladoByIdEmpresa = async (datos) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
 
         try{
             const {idEmpresa,idProforma,nombreBd} = datos;
 
             const queryDeleteProformaByIdEmp = `DELETE FROM ${nombreBd}.proformas WHERE prof_id = ? AND prof_empresa_id = ? LIMIT 1`;
 
-            pool.query(queryDeleteProformaByIdEmp, [idProforma, idEmpresa], function (errores, resultsss){
-                if(errores){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: errores.message
-                    });
-                    return;
-                }
-
-                resolve({
-                    isSuccess: true,
-                    message: 'proforma eliminada correctamente'
-                });
+            await pool.query(queryDeleteProformaByIdEmp, [idProforma, idEmpresa]); 
+            resolve({
+                isSuccess: true,
+                message: 'proforma eliminada correctamente'
             });
+
         }catch(exception){
             reject({
                 isSucess: false,
@@ -249,7 +191,7 @@ exports.getListListaProformasExcel = async (idEmpresa, fechaIni,fechaFin,nombreO
 
 function createExcelFileListaProformas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             let valueNombreClient = "";
@@ -274,19 +216,10 @@ function createExcelFileListaProformas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, no
                                          AND  prof_fecha_hora  BETWEEN ? AND ?
                                          ORDER BY prof_id DESC`;
 
-            pool.query(queryGetListaVentas, [idEmp, "%"+valueNombreClient+"%", 
-                                         "%"+valueCiRucClient+"%", "%"+noDoc+"%", fechaIni,fechaFin], (error, results) => {
+            let results = await pool.query(queryGetListaVentas, [idEmp, "%"+valueNombreClient+"%", 
+                                         "%"+valueCiRucClient+"%", "%"+noDoc+"%", fechaIni,fechaFin]); 
                 
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
-                }
-                
-                const arrayData = Array.from(results);
+                const arrayData = Array.from(results[0]);
 
                 const workBook = new excelJS.Workbook(); // Create a new workbook
                 const worksheet = workBook.addWorksheet("Lista Proformas");
@@ -362,10 +295,6 @@ function createExcelFileListaProformas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, no
                         error: 'error creando archivo, reintente'
                     });
                 }
-
-            });
-
-
         }catch(exception){
             console.log(exception);
             reject({
@@ -394,9 +323,9 @@ exports.generateDownloadPdfFromProforma = (idEmp, idProforma, identificacionClie
             const responseDatosProformaDetalles = await pool.query(sqlQuerySelectProformaDetallesByIdProforma, [idProforma]);
 
             // GENERATE PDF WITH DATA                            
-            responseDatosProforma['listProformasDetalles'] = responseDatosProformaDetalles;
+            responseDatosProforma[0]['listProformasDetalles'] = responseDatosProformaDetalles[0];
             
-            const pathPdfGenerated = pdfGenerator.generatePdfFromProforma(responseDatosEmpresa,responseDatosCliente, responseDatosProforma);
+            const pathPdfGenerated = pdfGenerator.generatePdfFromProforma(responseDatosEmpresa[0],responseDatosCliente[0], responseDatosProforma[0]);
 
             pathPdfGenerated.then(
                 function(result){
@@ -443,12 +372,12 @@ exports.getDataByIdProforma = async (idProforma, idEmp, ruc, nombreBd) => {
                                          AND prof_id = ? `;
 
             const listaProformaResponse = await pool.query(queryGetListaProforma,[idEmp, idProforma]);
-            if(listaProformaResponse.length > 0){
+   
+            if(listaProformaResponse[0].length > 0){
                 const responseListProforma = await pool.query(queryListProformaDelleByIdProforma,[idProforma]);
 
-                //console.log(responseListProforma);
-                let sendResult = listaProformaResponse[0];
-                sendResult['data'] = responseListProforma;
+                let sendResult = listaProformaResponse[0][0];
+                sendResult['data'] = responseListProforma[0];
 
                 resolve({
                     isSucess: true,

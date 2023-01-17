@@ -40,34 +40,30 @@ const codDoc = [
 
 
 exports.getNumDocByAutorizar = async(rucEmpresa) =>{
-    return new Promise((resolve, reject) =>{
+    return new Promise(async (resolve, reject) =>{
         try{
             const queryPlanEnviados = `SELECT EMPRESA_WEB_PLAN_CANTIDAD, EMPRESA_WEB_PLAN_ENVIADOS
                                         FROM empresas WHERE EMPRESA_RUC = ?`;
-            poolEFactra.query(queryPlanEnviados, [rucEmpresa], function(errorPlan, resultPlan){
-                if(errorPlan){
-                    return reject({isSucess: false, message:'error consultando plan'});
-                }
-
-                if(Object.entries(resultPlan).length > 0){  
+            let resultPlan = await poolEFactra.query(queryPlanEnviados, [rucEmpresa]);
+            
+            if(Object.entries(resultPlan[0]).length > 0){  
                     
-                    let planCantidad = Number(resultPlan[0].EMPRESA_WEB_PLAN_CANTIDAD);
-                    let planEnviados = Number(resultPlan[0].EMPRESA_WEB_PLAN_ENVIADOS);
-                    let total = planCantidad - planEnviados;
+                let planCantidad = Number(resultPlan[0][0].EMPRESA_WEB_PLAN_CANTIDAD);
+                let planEnviados = Number(resultPlan[0][0].EMPRESA_WEB_PLAN_ENVIADOS);
+                let total = planCantidad - planEnviados;
 
-                    resolve({
-                        isSucess: true,
-                        mensaje: 'ok',
-                        docRestantes : total
-                    })
-                }else{
-                    resolve({
-                        isSucess: false,
-                        mensaje: 'no cuenta con un plan de documentos vigente'
-                    })
-                }
-            });
-
+                resolve({
+                    isSucess: true,
+                    mensaje: 'ok',
+                    docRestantes : total
+                });
+            }else{
+                resolve({
+                    isSucess: false,
+                    mensaje: 'no cuenta con un plan de documentos vigente'
+                });
+            }
+        
         }catch(exception){
             reject({
                 isSucess: false,
@@ -105,7 +101,7 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
 }
 
 exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             const {idEmp, fechaIni, fechaFin, tipo, nodoc,nombresci, nombreBd} = datosFiltrar;
 
@@ -127,27 +123,14 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
             AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_fecha_hora BETWEEN ? AND ?
             AND CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ? AND venta_anulado=0 `;
 
-            pool.query(sqlQueryDocumentosElectronicos, [idEmp,/*"%"+tipo*/'FACTURA',"%"+valueNombreClient+"%",
-            "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc+"%", idEmp,"%"+tipo,fechaIni,fechaFin,"%"+valueNombreClient+"%",
-            "%"+valueCiRucClient+"%","%"+nodoc+"%"], function(error, results) {
-
-                if(error){
-                    console.log(error);
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'Ocurrio un error al consultar la lista de documentos electronicos'
-                    });
-
-                    return;
-                }
-
-                resolve({
-                    isSucess: true,
-                    data: results
-                });
+            let results = await pool.query(sqlQueryDocumentosElectronicos, [idEmp,'FACTURA',"%"+valueNombreClient+"%",
+                            "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc+"%", idEmp,"%"+tipo,
+                            fechaIni,fechaFin,"%"+valueNombreClient+"%", "%"+valueCiRucClient+"%","%"+nodoc+"%"]);
+            
+            resolve({
+                isSucess: true,
+                data: results[0]
             });
-
         }catch(exception){
             reject({
                 isSucess: false,
@@ -159,7 +142,7 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
 }
 
 exports.getDocumentosElectronicosByIdEmpNoAutorizados = async(datosFiltrar) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             const {idEmp, nombreBd} = datosFiltrar;
             
@@ -169,25 +152,11 @@ exports.getDocumentosElectronicosByIdEmpNoAutorizados = async(datosFiltrar) => {
             FROM ${nombreBd}.ventas,${nombreBd}.clientes WHERE venta_empresa_id = ? 
             AND venta_cliente_id=cli_id AND venta_electronica_estado != 2 AND venta_anulado= 0 AND VENTA_TIPO = ?`;
 
-            pool.query(sqlQueryDocumentosElectronicos, [idEmp, 'FACTURA'], function(error, results) {
-
-                if(error){
-                    console.log(error);
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'Ocurrio un error al consultar la lista de documentos electronicos no autorizados'
-                    });
-
-                    return;
-                }
-
-                resolve({
-                    isSucess: true,
-                    data: results
-                });
+            let results = await pool.query(sqlQueryDocumentosElectronicos, [idEmp, 'FACTURA']); 
+            resolve({
+                isSucess: true,
+                data: results[0]
             });
-
         }catch(exception){
             reject({
                 isSucess: false,
@@ -428,14 +397,14 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             }
          
             rootElement = rootElement.ele('infoAdicional');
-            if(datosCliente.cli_direccion.length > 0){
+            if(datosCliente.cli_direccion.trim().length > 0){
                 rootElement.ele('campoAdicional',{'nombre':'DIRECCION'},removeAccentDiactricsFromString(datosCliente.cli_direccion)).up();
             }
             rootElement.ele('campoAdicional',{'nombre':'FORMA DE PAGO'},removeAccentDiactricsFromString(datosVenta.venta_forma_pago)).up()
             .ele('campoAdicional',{'nombre':'RESPONSABLE'}, removeAccentDiactricsFromString(datosVenta.usu_nombres)).up()
 
 
-            if(datosCliente.cli_email && datosCliente.cli_email.length > 0 && datosCliente.cli_email !== ' '){
+            if(datosCliente.cli_email && datosCliente.cli_email.trim().length > 0 && datosCliente.cli_email !== ' '){
                 let firstEmailCliente = '';
                 if(datosCliente.cli_email.includes(',')){
                     firstEmailCliente = datosCliente.cli_email.split(',')[0];
@@ -449,11 +418,11 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             }
 
 
-            if(datosCliente.cli_teleono && datosCliente.cli_teleono.length > 0){
+            if(datosCliente.cli_teleono && datosCliente.cli_teleono.trim().length > 0){
                 rootElement.ele('campoAdicional',{'nombre':'TELEFONOS'},datosCliente.cli_teleono).up();
             }
             
-            if(datosVenta.venta_observaciones && datosVenta.venta_observaciones.length > 0){
+            if(datosVenta.venta_observaciones && datosVenta.venta_observaciones.trim().length > 0){
                 rootElement.ele('campoAdicional',{'nombre':'Observacion'},removeAccentDiactricsFromString(datosVenta.venta_observaciones)).up();
             }
 
@@ -576,7 +545,7 @@ exports.getListDocElectronicosExcel = async (datosFiltro) => {
 }
 
 function createExcelDocumentosElectronicos(datosFiltro){
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             const {idEmp, fechaIni, fechaFin, tipo, nodoc,nombresci, rucEmp, nombreBd} = datosFiltro;
@@ -605,22 +574,11 @@ function createExcelDocumentosElectronicos(datosFiltro){
             AND compra_fecha_hora  BETWEEN ? AND ?
             AND (pro_nombre_natural LIKE ? && pro_documento_identidad LIKE ?) AND compra_numero LIKE ? `;
 
-            pool.query(sqlQueryDocumentosElectronicos, [idEmp,"%"+tipo,"%"+valueNombreClient+"%",
-            "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc+"%", idEmp,"%"+tipo,fechaIni,fechaFin,"%"+valueNombreClient+"%",
-            "%"+valueCiRucClient+"%","%"+nodoc+"%"], function(error, results) {
-
-                if(error){
-                    console.log(error);
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'Ocurrio un error al consultar la lista de documentos electronicos'
-                    });
-
-                    return;
-                }
-
-                const arrayData = Array.from(results);
+            let results = await pool.query(sqlQueryDocumentosElectronicos, [idEmp,"%"+tipo,"%"+valueNombreClient+"%",
+                            "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc+"%", idEmp,"%"+tipo,
+                            fechaIni,fechaFin,"%"+valueNombreClient+"%","%"+valueCiRucClient+"%","%"+nodoc+"%"]);
+            
+                const arrayData = Array.from(results[0]);
                 const workBook = new excelJS.Workbook(); // Create a new workbook
                 const worksheet = workBook.addWorksheet("Lista Documentos Electronicos");
                 const path = `./files/${idEmp}`;
@@ -717,8 +675,6 @@ function createExcelDocumentosElectronicos(datosFiltro){
                         error: 'error creando archivo, reintente'
                     });
                 }
-
-            });
         }catch(exception){
             reject({
                 isSucess: false,
@@ -749,10 +705,10 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
             const responseDatosEstablecimiento = await pool.query(sqlQuerySelectDatosEstablecimiento, [idEmp, responseDatosVenta[0].venta_001]);
 
             // GENERATE PDF WHIT DATA                            
-            responseDatosVenta['listVentasDetalles'] = responseDatosVentaDetalles;
+            responseDatosVenta[0]['listVentasDetalles'] = responseDatosVentaDetalles[0];
             
-            const pathPdfGeneratedProm = pdfGenerator.generatePdfFromVenta(responseDatosEmpresa,responseDatosCliente,
-                                                responseDatosVenta, isPdfNormal, responseDatosConfig, responseDatosEstablecimiento);
+            const pathPdfGeneratedProm = pdfGenerator.generatePdfFromVenta(responseDatosEmpresa[0],responseDatosCliente[0],
+                                                responseDatosVenta[0], isPdfNormal, responseDatosConfig[0], responseDatosEstablecimiento[0]);
 
             pathPdfGeneratedProm.then(
                 function(result){
@@ -804,10 +760,10 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
         const responseDatosCliente = await pool.query(querySelectCliente, [idEmp, identificacion]);
         const responseDatosVenta = await pool.query(querySelectVenta, [idEmp, idVentaCompra]);
         const responseDatosVentaDetalles = await pool.query(querySelectVentasDetalles, [idVentaCompra]);
-        const responseDatosEstablecimiento = await pool.query(sqlQuerySelectDatosEstablecimiento, [idEmp, responseDatosVenta[0].venta_001]);        
+        const responseDatosEstablecimiento = await pool.query(sqlQuerySelectDatosEstablecimiento, [idEmp, responseDatosVenta[0].venta_001]);
 
-        const valorGenerateXmlResponse = generateXmlDocumentoElectronicoVenta(responseDatosCliente[0],responseDatosVenta[0],responseDatosVentaDetalles,
-                                                                                responseDatosEmpresa[0],responseDatosConfig, responseDatosEstablecimiento);
+        const valorGenerateXmlResponse = generateXmlDocumentoElectronicoVenta(responseDatosCliente[0][0],responseDatosVenta[0][0],responseDatosVentaDetalles[0],
+                                                                                responseDatosEmpresa[0][0],responseDatosConfig[0], responseDatosEstablecimiento[0]);
         valorGenerateXmlResponse.then(
             async function(data){
                 const pathFile = data.pathFile;
@@ -822,20 +778,21 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                                             ELSE 1 END AS isSucess
                                             FROM empresas WHERE EMPRESA_RUC = ?`;
 
-                const responseSelectEmpresaAutorizacion = await poolEFactra.query(sqlQuerySelectEmpresa,[responseDatosEmpresa[0].EMP_RUC]);
-                const responsePlanEnviados = await poolEFactra.query(queryPlanEnviados, [responseDatosEmpresa[0].EMP_RUC]);
+                const responseSelectEmpresaAutorizacion = await poolEFactra.query(sqlQuerySelectEmpresa,[responseDatosEmpresa[0][0].EMP_RUC]);
+                const responsePlanEnviados = await poolEFactra.query(queryPlanEnviados, [responseDatosEmpresa[0][0].EMP_RUC]);
 
-                if(responsePlanEnviados[0].isSucess == 1){
+                console.log(responsePlanEnviados);
+                if(responsePlanEnviados[0][0].isSucess == 1){
                     const responseXmlExist = await poolEFactra.query(sqlQueryExistXmlInsert,[claveActivacion]);
                     // SI EXISTE XML EN LA TABLA AUTORIZACIONES ENTONCES HACER OTRAS VALIDACIONES, CASO CONTRARIO SEGUIR CON LA INSERCION
-                    if(Object.entries(responseXmlExist).length > 0){
+                    if(Object.entries(responseXmlExist[0]).length > 0){
                         // VERIFICAR SI ES UN ERROR O YA SE AUTORIZO PARA REALIZAR EL PROCESO CORRESPONDIENTE 
                         // SE OBTENIENE EL ESTADO DE LA FACTRUA EN LA TABLA AUTORIZACION
                         // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
                         const queryUpdateFacAutorizacion = `DELETE FROM autorizaciones WHERE auto_clave_acceso = ?`;
                         const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
-
-                        if(responseXmlExist[0].auto_estado == 2){
+                        console.log(responseXmlExist[0]);
+                        if(responseXmlExist[0][0].auto_estado == 2){
 
                             await poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion]);
                             await pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra]);
@@ -850,14 +807,14 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                         }else if(responseXmlExist[0].auto_estado == 1){
 
                             // YA SE AUTORIZO EL DOCUMENTO DEBO ACTUALIZAR ESE ESTADO EN LA VENTA
-                            pool.query(queryUpdateVentaEstado,[2,responseXmlExist[0].auto_mensaje,idVentaCompra]);
+                            await pool.query(queryUpdateVentaEstado,[2,responseXmlExist[0][0].auto_mensaje,idVentaCompra]);
                             //DELETE XML FILE GENERATED
                             fs.unlink(pathFile, function(){
                                 console.log("File was deleted")
                             });
 
-                            sendDataToWorkerAutorizacion(claveActivacion, responseSelectEmpresaAutorizacion[0].empresa_id, responseDatosEmpresa[0],
-                                                        responseDatosCliente[0], responseDatosVenta[0], nombreBd);
+                            sendDataToWorkerAutorizacion(claveActivacion, responseSelectEmpresaAutorizacion[0][0].empresa_id, responseDatosEmpresa[0][0],
+                                                        responseDatosCliente[0][0], responseDatosVenta[0][0], nombreBd);
 
                         }else{
                             //DELETE XML FILE GENERATED
@@ -879,14 +836,14 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                         stream.on('end', async function() {
                             let str = xmlString.replace(/[\n\r\t]+/g, '');
                             
-                            await poolEFactra.query(sqlQueryInsertXmlBlob,[responseSelectEmpresaAutorizacion[0].empresa_id,claveActivacion, str]);
+                            await poolEFactra.query(sqlQueryInsertXmlBlob,[responseSelectEmpresaAutorizacion[0][0].empresa_id,claveActivacion, str]);
                             //DELETE XML FILE GENERATED
                             fs.unlink(pathFile, function(){
                                 console.log("File was deleted")
                             });
 
-                            sendDataToWorkerAutorizacion(claveActivacion, responseSelectEmpresaAutorizacion[0].empresa_id, responseDatosEmpresa[0],
-                                                        responseDatosCliente[0], responseDatosVenta[0], nombreBd);
+                            sendDataToWorkerAutorizacion(claveActivacion, responseSelectEmpresaAutorizacion[0][0].empresa_id, responseDatosEmpresa[0][0],
+                                                        responseDatosCliente[0][0], responseDatosVenta[0][0], nombreBd);
 
                         });
                     }
@@ -909,129 +866,84 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
     const queryDatosEmpresaById = `SELECT * FROM ${nombreBd}.empresas WHERE emp_id = ?`;
     const querySelectCliente = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_documento_identidad = ? LIMIT 1`;
     
-    pool.query(queryDatosEmpresaById,[idEmp], (err, empResponse) => {
-        if(err){
-            return;
-        }
-        pool.query(querySelectCliente, [idEmp, identificacion], (errorCliente, clienteResponse) => {
-            if(errorCliente){
-                return;
-            }
+    let empResponse = await pool.query(queryDatosEmpresaById,[idEmp]);
+    let clienteResponse = await pool.query(querySelectCliente, [idEmp, identificacion]);
 
-            const datosCliente = clienteResponse[0];
-            const datosEmpresa = empResponse[0];
+    const datosCliente = clienteResponse[0][0];
+    const datosEmpresa = empResponse[0][0];
 
-            pool.query(querySelectVenta, [idEmp, idVentaCompra], (errorr, ventaResponse) => {
-                if(errorr){
-                    return;
-                }
-                const datosVenta = ventaResponse[0];
+    let ventaResponse = await pool.query(querySelectVenta, [idEmp, idVentaCompra]);
 
-                const dateVenta = new Date(datosVenta.venta_fecha_hora);
-                const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
-                const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
-                const yearVenta = dateVenta.getFullYear().toString();
+    const datosVenta = ventaResponse[0][0];
 
-                let rucEmpresa = datosEmpresa.EMP_RUC;
-                let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta.venta_tipo);
-                let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
-                let serie = `${datosVenta.venta_001}${datosVenta.venta_002}`;
-                let codigoNumerico = '12174565';
-                let secuencial = (datosVenta.venta_numero).toString().padStart(9,'0');
-                let tipoEmision = 1;
+    const dateVenta = new Date(datosVenta.venta_fecha_hora);
+    const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
+    const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
+    const yearVenta = dateVenta.getFullYear().toString();
+
+    let rucEmpresa = datosEmpresa.EMP_RUC;
+    let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(datosVenta.venta_tipo);
+    let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
+    let serie = `${datosVenta.venta_001}${datosVenta.venta_002}`;
+    let codigoNumerico = '12174565';
+    let secuencial = (datosVenta.venta_numero).toString().padStart(9,'0');
+    let tipoEmision = 1;
         
-                let digit48 = 
+    let digit48 = 
                 `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
                 
-                let claveActivacion = sharedFunctions.modulo11(digit48);
+    let claveActivacion = sharedFunctions.modulo11(digit48);
         
-                //query in table Autorizaciones for state with clave
-                const sqlQuerySelectAutoFacState = `SELECT auto_estado, auto_mensaje,auto_id_empresa FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
-                const queryPlanEnviados = `SELECT EMPRESA_WEB_PLAN_CANTIDAD, EMPRESA_WEB_PLAN_ENVIADOS,
-                                    CASE WHEN EMPRESA_WEB_PLAN_ENVIADOS >= EMPRESA_WEB_PLAN_CANTIDAD THEN 0 
-                                    ELSE 1 END AS isSucess
-                                    FROM empresas WHERE EMPRESA_RUC = ?`;
+    //query in table Autorizaciones for state with clave
+    const sqlQuerySelectAutoFacState = `SELECT auto_estado, auto_mensaje,auto_id_empresa FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
+    const queryPlanEnviados = `SELECT EMPRESA_WEB_PLAN_CANTIDAD, EMPRESA_WEB_PLAN_ENVIADOS,
+                                CASE WHEN EMPRESA_WEB_PLAN_ENVIADOS >= EMPRESA_WEB_PLAN_CANTIDAD THEN 0 
+                                ELSE 1 END AS isSucess
+                                FROM empresas WHERE EMPRESA_RUC = ?`;
 
-                poolEFactra.query(sqlQuerySelectAutoFacState,[claveActivacion], function(error, results) {
-                    if(error){
-                        return;
-                    }
+    let results = await poolEFactra.query(sqlQuerySelectAutoFacState,[claveActivacion]);
+    let resultPlan = await  poolEFactra.query(queryPlanEnviados, [rucEmpresa]);
 
-                    poolEFactra.query(queryPlanEnviados, [rucEmpresa], function(errorPlan, resultPlan){
-                        if(errorPlan){
-                            return {isSucess: false, message:'error consultando plan'};
-                        }
-                        if(resultPlan[0].isSucess == 1){
-                            if(results.length <= 0){
-                                // no existe en la tabla autorizaciones
-                                //enviar otra vez el xml al servicio
-                                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo, nombreBd);
-                                return{estado:'ok'};
-                            }else{
-                                // SE OBTENIENE EL ESTADO DE LA FACTURA EN LA TABLA AUTORIZACION
-                                // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
-                                const queryUpdateFacAutorizacion = `DELETE FROM autorizaciones WHERE auto_clave_acceso = ?`;
-                                const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
+    if(resultPlan[0][0].isSucess == 1){
+        if(results[0].length <= 0){
+            // no existe en la tabla autorizaciones
+            //enviar otra vez el xml al servicio
+            prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo, nombreBd);
+            return{estado:'ok'};
+        }else{
+            // SE OBTENIENE EL ESTADO DE LA FACTURA EN LA TABLA AUTORIZACION
+            // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
+            const queryUpdateFacAutorizacion = `DELETE FROM autorizaciones WHERE auto_clave_acceso = ?`;
+            const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
 
-                                //2.-Error
-                                if(results[0].auto_estado == 2){
-                                    poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion], function(errorUpdate, resultsUpdate){
-                                        if(errorUpdate){
-                                            return;
-                                        }
-                                        
-                                        pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra], function(errorUp, resultUpdateVentaEstado){
-                                            if(errorUp){
-                                                return;
-                                            }   
-                                            
-                                            prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo, nombreBd);
+            //2.-Error
+            if(results[0][0].auto_estado == 2){
+                await poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion]);                     
+                await pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra]);
+                            
+                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo, nombreBd);
 
-                                            return{estado:'ok'}
-        
-                                        });
-        
-                                    });
-                                }else if(results[0].auto_estado == 1){
-                                    // YA SE AUTORIZO EL DOCUMENTO DEBO ACTUALIZAR ESE ESTADO EN LA VENTA
-                                    pool.query(queryUpdateVentaEstado,[2,results[0].auto_mensaje,idVentaCompra], function(errorUp, resultUpdateVentaEstado){
-                                        if(errorUp){
-                                            return;
-                                        }
-        
-                                        //ENVIAR A  LA COLA PARA QUE GUARDE LOS DATOS DEL XML Y ENVIE POR CORREO
-                                        sendDataToWorkerAutorizacion(claveActivacion,results[0].auto_id_empresa,datosEmpresa,
-                                                                        datosCliente,datosVenta,nombreBd)
-                                        
-                                        return{estado:'ok'}
-                                    });
-                                }else if(results[0].auto_estado == 0){
-                                    pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra], function(errorUp, resultUpdateVentaEstado){
-                                        if(errorUp){
-                                            return;
-                                        }   
-
-                                        return{estado:'ok'}
-    
-                                    });
-                                }
-                            }
-
-                        }else{
-                            return {
-                                isSucess: false, 
-                                message:'no cuenta con documentos para autorizar',
-                                isAllowAutorizar: false
-                            };
-                        }
-
-                    });
-
-                });
-            });
-        });
-
-    });
+                return{estado:'ok'}
+            }else if(results[0][0].auto_estado == 1){
+                // YA SE AUTORIZO EL DOCUMENTO DEBO ACTUALIZAR ESE ESTADO EN LA VENTA
+                await pool.query(queryUpdateVentaEstado,[2,results[0][0].auto_mensaje,idVentaCompra]);
+                
+                //ENVIAR A  LA COLA PARA QUE GUARDE LOS DATOS DEL XML Y ENVIE POR CORREO
+                sendDataToWorkerAutorizacion(claveActivacion,results[0][0].auto_id_empresa,datosEmpresa,
+                                                datosCliente,datosVenta,nombreBd)
+                return{estado:'ok'}
+            }else if(results[0][0].auto_estado == 0){
+                await pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra]);
+                return{estado:'ok'}
+            }
+        }
+    }else{
+        return {
+            isSucess: false, 
+            message:'no cuenta con documentos para autorizar',
+            isAllowAutorizar: false
+        };
+    }
    
 }
 
@@ -1060,6 +972,7 @@ function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmpresa, 
         ventaFecha: dateString,
         nombreBd: nombreBd
     }
+    console.log('send data to worker');
     // SEND JOB TO QUEUE BULL
     docElectronicoQueue.add(objSendJob,{
         removeOnComplete: true,

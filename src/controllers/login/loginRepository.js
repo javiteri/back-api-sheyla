@@ -94,7 +94,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
     return new Promise((resolve, reject) => {
         try{
             getNameBdByRuc(ruc).then(
-                function(result){
+                async function(result){
                 
                     if(!result.existEmp){
                         resolve(result);
@@ -109,100 +109,74 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                         = efactura_factura.empresas.EMPRESA_RUC AND
                         efactura_web.empresas.EMP_RUC= ?`;
     
-                    poolMysqlBd1.query(queryNumDocAndLicenceDays, [ruc], (err, results) => {
+                    let datosEmpresa = await poolMysqlBd1.query(queryNumDocAndLicenceDays, [ruc]);
 
-                        if(err){
-                            reject({
-                                isSucess: false,
-                                code: 400,
-                                messageError: err
-                            });
-                            return;
-                        }
-                        
-                        const dateActual = new Date();
-                        const dateInit = new Date(results[0].finfactura);
+                    const dateActual = new Date();
+                    const dateInit = new Date(datosEmpresa[0].finfactura);
 
-                        let time = dateInit.getTime() - dateActual.getTime(); 
-                        let days = time / (1000 * 3600 * 24); //Diference in Days
+                    let time = dateInit.getTime() - dateActual.getTime(); 
+                    let days = time / (1000 * 3600 * 24); //Diference in Days
 
-                        let diasLicenciaValue = Number(days).toFixed(0);
+                    let diasLicenciaValue = Number(days).toFixed(0);
 
-                        if(diasLicenciaValue <= 0){ 
-                            resolve({
-                                isSuccess: true,
-                                code: 400,
-                                sinLicencia: true,
-                                mensage: 'dias de licencia expirados'
-                            });
-                            return;
-                        }
-
-                        let queryEmpresas = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? LIMIT 1`;
-                        let query = `SELECT * FROM ${dbName}.usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1`;
-                        
-                        poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
-
-                            if(err){
-                                console.log(err);
-                                reject('error en BD2');
-                                return;
-                            }
-
-                            if(!resultEmpresa | resultEmpresa == undefined | resultEmpresa == null | !resultEmpresa.length){
-                                reject(' error, no se encontro la empresa');
-                                return;
-                            }
-
-                            let idEmpresa;
-                            let nombreEmpresa;
-                            Object.keys(resultEmpresa).forEach(function(key) {
-                                idEmpresa = resultEmpresa[key].EMP_ID;
-                                nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
-                            });
-
-                            poolMysql.query(query, [username, password, idEmpresa], function(err, results, fields) {
-
-                                if(err){
-                                    reject('error: ' + err);
-                                    return;
-                                }
-
-
-                                if(!results | results == undefined | results == null | !results.length){
-                                    resolve({
-                                        isSuccess: true,
-                                        existUser: false
-                                    });
-                                    return;
-                                }
-                                
-                                let idUsuario;
-                                let nombreUsuario;
-                                Object.keys(results).forEach(function(key){
-                                    let row = results[key]
-                                    idUsuario = row.usu_id;
-                                    nombreUsuario = row.usu_nombres;
-                                });
-
-                                resolve({
-                                    isSuccess: true,
-                                    existUser: true,
-                                    idUsuario: idUsuario,
-                                    nombreUsuario: nombreUsuario,
-                                    idEmpresa: idEmpresa,
-                                    nombreEmpresa: nombreEmpresa,
-                                    rucEmpresa: ruc,
-                                    redirectToHome: true,
-                                    nombreBd: result.value
-                                })
-                            }
-                        );
-
-
+                    if(diasLicenciaValue <= 0){ 
+                        resolve({
+                            isSuccess: true,
+                            code: 400,
+                            sinLicencia: true,
+                            mensage: 'dias de licencia expirados'
                         });
+                        return;
+                    }
 
+                    let queryEmpresas = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? LIMIT 1`;
+                    let query = `SELECT * FROM ${dbName}.usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1`;
+                        
+                    let resultEmpresa = await poolMysql.query(queryEmpresas, [ruc]); 
+                    
+                    if(!resultEmpresa[0] | resultEmpresa[0] == undefined | resultEmpresa[0] == null | !resultEmpresa[0].length){
+                        reject(' error, no se encontro la empresa');
+                        return;
+                    }
+
+                    let idEmpresa;
+                    let nombreEmpresa;
+                    Object.keys(resultEmpresa[0]).forEach(function(key) {
+                        idEmpresa = resultEmpresa[0][key].EMP_ID;
+                        nombreEmpresa = resultEmpresa[0][key].EMP_NOMBRE;
                     });
+
+                    let results = await poolMysql.query(query, [username, password, idEmpresa]);
+
+                    if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
+                        resolve({
+                            isSuccess: true,
+                            existUser: false
+                        });
+                        return;
+                    }
+                    
+                    let idUsuario;
+                    let nombreUsuario;
+                    Object.keys(results[0]).forEach(function(key){
+                        let row = results[0][key]
+                        idUsuario = row.usu_id;
+                        nombreUsuario = row.usu_nombres;
+                    });
+
+                    resolve({
+                        isSuccess: true,
+                        existUser: true,
+                        idUsuario: idUsuario,
+                        nombreUsuario: nombreUsuario,
+                        idEmpresa: idEmpresa,
+                        nombreEmpresa: nombreEmpresa,
+                        rucEmpresa: ruc,
+                        redirectToHome: true,
+                        nombreBd: result.value
+                    })
+
+                    
                 },
                 function(error){
                     reject(error);

@@ -6,7 +6,9 @@ const sharedFunctions = require('../../../util/sharedfunctions');
 
 exports.insertVenta = async (datosVenta) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+
+        let conexion = await pool.getConnection();
         try{
 
             const {empresaId,tipoVenta,venta001,venta002,ventaNumero,ventaFechaHora,
@@ -27,182 +29,95 @@ exports.insertVenta = async (datosVenta) => {
                                                 ventad_iva,ventad_producto,ventad_vu,ventad_descuento,ventad_vt) VALUES 
                                                 (?,?,?,?,?,?,?,?)`;
             const sqlQueryUpdateStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
-                
-            pool.getConnection(function(error, connection){
+            
+            
+            await conexion.beginTransaction();
+            
+            let results = await conexion.query(sqlQueryInsertVenta, [empresaId,tipoVenta,venta001,venta002,ventaNumero,
+                ventaFechaHora,usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,
+                formaPago,obs, `${empresaId}_${tipoVenta}_${venta001}_${venta002}_${ventaNumero}`]);
 
-                connection.beginTransaction(function(err){
-                    if(err){
-                        connection.rollback(function(){
-                            connection.release();
-                            reject('error en conexion transaction');
-                            return;
-                        });
-                    }
+            const idVentaGenerated = results[0].insertId;
+
+            const arrayListVentaDetalle = Array.from(ventaDetallesArray);
+            arrayListVentaDetalle.forEach(async (ventaDetalle, index) => {
+
+                const {prodId, cantidad,iva,nombreProd,
+                    valorUnitario,descuento,valorTotal} = ventaDetalle;
                     
-                    connection.query(sqlQueryInsertVenta, [empresaId,tipoVenta,venta001,venta002,ventaNumero,
-                                    ventaFechaHora,usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,
-                                    formaPago,obs, `${empresaId}_${tipoVenta}_${venta001}_${venta002}_${ventaNumero}`], function(erro, results){
-                        if(erro){
-                            
-                            connection.rollback(function(){ connection.release()});
-                            reject({
-                                isSuccess: false,
-                                error: 'error insertando Venta',
-                                isDuplicate: 
-                                (erro.sqlMessage.includes('Duplicate entry') || erro.sqlMessage.includes('venta_unico'))
-                            });
-                            return;
-                        }
-
-                        const idVentaGenerated = results.insertId;
-
-                        const arrayListVentaDetalle = Array.from(ventaDetallesArray);
-                        arrayListVentaDetalle.forEach((ventaDetalle, index) => {
-
-                            const {prodId, cantidad,iva,nombreProd,
-                                valorUnitario,descuento,valorTotal} = ventaDetalle;
-                            
-                            connection.query(sqlQueryInsertVentaDetalle, [idVentaGenerated,prodId,
-                                            cantidad,iva,nombreProd,valorUnitario,
-                                            descuento,valorTotal], function(errorr, results){
-
-                                if(errorr){
-                                    connection.rollback(function(){ connection.release()});
-                                    reject('error insertando Venta Detalle');
-                                    return;
-                                }
-
-                                //UPDATE productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ? AND
-                                connection.query(sqlQueryUpdateStockProducto,[cantidad,empresaId,prodId], function(errorrr, results){
-                                    if(errorrr){
-                                        connection.rollback(function(){ connection.release()});
-                                        reject('error descontando inventario');
-                                        return;
-                                    }
-
-                                    if(index == arrayListVentaDetalle.length - 1){
-                                        
-                                        connection.commit(function(errorComit){
-                                            if(errorComit){
-                                                connection.rollback(function(){
-                                                    connection.release();
-                                                    reject('error insertando la venta');
-                                                    return;
-                                                });   
-                                            }
+                await conexion.query(sqlQueryInsertVentaDetalle, [idVentaGenerated,prodId,
+                                    cantidad,iva,nombreProd,valorUnitario,
+                                    descuento,valorTotal]);
                 
-                                            connection.release();
-                                            resolve({
-                                                isSuccess: true,
-                                                message: 'Venta insertada correctamente',
-                                                ventaid: idVentaGenerated
-                                            })
-                
-                                        });
-                                    }
+                //UPDATE productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ? AND
+                await conexion.query(sqlQueryUpdateStockProducto,[cantidad,empresaId,prodId]); 
 
-                                });
+                if(index == arrayListVentaDetalle.length - 1){
+                    await conexion.commit();
+                    conexion.release();
 
-                            });
-                        });
-
-                    });
-
-                });
+                    resolve({
+                        isSuccess: true,
+                        message: 'Venta insertada correctamente',
+                        ventaid: idVentaGenerated
+                    })
+                }
             });
             
         }catch(exp){
             console.log('error insertando venta');
             console.log(exp);
+            conexion.rollback();
+            conexion.release();
+
             reject({
                 isSuccess: false,
                 error: 'error insertando Venta',
+                isDuplicate: 
+                (exp.sqlMessage.includes('Duplicate entry') || exp.sqlMessage.includes('venta_unico'))
             });
         }
     });
 }
 
 exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+
+        let conexion = await pool.getConnection();
         try{
             const {idEmpresa,idVenta,estado, nombreBd} = datos;
             const sqlSelectDetalleVenta = `SELECT * FROM ${nombreBd}.ventas_detalles WHERE ventad_venta_id = ?`;
             const sqlUpdateEstadoVenta = `UPDATE ${nombreBd}.ventas SET venta_anulado = ? WHERE venta_id = ? AND venta_empresa_id = ?`;
             const sqlQueryUpdateStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
 
-            pool.getConnection(function(error, connection){
-                connection.beginTransaction(function(err){
-                    if(err){
-                        connection.rollback(function(){
-                            connection.release();
-                            reject('error en conexion transaction');
-                            return;
-                        });
-                    }
+            await conexion.beginTransaction();
+            await conexion.query(sqlUpdateEstadoVenta, [estado,idVenta,idEmpresa]);
+            let results = await conexion.query(sqlSelectDetalleVenta, [idVenta]);
 
-                    connection.query(sqlUpdateEstadoVenta, [estado,idVenta,idEmpresa], function(errorr, result){
-                        if(errorr){
-                            connection.rollback(function(){ connection.release()});
-                            reject({
-                                isSucess: false,
-                                code: 400,
-                                message: errorr.message
-                            });
-                            return;
-                        }
-                        
-                        connection.query(sqlSelectDetalleVenta, [idVenta], function(erro, results){
-                            if(erro){
-                                
-                                connection.rollback(function(){ connection.release()});
-                                reject({
-                                    isSucess: false,
-                                    code: 400,
-                                    message: erro.message
-                                });
-                                return;
-                            }
+            console.log(results);
+            const listVentaDetalle = Array.from(results[0]);
                             
-                            const listVentaDetalle = Array.from(results);
-                            
-                            listVentaDetalle.forEach((ventaDetalle, index) => {
-                                const cantidad = ventaDetalle.ventad_cantidad;
-                                const prodId = ventaDetalle.ventad_prod_id;
+            listVentaDetalle.forEach(async (ventaDetalle, index) => {
+                let cantidad = ventaDetalle.ventad_cantidad;
+                let prodId = ventaDetalle.ventad_prod_id;
                                 
-                                connection.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId], function(errorrr, results){
-                                    if(errorrr){
-                                        connection.rollback(function(){ connection.release()});
-                                        reject('error sumando inventario');
-                                        return;
-                                    }
+                await conexion.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId]);
 
-                                    if(index == listVentaDetalle.length - 1){
-                                        connection.commit(function(errorComit){
-                                            if(errorComit){
-                                                connection.rollback(function(){
-                                                    connection.release();
-                                                    reject('error actualizando estado venta');
-                                                    return;
-                                                });   
-                                            }
-                                            connection.release();
-                                            resolve({
-                                                isSuccess: true,
-                                                message: 'Venta anulada correctamente'
-                                            })
-                                        });
-                                    }
-                                });
+                if(index == listVentaDetalle.length - 1){
+                    await conexion.commit();
+                    conexion.release();
 
-                            });
+                    resolve({
+                        isSuccess: true,
+                        message: 'Venta anulada correctamente'
+                    })
+                }
 
-                        });
-
-                    });
-                });
             });
 
         }catch(exp){
+            conexion.rollback();
+            conexion.release();
             reject({
                 isSucess: false,
                 code: 400,
@@ -213,8 +128,9 @@ exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
 }
 
 exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
 
+        let conexion = await pool.getConnection();
         try{
 
             const {idEmpresa,idVenta,estado, nombreBd} = datos;
@@ -224,111 +140,46 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
             const queryDeleteVentaByIdEmp = `DELETE FROM ${nombreBd}.ventas WHERE venta_id = ? AND venta_empresa_id = ? LIMIT 1`;
             const queryDeleteVentaDetalleByIdEmp = `DELETE FROM ${nombreBd}.ventas_detalles WHERE ventad_venta_id = ?`;
 
-            pool.getConnection(function(error, connection){
-                connection.beginTransaction(function(err){
-                    if(err){
-                        connection.rollback(function(){
-                            connection.release();
-                            reject('error en conexion transaction');
-                            return;
-                        });
-                    }
+            await conexion.beginTransaction();
+            if(estado == 0){
+                let results = await conexion.query(sqlSelectDetalleVenta, [idVenta]);
+                const listVentaDetalle = Array.from(results[0]);
 
-                    if(estado == 0){
-
-                        connection.query(sqlSelectDetalleVenta, [idVenta], function(erro, results){
-                            if(erro){
-                                connection.rollback(function(){ connection.release()});
-                                reject({
-                                    isSucess: false,
-                                    code: 400,
-                                    message: erro.message
-                                });
-                                return;
-                            }
-
-                            const listVentaDetalle = Array.from(results);
-                            listVentaDetalle.forEach((ventaDetalle, index) => {
-                                const cantidad = ventaDetalle.ventad_cantidad;
-                                const prodId = ventaDetalle.ventad_prod_id;
+                listVentaDetalle.forEach(async (ventaDetalle, index) => {
+                    const cantidad = ventaDetalle.ventad_cantidad;
+                    const prodId = ventaDetalle.ventad_prod_id;
                                 
-                                connection.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId], function(errorrr, results){
-                                    if(errorrr){
-                                        connection.rollback(function(){ connection.release()});
-                                        reject('error sumando inventario');
-                                        return;
-                                    }
-                                   
-                                    if(index == listVentaDetalle.length - 1){
-                                        connection.query(queryDeleteVentaByIdEmp, [idVenta,idEmpresa], function (errores, resultsss){
-                                            if(errores){
-                                                connection.rollback(function(){ connection.release()});
-                                                reject({
-                                                    isSucess: false,
-                                                    code: 400,
-                                                    message: errores.message
-                                                });
-                                                return;
-                                            }
-        
-                                            connection.commit(function(errorComit){
-                                                if(errorComit){
-                                                    connection.rollback(function(){
-                                                        connection.release();
-                                                        reject('error eliminando venta');
-                                                        return;
-                                                    });   
-                                                }
-                                                connection.release();
-                                                resolve({
-                                                    isSuccess: true,
-                                                    message: 'Venta eliminada correctamente'
-                                                })
-                                            });
-        
-                                        });
-                                    }
+                    await conexion.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId]);
 
-                                });
-                            });
+                    if(index == listVentaDetalle.length - 1){
+                        await conexion.query(queryDeleteVentaByIdEmp, [idVenta,idEmpresa]);
 
-                            
+                        await conexion.commit();
+                        conexion.release();
 
-                        });
+                        resolve({
+                            isSuccess: true,
+                            message: 'Venta eliminada correctamente'
+                        })
 
-                    }else{
-                        connection.query(queryDeleteVentaByIdEmp, [idVenta, idEmpresa], function (errores, resultsss){
-                            if(errores){
-                                connection.rollback(function(){ connection.release()});
-                                reject({
-                                    isSucess: false,
-                                    code: 400,
-                                    message: errores.message
-                                });
-                                return;
-                            }
-
-                            connection.commit(function(errorComit){
-                                if(errorComit){
-                                    connection.rollback(function(){
-                                        connection.release();
-                                        reject('error eliminando venta');
-                                        return;
-                                    });   
-                                }
-                                connection.release();
-                                resolve({
-                                    isSuccess: true,
-                                    message: 'Venta eliminada correctamente'
-                                })
-                            });
-
-                        });
                     }
-                });
-            });
+
+                });               
+            }else{
+                await conexion.query(queryDeleteVentaByIdEmp, [idVenta, idEmpresa]);
+                await conexion.commit();
+                conexion.release();
+
+                resolve({
+                    isSuccess: true,
+                    message: 'Venta eliminada correctamente'
+                })
+            }
 
         }catch(exception){
+            await conexion.rollback();
+            conexion.release();
+
             reject({
                 isSucess: false,
                 code: 400,
@@ -339,7 +190,7 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
 }
 
 exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             let valueNombreClient = "";
             let valueCiRucClient = "";
@@ -361,25 +212,14 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
                                          AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND 
                                          CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ?
                                          AND  venta_fecha_hora  BETWEEN ? AND ? ORDER BY venta_id DESC`;
-            pool.query(queryGetListaVentas, 
+            let results = await pool.query(queryGetListaVentas, 
                 [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc+"%", 
-                fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
-
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+                fechaIni+" 00:00:00",fechaFin+" 23:59:59"]); 
+            
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(exception){
@@ -394,7 +234,7 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
 }
 
 exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni, fechaFin, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             let valueNombreClient = "";
             let valueCiRucClient = "";
@@ -415,25 +255,14 @@ exports.getListResumenVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fe
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ?
             AND venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 `;
 
-            pool.query(queryGetListaResumenVentas, 
+            let results = await pool.query(queryGetListaResumenVentas, 
                 [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc+"%",
-                fechaIni+" 00:00:00",fechaFin+" 23:59:59"], (error, results) => {
+                fechaIni+" 00:00:00",fechaFin+" 23:59:59"]); 
 
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(exception){
@@ -456,13 +285,13 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp, nombreBd) => {
                                                     cli_nombres_natural, cli_teleono, cli_direccion) VALUES (?,?,?,?,?,?,?)`;
 
             const responseConsumidorFinal = await pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`]);
-
-            if(!responseConsumidorFinal[0] | responseConsumidorFinal == undefined | responseConsumidorFinal == null){
+            
+            if(!responseConsumidorFinal[0] | responseConsumidorFinal[0] == undefined | responseConsumidorFinal[0] == null){
 
                 const respInsertDefaultConsumidorFinal = await pool.query(insertDefaultConsumidorFinal, [idEmp,'Ecuador','9999999999','CI',
                                                                             'CONSUMIDOR FINAL','0999999999',consumidorFinalName] );
 
-                const idInserted = respInsertDefaultConsumidorFinal.insertId;
+                const idInserted = respInsertDefaultConsumidorFinal[0].insertId;
                 const resultData = {
                     cli_id: idInserted,
                     cli_documento_identidad: '9999999999',
@@ -480,7 +309,7 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp, nombreBd) => {
                 resolve({
                     isSucess: true,
                     code: 200,
-                    data: responseConsumidorFinal[0]
+                    data: responseConsumidorFinal[0][0]
                 });
             }
 
@@ -499,15 +328,14 @@ exports.getNextNumeroSecuencialByIdEmp = async(idEmp, tipoDoc, fac001, fac002,no
 
     return new Promise(async(resolve, reject) => {
         try{
-            console.log('next secuencial by id Emp');
             const queryNextSecencial = `SELECT MAX(CAST(venta_numero AS UNSIGNED)) as numero FROM ${nombreBd}.ventas WHERE venta_001 = ? AND venta_002 = ? AND venta_tipo = ?  
                                         AND venta_empresa_id = ?`;
             const responseSecuencial = await pool.query(queryNextSecencial, [fac001,fac002,tipoDoc,idEmp]);
-
+            
             resolve({
                 isSucess: true,
                 code: 200,
-                data: responseSecuencial[0].numero ? Number(responseSecuencial[0].numero) + 1 : 1
+                data: responseSecuencial[0][0].numero ? Number(responseSecuencial[0][0].numero) + 1 : 1
             });
 
         }catch(exception){
@@ -531,7 +359,7 @@ exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsu
 
             const respSelectVenta = await pool.query(querySelectVenta1And2, [tipoDoc,idEmp,idUsuario]);
 
-            if(respSelectVenta.length <= 0){
+            if(respSelectVenta[0].length <= 0){
                 resolve({
                     isSucess: true,
                     valor001: 1,
@@ -541,8 +369,8 @@ exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsu
                 return;
             }
 
-            valor001 = respSelectVenta[0].valoruno;
-            valor002 = respSelectVenta[0].valordos;
+            valor001 = respSelectVenta[0][0].valoruno;
+            valor002 = respSelectVenta[0][0].valordos;
 
             if((valor001 != null && valor001 > 0) && (valor002 != null && valor002 > 0)){
                 const respNextSecuencial = await pool.query(querySelectNextSecuencial, [valor001,valor002,idEmp]);
@@ -551,7 +379,7 @@ exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsu
                     isSucess: true,
                     valor001: valor001,
                     valor002: valor002,
-                    secuencial: (respNextSecuencial[0].numero + 1)
+                    secuencial: (respNextSecuencial[0][0].numero + 1)
                 });
 
             }else{
@@ -575,7 +403,7 @@ exports.getNoPuntoVentaSecuencialByIdusuarioAndEmp = async(idEmp, tipoDoc, idUsu
 
 
 exports.getDataByIdVenta = async (idVenta, idEmp, ruc, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             const queryListVentaDelleByIdVenta = `SELECT ventad_cantidad,ventad_descuento,ventad_id,ventad_iva,
@@ -590,76 +418,56 @@ exports.getDataByIdVenta = async (idVenta, idEmp, ruc, nombreBd) => {
                                          FROM ${nombreBd}.ventas,${nombreBd}.clientes,${nombreBd}.usuarios WHERE venta_empresa_id=? AND venta_usu_id=usu_id AND venta_cliente_id=cli_id 
                                          AND venta_id = ? `;
 
-            pool.query(queryGetListaVentas,[idEmp, idVenta], (error, results) => {
+            let results = await pool.query(queryGetListaVentas,[idEmp, idVenta]); 
+            
+            if(results[0].length > 0){
+                let resultss = await pool.query(queryListVentaDelleByIdVenta,[idVenta]);
                 
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
-                }
+                let sendResult = results[0][0];
+                sendResult['data'] = resultss[0];
 
-                if(results.length > 0){
-                    pool.query(queryListVentaDelleByIdVenta,[idVenta], (errorr, resultss) => {
+                try{
+                    //GET NUMERO AUTORIZACION
+                    const dateVenta = new Date(sendResult.fechaHora);
+                    const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
+                    const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
+                    const yearVenta = dateVenta.getFullYear().toString();
                     
-                        if(errorr){
-                            reject({
-                                isSucess: false,
-                                code: 400,
-                                messageError: 'ocurrio un error obteniendo venta detalle'
-                            });
-                            return;
-                        }
-    
-                        let sendResult = results[0];
-                        sendResult['data'] = resultss;
+                    let rucEmpresa = ruc;
+                    let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(sendResult.documento);
+                    let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
+                    let serie = `${sendResult.venta001}${sendResult.venta002}`;
+                    let codigoNumerico = '12174565';
+                    let secuencial = (sendResult.numero).toString().padStart(9,'0');
+                    let tipoEmision = 1;
+                     
+                    let digit48 = 
+                    `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
 
-                        try{
-                            //GET NUMERO AUTORIZACION
-                            const dateVenta = new Date(sendResult.fechaHora);
-                            const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
-                            const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
-                            const yearVenta = dateVenta.getFullYear().toString();
-                            
-                            let rucEmpresa = ruc;
-                            let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(sendResult.documento);
-                            let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
-                            let serie = `${sendResult.venta001}${sendResult.venta002}`;
-                            let codigoNumerico = '12174565';
-                            let secuencial = (sendResult.numero).toString().padStart(9,'0');
-                            let tipoEmision = 1;
-                             
-                            let digit48 = 
-                            `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
+                    let claveActivacion = sharedFunctions.modulo11(digit48);
 
-                            let claveActivacion = sharedFunctions.modulo11(digit48);
+                    sendResult['numeroautorizacion'] = claveActivacion;
 
-                            sendResult['numeroautorizacion'] = claveActivacion;
-                        }catch(exception){
-                            sendResult['numeroautorizacion'] = '';
-                        }
-
-                        resolve({
-                            isSucess: true,
-                            code: 200,
-                            data: sendResult
-                        });
-
-                        return;
-                    });
-                }else{
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'no existe venta con ese id empresa',
-                        notExist: true
-                    });
-                    return;
+                }catch(exception){
+                    sendResult['numeroautorizacion'] = '';
                 }
 
-            });
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: sendResult
+                });
+
+                return;      
+
+            }else{
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    messageError: 'no existe venta con ese id empresa',
+                    notExist: true
+                });
+            }
 
         }catch(exception){
             reject({
@@ -672,14 +480,11 @@ exports.getDataByIdVenta = async (idVenta, idEmp, ruc, nombreBd) => {
 }
 
 
-exports.importListVentas = async (listVentas, nombreBd, idEmpresa) => {
-    return new Promise(async (resolve, reject ) => {
+exports.importListVentas = (listVentas, nombreBd, idEmpresa) => {
+    return new Promise((resolve, reject ) => {
         try{
-            let listVentasWithError = [];
 
-            /*const {empresaId,tipoVenta,venta001,venta002,ventaNumero,ventaFechaHora,
-                usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,formaPago,obs, nombreBd} = datosVenta;
-            const ventaDetallesArray = datosVenta['ventaDetalles'];*/
+            let listVentasWithError = [];
         
             // INSERT VENTA Y OBTENER ID
             // INSERTAR EN EL CAMPO UNICO CORRESPONDIENTE
@@ -688,7 +493,8 @@ exports.importListVentas = async (listVentas, nombreBd, idEmpresa) => {
             // INSERT VENTA DETALLE CON EL ID DE LA VENTA RECIBIDO
             // EN CADA VENTA DETALLE SE DEBE BAJAR EL STOCK DEL PRODUCTO CORRESPONDIENTE
             const sqlQueryExistClient = `SELECT cli_id AS ID FROM ${nombreBd}.clientes WHERE cli_documento_identidad = ?`;
-            const sqlQueryExistProduct = `SELECT prod_id AS ID FROM ${nombreBd}.productos WHERE prod_codigo = ?`;
+            const sqlQueryExistProduct = `SELECT * FROM ${nombreBd}.productos WHERE prod_codigo = ?`;
+
             const sqlQueryInsertVenta = `INSERT INTO ${nombreBd}.ventas (venta_empresa_id,venta_tipo, 
                                         venta_001,venta_002,venta_numero,venta_fecha_hora,venta_usu_id,venta_cliente_id, 
                                         venta_subtotal_12,venta_subtotal_0,venta_valor_iva,venta_total,venta_forma_pago, 
@@ -697,103 +503,25 @@ exports.importListVentas = async (listVentas, nombreBd, idEmpresa) => {
                                                 ventad_iva,ventad_producto,ventad_vu,ventad_descuento,ventad_vt) VALUES 
                                                 (?,?,?,?,?,?,?,?)`;
 
-            const connection = connection();
+            const queryInsertCliente = `INSERT INTO ${nombreBd}.clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
+                                                cli_nombres_natural, cli_razon_social , cli_observacion , cli_fecha_nacimiento) VALUES (?,?,?,?,?,?,?,?)`;
             
-            await connection.query("START TRANSACTION");
-            let cliente = await connection.query(sqlQueryExistClient);
-            console.log(cliente);
-            let producto = await connection.query(sqlQueryExistProduct);
-            console.log(producto);
+            listVentas.forEach(async (datosVenta) => {
+                console.log('inside first loop datosVentas');              
 
-            /*pool.getConnection(function(error, connection){
-                connection.beginTransaction( async function(err){
-                    if(err){
-                        connection.rollback(function(){
-                            connection.release();
-                            reject('error en conexion transaction');
-                            return;
-                        });
-                    }
-                    
-                    let resultExistCliente = await connection.query(sqlQueryExistClient);
-                    console.log('result cliente');
-                    //console.log(resultExistCliente);
-                    let resultExistProducto = await connection.query(sqlQueryExistProduct);
-                    console.log('result producto');
-                    //console.log(resultExistProducto);
+                let conexion = await pool.getConnection();
+                await conexion.beginTransaction();
 
-                    /*connection.query(sqlQueryInsertVenta, [empresaId,tipoVenta,venta001,venta002,ventaNumero,
-                                    ventaFechaHora,usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,
-                                    formaPago,obs, `${empresaId}_${tipoVenta}_${venta001}_${venta002}_${ventaNumero}`], function(erro, results){
-                        if(erro){
-                            
-                            connection.rollback(function(){ connection.release()});
-                            reject({
-                                isSuccess: false,
-                                error: 'error insertando Venta',
-                                isDuplicate: 
-                                (erro.sqlMessage.includes('Duplicate entry') || erro.sqlMessage.includes('venta_unico'))
-                            });
-                            return;
-                        }
+                let cliente = conexion.query(sqlQueryExistClient, [datosVenta.cc_ruc_pasaporte]);
+                console.log('datos Cliente');
+                console.log(cliente);
 
-                        const idVentaGenerated = results.insertId;
+                console.log('fuera del pool get Connection return error cliente');
+                console.log('siguiente registro');
 
-                        const arrayListVentaDetalle = Array.from(ventaDetallesArray);
-                        arrayListVentaDetalle.forEach((ventaDetalle, index) => {
-
-                            const {prodId, cantidad,iva,nombreProd,
-                                valorUnitario,descuento,valorTotal} = ventaDetalle;
-                            
-                            connection.query(sqlQueryInsertVentaDetalle, [idVentaGenerated,prodId,
-                                            cantidad,iva,nombreProd,valorUnitario,
-                                            descuento,valorTotal], function(errorr, results){
-
-                                if(errorr){
-                                    connection.rollback(function(){ connection.release()});
-                                    reject('error insertando Venta Detalle');
-                                    return;
-                                }
-
-                                //UPDATE productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ? AND
-                                connection.query(sqlQueryUpdateStockProducto,[cantidad,empresaId,prodId], function(errorrr, results){
-                                    if(errorrr){
-                                        connection.rollback(function(){ connection.release()});
-                                        reject('error descontando inventario');
-                                        return;
-                                    }
-
-                                    if(index == arrayListVentaDetalle.length - 1){
-                                        
-                                        connection.commit(function(errorComit){
-                                            if(errorComit){
-                                                connection.rollback(function(){
-                                                    connection.release();
-                                                    reject('error insertando la venta');
-                                                    return;
-                                                });   
-                                            }
-                
-                                            connection.release();
-                                            resolve({
-                                                isSuccess: true,
-                                                message: 'Venta insertada correctamente',
-                                                ventaid: idVentaGenerated
-                                            })
-                
-                                        });
-                                    }
-
-                                });
-
-                            });
-                        });
-
-                    });*/
-               // });
-            //});
+            });
+            
         }catch(error){
-            console.log(error);
             reject({
                 isSucess: false,
                 code: 400,
@@ -844,7 +572,7 @@ exports.getListListaResumenVentasExcel = async (idEmpresa, fechaIni,fechaFin,nom
 
 function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc, nombreBd){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             let valueNombreClient = "";
@@ -867,20 +595,11 @@ function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc
             AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
             AND  venta_fecha_hora  BETWEEN ? AND ? ORDER BY venta_id DESC`;
 
-            pool.query(queryGetListaVentas, 
+            let results = await pool.query(queryGetListaVentas, 
                         [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
-                        fechaIni,fechaFin], (error, results) => {
+                        fechaIni,fechaFin]); 
                 
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
-                }
-                
-                const arrayData = Array.from(results);
+            const arrayData = Array.from(results[0]);
 
                 const workBook = new excelJS.Workbook(); // Create a new workbook
                 const worksheet = workBook.addWorksheet("Lista Ventas");
@@ -959,11 +678,6 @@ function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc
                     });
                 }
 
-            });
-
-
-
-
         }catch(exception){
             reject({
                 isSucess: false,
@@ -977,7 +691,7 @@ function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc
 
 function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc,nombreBd){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             let valueNombreClient = "";
@@ -998,20 +712,11 @@ function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noD
             AND venta_usu_id=usu_id AND venta_cliente_id=cli_id AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_numero LIKE ?
             AND venta_fecha_hora BETWEEN ? AND ? AND venta_anulado=0 `;
 
-            pool.query(queryGetListaResumenVentas, 
+            let results = await pool.query(queryGetListaResumenVentas, 
                         [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
-                        fechaIni,fechaFin], (error, results) => {
-
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error'
-                    });
-                    return;
-                }
-                
-                const arrayData = Array.from(results);
+                        fechaIni,fechaFin]); 
+                        
+            const arrayData = Array.from(results[0]);
 
                 const workBook = new excelJS.Workbook(); // Create a new workbook
                 const worksheet = workBook.addWorksheet("Resumen Ventas");
@@ -1096,8 +801,6 @@ function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noD
                         error: 'error creando archivo, reintente'
                     });
                 }
-
-            });
 
         }catch(exception){
             reject({

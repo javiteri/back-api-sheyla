@@ -26,31 +26,29 @@ module.exports = async (job, done) => {
         let claveAcceso = job.data.claveAct;
         let ventaId = job.data.idVenta;
 
-        mysqlEFactura.query(sqlQueryAutoMessage, [claveAcceso], function(error, resultMensaje) {
-            if(error){
-                return done(new Error(error));
-            }
+        let resultMensaje = await mysqlEFactura.query(sqlQueryAutoMessage, [claveAcceso]);
+        
 
-            if(resultMensaje[0] && (resultMensaje[0].auto_mensaje === null || resultMensaje[0].auto_mensaje === undefined 
-                        || resultMensaje[0].auto_estado == 0)){
-                console.log('inside aun sin respuesta');
-                return done(new Error('Aun sin Respuesta'));
-            }
+        if(resultMensaje[0][0] && (resultMensaje[0][0].auto_mensaje === null || resultMensaje[0][0].auto_mensaje === undefined 
+                        || resultMensaje[0][0].auto_estado == 0)){
+            console.log('inside aun sin respuesta');
+            return done(new Error('Aun sin Respuesta'));
+        }
 
-            // si el mensje indica qe fue atorizado significa que todo salio bien caso contrario 
-            // caso contrario guardar un estado dew error y el mensaje que tenga 
-            //let valorMensaje = resultMensaje[0].auto_mensaje;
-            let valorAutoEstado = resultMensaje[0].auto_estado;
+        // si el mensje indica qe fue atorizado significa que todo salio bien caso contrario 
+        // caso contrario guardar un estado dew error y el mensaje que tenga 
+        //let valorMensaje = resultMensaje[0].auto_mensaje;
+        let valorAutoEstado = resultMensaje[0][0].auto_estado;
 
-            let valorMensajeElectronica = '';
-            if(resultMensaje[0].auto_mensaje && resultMensaje[0].auto_mensaje.length > 250){
-                valorMensajeElectronica = resultMensaje[0].auto_mensaje.substring(0,250);
-            }else{
-                valorMensajeElectronica = resultMensaje[0].auto_mensaje;
-            }
+        let valorMensajeElectronica = '';
+        if(resultMensaje[0][0].auto_mensaje && resultMensaje[0][0].auto_mensaje.length > 250){
+                valorMensajeElectronica = resultMensaje[0][0].auto_mensaje.substring(0,250);
+        }else{
+                valorMensajeElectronica = resultMensaje[0][0].auto_mensaje;
+        }
 
             // SI EL CODIGO ES DE ERROR (2) GUARDAR ESTADO EN LA TABLA VENTA
-            if(valorAutoEstado == 2){
+        if(valorAutoEstado == 2){
                 updateEstadoVentaDocumentoElectronico('1',valorMensajeElectronica,ventaId, nombreBd).then(
                     function(result){
                         console.log('todo ok insertando estado venta error');
@@ -61,7 +59,7 @@ module.exports = async (job, done) => {
                         //return done(new Error('error insertando estado venta'));
                     }
                 );
-            }else{
+        }else{
                 // SUMA EN 1 A LA PROPIEDAD EMRESAS_WEB_PLAN_ENVIADOS
                 updatePlanEnviadosDocumentoElectronico(rucEmpresa);
 
@@ -84,39 +82,28 @@ module.exports = async (job, done) => {
                     // BUSCAR CLIENTE O INSERTARLO SI NO EXISTE CON LOS DATOS CORRESPONDIENTES
                     //  INSERTAR LOS VALORES EN LA TABLA DOCUMENTOS TAMBIEN QUE TENDRA EL XML 
                     // ENVIAR A UNA URL EL CORREO 
-                    mysqlEFactura.query(queryClienteIfExist,[rucCliente, empresaId],function(err, resultExistClient){
-                        if(err){
-                            return done(new Error(error));
-                        }
-
-                        if(resultExistClient.length == 0 || resultExistClient === null || resultExistClient === undefined){
+                    let resultExistClient = await mysqlEFactura.query(queryClienteIfExist,[rucCliente, empresaId]);
+                    
+                    if(resultExistClient[0].length == 0 || resultExistClient[0] === null || resultExistClient[0] === undefined){
                             // INSERTAR CLIENTE EN LA BASE DE DATOS PARA LUEGO INSERTAR EN LA TABLA DOCUMENTOS
-                            mysqlEFactura.query(sqlInsertCliente,[rucCliente, nombreCliente,empresaId,rucCliente],function(errorClient, resultInsertClient){
-                                if(errorClient){
-                                    return done(new Error(errorClient));
-                                }
-                                
-                                let idClienteReturned = resultInsertClient.insertId;
+                        let resultInsertClient = await mysqlEFactura.query(sqlInsertCliente,[rucCliente, nombreCliente,empresaId,rucCliente]);        
+                        let idClienteReturned = resultInsertClient[0].insertId;
 
-                                // INSERTAR EN LA TABLA DOCUMENTOS
-                                insertDocumento(ventaTipo, ventaFecha,ventaNumero,idClienteReturned,ventaValor,
-                                    claveAcceso, done, resultMensaje,ventaId,job);
-                            });
+                        // INSERTAR EN LA TABLA DOCUMENTOS
+                        insertDocumento(ventaTipo, ventaFecha,ventaNumero,idClienteReturned,ventaValor,
+                                        claveAcceso, done, resultMensaje[0],ventaId,job);
 
-                        }else{
-                            let clienteId = resultExistClient[0].CLI_CODIGO;
+                    }else{
+                            let clienteId = resultExistClient[0][0].CLI_CODIGO;
                             // INSERTAR EN LA TABLA DOCUMENTOS
                             insertDocumento(ventaTipo, ventaFecha,ventaNumero,clienteId,ventaValor,
-                                claveAcceso, done,resultMensaje,ventaId, job);
-                        }
+                                claveAcceso, done,resultMensaje[0],ventaId, job);
+                    }
 
-                    });
                 }
 
-            }
+        }
             
-        });
-
     }catch(exception){
         console.log(exception);
         done(exception);
@@ -125,46 +112,35 @@ module.exports = async (job, done) => {
 
 
 //---------------------------------------------------------------------------------------------------------------------
-function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
+async function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
                             ventaValor,claveAcceso, done,resultMensaje,ventaId, job){
 
     const sqlInsertDocumento = `INSERT INTO documentos (documento_tipo, documento_fecha,documento_numero,
                                  documento_cliente_id,documento_valor,documento_clave_acceso) VALUES (?,?,?,?,?,?)`;
 
-    mysqlEFactura.query(sqlInsertDocumento, [ventaTipo,ventaFecha,ventaNumero,clienteId,
-                                            ventaValor,claveAcceso], function(errorr, resultInsertDocumento) {
-        if(errorr){
-            return done(new Error(errorr));
-        }
-
-        updateEstadoVentaDocumentoElectronico('2',resultMensaje[0].auto_mensaje,ventaId, job.data.nombreBd).then(
-        function(result){
-            createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso,done, job.data);
-        },
-        function(error){
-            done(null,job.data);
-        });
-
+    await mysqlEFactura.query(sqlInsertDocumento, [ventaTipo,ventaFecha,ventaNumero,clienteId,
+                                            ventaValor,claveAcceso]); 
+    updateEstadoVentaDocumentoElectronico('2',resultMensaje[0].auto_mensaje,ventaId, job.data.nombreBd).then(
+    function(result){
+        createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso,done, job.data);
+    },
+    function(error){
+        done(null,job.data);
     });
 }
 
-function createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso, done, jobData){
+async function createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso, done, jobData){
 
     try{
         //get string xml tabla autorizaciones
         const sqlGetXmlAutorizedString = `SELECT auto_xml_autorizado FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
-        mysqlEFactura.query(sqlGetXmlAutorizedString, [claveAcceso], async function(error, results){
-            if(error){
-                done();
-            }            
+        let results = await mysqlEFactura.query(sqlGetXmlAutorizedString, [claveAcceso]); 
 
-            // UPLOAD FILES TO FTP SERVER
-            await createXMLSendFTP(results[0].auto_xml_autorizado, claveAcceso);
-            await createPDFSendFTP(jobData);
+        // UPLOAD FILES TO FTP SERVER
+        await createXMLSendFTP(results[0][0].auto_xml_autorizado, claveAcceso);
+        await createPDFSendFTP(jobData);
             
-            sendEmailToClient(claveAcceso, jobData, done);
-        });
-        
+        sendEmailToClient(claveAcceso, jobData, done);
     }catch(exception){
         console.log('error creando y enviando archivos ');
     }
@@ -304,19 +280,12 @@ function sendEmailToClient(claveAcceso, jobData, done){
 //---------------------------------------------------------------------------------------------------------------------
 function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, nombreBd){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
 
-            mysql.query(queryUpdateVentaEstado,[estado,mensaje,ventaId], function(errorUp, resultUpdateVentaEstado){
-
-                if(errorUp){
-                    console.log('error insertando en estado venta');
-                    reject(errorUp);
-                }
-                resolve('ok');
-            });
-
+            await mysql.query(queryUpdateVentaEstado,[estado,mensaje,ventaId]); 
+            resolve('ok');
         }catch(exception){
             reject('error actalizando estado venta');
         }
@@ -326,18 +295,12 @@ function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, nombreBd)
 
 //UPDATE IN ONE PLAN ENVIADOS DOCUMENTO
 function updatePlanEnviadosDocumentoElectronico(rucEmp){    
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             const queryUpdatePlanWebEnviado = `UPDATE empresas SET EMPRESA_WEB_PLAN_ENVIADOS = EMPRESA_WEB_PLAN_ENVIADOS + 1 WHERE EMPRESA_RUC = ?`;
 
-            mysqlEFactura.query(queryUpdatePlanWebEnviado,[rucEmp], function(error, resultUpdatePlanEviado){
-
-                if(error){
-                    console.log('error actualizando plan enviado');
-                    reject(error);
-                }
-                resolve('ok');
-            });
+            await mysqlEFactura.query(queryUpdatePlanWebEnviado,[rucEmp]);
+            resolve('ok');
 
         }catch(exception){
             reject('error actualizando plan enviado');

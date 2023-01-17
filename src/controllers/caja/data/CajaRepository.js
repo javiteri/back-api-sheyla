@@ -3,9 +3,9 @@ const excelJS = require("exceljs");
 const fs = require('fs');
 
 exports.getListResumenCajaByIdEmp = async (idEmp,idUsuario,tipo,
-    concepto,fechaIni,fechaFin, nombreBd) => {
+                                    concepto,fechaIni,fechaFin, nombreBd) => {
 
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             try{
                 let searchByUsuario = '';
                 if(idUsuario && idUsuario != 0){
@@ -22,28 +22,14 @@ exports.getListResumenCajaByIdEmp = async (idEmp,idUsuario,tipo,
                                                 WHERE bc_empresa_id = ? AND usu_id=ie_user ${searchByTipo} AND bc_concepto LIKE ?
                                                 ${searchByUsuario} AND bc_Fecha_hora BETWEEN ? AND ? ORDER BY bc_id`;
                 
-                pool.query(sqlQueryGetListResumen, [idEmp,"%"+concepto+"%",fechaIni,fechaFin], (error, results) => { 
-                    
-                    if(error){
-                        reject({
-                            isSucess: false,
-                            code: 400,
-                            messageError: 'ocurrio un error'
-                        });
-                        return;
-                    }
-                    
-                    resolve({
-                        isSucess: true,
-                        code: 200,
-                        data: results
-                    });
-
+                let results = await pool.query(sqlQueryGetListResumen, [idEmp,"%"+concepto+"%",fechaIni,fechaFin]); 
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results[0]
                 });
 
             }catch(exception){
-                console.log(exception);
-                console.log('error getListResumenCaja');
                 reject({
                     status: 400,
                     error: 'error catch lista resumen'
@@ -55,28 +41,16 @@ exports.getListResumenCajaByIdEmp = async (idEmp,idUsuario,tipo,
 
 exports.getListValorCajaByIdEmp = async (idEmp, nombreBd) => {
 
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             try{
 
                 const sqlQueryGetListValorCaja = `SELECT EMP_CAJA AS valorcaja FROM ${nombreBd}.empresas WHERE EMP_ID = ?`;
                 
-                pool.query(sqlQueryGetListValorCaja, [idEmp], (error, results) => { 
-                    
-                    if(error){
-                        reject({
-                            isSucess: false,
-                            code: 400,
-                            messageError: 'ocurrio un error obteniendo valor caja'
-                        });
-                        return;
-                    }
-                    
-                    resolve({
-                        isSucess: true,
-                        code: 200,
-                        data: results[0]
-                    });
-
+                let results = await pool.query(sqlQueryGetListValorCaja, [idEmp]);
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: results[0][0]
                 });
 
             }catch(exception){
@@ -89,7 +63,7 @@ exports.getListValorCajaByIdEmp = async (idEmp, nombreBd) => {
 }
 
 exports.getListCuadreCajaMovimientosGrupo = async (idEmp, idUsuario,fechaIni,fechaFin, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             let queryByUsu = ``;
             if(idUsuario == "0"){
@@ -105,53 +79,37 @@ exports.getListCuadreCajaMovimientosGrupo = async (idEmp, idUsuario,fechaIni,fec
                 AND bc_Fecha_hora BETWEEN ? AND ? 
                 ${queryByUsu} GROUP BY  ie_grupo ORDER BY bc_id`;
 
-            pool.query(sqlQueryMovimientosGrupo, [idEmp,fechaIni,fechaFin], function(error, results){
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: 'ocurrio un error obteniendo lista movimientos'
-                    });
-                    return;
-                }else{
+            let results = await pool.query(sqlQueryMovimientosGrupo, [idEmp,fechaIni,fechaFin]);
+            if(results[0].length > 0){
+                const arrayResults = Array.from(results[0]);
                 
-                    if(results.length > 0){
-                        const arrayResults = Array.from(results);
-                       
-                        getDataDetalleCuadreCaja(arrayResults,idEmp,fechaIni,fechaFin,idUsuario, nombreBd).then(function(returnedData){
-
-                            resolve({
-                                isSucess: true,
-                                code: 200,
-                                data: arrayResults
-                            });
-                            return;
-
-                        }).catch((error) =>{
-                            console.log(error);
-                              reject({
-                                isSucess: false,
-                                error: 'ocurrio un error obteniendo lista grupo caja'
-                            });
-                        });
-
-                    }else{
-
-                        resolve({
+                getDataDetalleCuadreCaja(arrayResults,idEmp,fechaIni,fechaFin,idUsuario, nombreBd).then(function(returnedData){
+                    resolve({
                             isSucess: true,
                             code: 200,
-                            data: []
-                        });
-                        return;
-                        
-                    }
-                
-                }                
+                            data: arrayResults
+                    });
+                    return;
 
-            });
+                }).catch((error) =>{
+                    console.log(error);
+                    reject({
+                        isSucess: false,
+                        error: 'ocurrio un error obteniendo lista grupo caja'
+                    });
+                });
+
+            }else{
+                resolve({
+                    isSucess: true,
+                    code: 200,
+                    data: []
+                });
+                return;
+                
+            }
 
         }catch(exception){
-            console.log('error get Lista Cuadre Caja');
             reject({
                 isSucess: false,
                 error: 'ocurrio un error obteniendo lista grupo caja'
@@ -185,21 +143,16 @@ function getListDetalleCuadreCajaByGrupo(idEmp, fechaIni,fechaFin,grupo,idUser, 
                     ${nombreBd}.bitacora_caja WHERE bc_empresa_id = ? ${queryByUsu}
                     AND bc_Fecha_hora BETWEEN ? AND ? AND ie_grupo = ?`;
 
-    return new Promise((resolve, reject) => {
-        pool.query(sqlQuerySelectListVentasByGroup,[idEmp,fechaIni,fechaFin,grupo],function(errors, resultss){
-            if (errors){
-                console.log(errors);
-                reject(errors);
-            }  
-
-            resolve(resultss);
-
-        });
+    return new Promise(async (resolve, reject) => {
+        let resultss = await pool.query(sqlQuerySelectListVentasByGroup,[idEmp,fechaIni,fechaFin,grupo]);
+        resolve(resultss[0]);
     });
 }
 
 exports.insertCuadreCajaByIdEmp = async (cuadreCajaData) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+
+        let conexion = await pool.getConnection();
         try{
 
             const {idEmp,fecha,tipo,concepto,idUser,grupo,monto,nombreBd} = cuadreCajaData;
@@ -211,120 +164,54 @@ exports.insertCuadreCajaByIdEmp = async (cuadreCajaData) => {
             const sqlQueryUpdateCajaByIdEmp = `UPDATE ${nombreBd}.empresas SET emp_caja = ? WHERE emp_id = ?`;
             const sqlQueryGetValueCajaEmp = `SELECT emp_caja AS valorcaja FROM ${nombreBd}.empresas WHERE emp_id = ?`;
 
-            pool.getConnection(function(error, connection){
+            await conexion.beginTransaction();
+            await conexion.query(sqlQueryInsertDataBitacora, [idEmp,fecha,tipo,monto,concepto,idUser,grupo]);
+
+            let resultss = await conexion.query(sqlQueryGetValueCajaEmp,[idEmp]);
+            
+            if(resultss[0][0].valorcaja){
+                let tipoInsertNuevoSaldo = '';
+                let valorConceptoNuevoSaldo = '';
+
+                const valorCajaActual = resultss[0][0].valorcaja;
                 
-                connection.beginTransaction(function(err){
-                    if(err){
-                        connection.rollback(function(){
-                            connection.release();
-                            reject('error en conexion transaction');
-                            return;
-                        });
-                    }
+                if(valorCajaActual > 0){
+                    tipoInsertNuevoSaldo = 'EGRESO';
+                    valorConceptoNuevoSaldo = 'EGRESO Nuevo Saldo Caja'
+                }
+                if(valorCajaActual < 0){
+                    tipoInsertNuevoSaldo = 'INGRESO';
+                    valorConceptoNuevoSaldo = 'INGRESO Nuevo Saldo Caja'
+                }
 
-                    connection.query(sqlQueryInsertDataBitacora,
-                        [idEmp,fecha,tipo,monto,concepto,idUser,grupo], function(error,results){
-                        if(error){
-                            connection.rollback(function(){ connection.release()});
-                            reject({
-                                isSuccess: false,
-                                error: 'error insertando cuadre caja'
-                            });
-                            return;
-                        }
-
-                        connection.query(sqlQueryGetValueCajaEmp,[idEmp],function(errorr,resultss){
-                            
-                            if(errorr){
-                                connection.rollback(function(){ connection.release()});
-                                reject({
-                                    isSuccess: false,
-                                    error: 'error obteniendo valor caja'
-                                });
-                                return;
-                            }
-
-                            if(resultss[0].valorcaja){
-                                let tipoInsertNuevoSaldo = '';
-                                let valorConceptoNuevoSaldo = '';
-
-                                const valorCajaActual = resultss[0].valorcaja;
-                                
-                                if(valorCajaActual > 0){
-                                    tipoInsertNuevoSaldo = 'EGRESO';
-                                    valorConceptoNuevoSaldo = 'EGRESO Nuevo Saldo Caja'
-                                }
-                                if(valorCajaActual < 0){
-                                    tipoInsertNuevoSaldo = 'INGRESO';
-                                    valorConceptoNuevoSaldo = 'INGRESO Nuevo Saldo Caja'
-                                }
-
-
-                                connection.query(sqlQueryInsertDataBitacora2,
+                await conexion.query(sqlQueryInsertDataBitacora2,
                                     [idEmp,fecha,tipoInsertNuevoSaldo,valorCajaActual,valorConceptoNuevoSaldo,
-                                    idUser,'CUADRAR CAJA'], function(errorrr,resultsss){
+                                    idUser,'CUADRAR CAJA']);
 
-                                        if(errorrr){
-                                            console.log(errorrr);
-                                            connection.rollback(function(){ connection.release()});
-                                            reject({
-                                                isSuccess: false,
-                                                error: 'error insertando nuevo saldo'
-                                            });
-                                            return;
-                                        }
+                await conexion.query(sqlQueryUpdateCajaByIdEmp,['00.00',idEmp]);
 
-                                        connection.query(sqlQueryUpdateCajaByIdEmp,['00.00',idEmp],function(errorrrr, resultssss){
-                                            if(errorrrr){
-                                                connection.rollback(function(){ connection.release()});
-                                                reject({
-                                                    isSuccess: false,
-                                                    error: 'error actualizando valor cero caja'
-                                                });
-                                                return;
-                                            }   
+                await conexion.commit();
+                conexion.release();
+                resolve({
+                    isSuccess: true,
+                    message: 'Cuadre de Caja Realizado Correctamente'
+                })
+                
+            }else{
+                await conexion.rollback();
+                conexion.release();
 
-                                            connection.commit(function(errorComit){
-                                                if(errorComit){
-                                                    connection.rollback(function(){
-                                                        connection.release();
-                                                        reject('error actualizando valor caja');
-                                                        return;
-                                                    });   
-                                                }
-                                                
-                                                connection.release();
-                                                resolve({
-                                                    isSuccess: true,
-                                                    message: 'Cuadre de Caja Realizado Correctamente'
-                                                })
-                    
-                                            });
-
-                                        });
-
-                                });
-
-
-                            }else{
-                                connection.rollback(function(){ connection.release()});
-                                reject({
-                                    isSuccess: false,
-                                    error: 'error, no se encuentro valor de caja'
-                                });
-                            }
-
-
-                        });
-
-                    });
-
+                reject({
+                    isSuccess: false,
+                    error: 'error, no se encuentro valor de caja'
                 });
-            });
-
+            }
 
         }catch(exception){
-            console.log(exception);
+            
+            await conexion.rollback();
+            conexion.release();
+
             reject({
                 isSucess: false,
                 code: 400,
@@ -335,34 +222,21 @@ exports.insertCuadreCajaByIdEmp = async (cuadreCajaData) => {
 }
 
 exports.insertBitacoraIngresoOrEgreso = async (bitacoraData) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             const {idEmp,fecha,tipo,concepto,idUser,grupo,monto,nombreBd} = bitacoraData;
 
             const sqlQueryInsertDataBitacora = `INSERT INTO ${nombreBd}.bitacora_caja 
                     (bc_empresa_id,bc_fecha_hora,bc_tipo,bc_monto,bc_concepto,ie_user,ie_grupo) VALUES (?,?,?,?,?,?,?)`;
-            pool.query(sqlQueryInsertDataBitacora,[idEmp,fecha,tipo,monto,concepto,idUser,grupo],function(error, reslts){
-               if(error){
-                    reject({
-                        isSuccess: false,
-                        code:400,
-                        error: 'ocurrio un error insertando en bitacora'   ,
-                        message: error
-                    });
-                    return;
-               } 
-
-               console.log('insertada correctamente');
-               resolve({
-                    isSuccess: true,
-                    code:200,
-                    message: 'registro insertado correctamente'
-               });
-
+            await pool.query(sqlQueryInsertDataBitacora,[idEmp,fecha,tipo,monto,concepto,idUser,grupo]);
+            
+            resolve({
+                isSuccess: true,
+                code:200,
+                message: 'registro insertado correctamente'
             });
 
         }catch(exception){
-            console.log(exception);
             reject({
                 isSuccess: false,
                 code:400,
@@ -395,7 +269,7 @@ exports.getListaMovimientosCajaExcel = async (idEmp,idUsuario,tipo,concepto,fech
 
 function createExcelFileMovimientosCaja(idEmp,idUsuario,tipo,concepto,fechaIni,fechaFin, nombreBd){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             let searchByUsuario = '';
@@ -413,19 +287,9 @@ function createExcelFileMovimientosCaja(idEmp,idUsuario,tipo,concepto,fechaIni,f
                                                 WHERE bc_empresa_id = ? AND usu_id=ie_user ${searchByTipo} AND bc_concepto LIKE ?
                                                 ${searchByUsuario} AND bc_Fecha_hora BETWEEN ? AND ? ORDER BY bc_id`;
                 
-                pool.query(sqlQueryGetListResumen, [idEmp,"%"+concepto+"%",fechaIni,fechaFin], (error, results) => { 
-                    
-                    if(error){
-                        reject({
-                            isSucess: false,
-                            code: 400,
-                            messageError: 'ocurrio un error'
-                        });
-                        return;
-                    }
-                    
+                let results = await pool.query(sqlQueryGetListResumen, [idEmp,"%"+concepto+"%",fechaIni,fechaFin]);
                 
-                const arrayData = Array.from(results);
+                const arrayData = Array.from(results[0]);
 
                 const workBook = new excelJS.Workbook(); // Create a new workbook
                 const worksheet = workBook.addWorksheet("Lista Compras");
@@ -503,7 +367,6 @@ function createExcelFileMovimientosCaja(idEmp,idUsuario,tipo,concepto,fechaIni,f
                     });
                 }
 
-                });
         }catch(exception){
             reject({
                 isSucess: false,

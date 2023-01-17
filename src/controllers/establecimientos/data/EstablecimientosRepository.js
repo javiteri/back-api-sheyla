@@ -4,7 +4,7 @@ const ftp = require("basic-ftp");
 
 exports.guardarDatosEstablecimiento = async function (datosEstablecimiento){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             const {idEmpresa, ruc, establecimiento, nombreEmpresa, direccion, telefono, 
@@ -41,26 +41,19 @@ exports.guardarDatosEstablecimiento = async function (datosEstablecimiento){
             queryInsertDatosEstablecimiento = ` INSERT INTO ${nombreBd}.config_establecimientos (cone_empresa_id, cone_establecimiento, cone_nombre_establecimiento, 
                                                 cone_direccion_sucursal, cone_telefonos_sucursal) VALUES (?, ?, ?, ?,?);`;
 
-            poolMysql.query(queryInsertDatosEstablecimiento, [idEmpresa, establecimiento, nombreEmpresa, 
-                                                            direccion, telefono], function(err, results, fields) {
-                                
-                if(err){
-                    reject('error insertando datos establecimiento: ' + err);
-                    return; 
-                }
+            let results = await poolMysql.query(queryInsertDatosEstablecimiento, [idEmpresa, establecimiento, nombreEmpresa, 
+                                                            direccion, telefono]); 
 
-                const affectedRows = results.affectedRows;
-                let updateDatosEmpresaResponse = {}
-                if(affectedRows === 0){
-                    updateDatosEmpresaResponse['isSucess'] = false;
-                    updateDatosEmpresaResponse['message'] = 'error al insertar datos establecimiento';
-                }else{
-                    updateDatosEmpresaResponse['isSucess'] = true;
-                }
+            const affectedRows = results[0].affectedRows;
+            let updateDatosEmpresaResponse = {}
+            if(affectedRows === 0){
+                updateDatosEmpresaResponse['isSucess'] = false;
+                updateDatosEmpresaResponse['message'] = 'error al insertar datos establecimiento';
+            }else{
+                updateDatosEmpresaResponse['isSucess'] = true;
+            }
 
-                resolve(updateDatosEmpresaResponse);
-
-            });
+            resolve(updateDatosEmpresaResponse);
 
         }catch(error){
             reject('error insertando datos establecimiento: ' + error);
@@ -71,7 +64,7 @@ exports.guardarDatosEstablecimiento = async function (datosEstablecimiento){
 
 exports.actualizarDatosEstablecimiento = async function (datosEstablecimiento){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             const {idEstablecimiento, idEmpresa, ruc, establecimiento, nombreEmpresa, direccion, telefono, 
@@ -108,26 +101,19 @@ exports.actualizarDatosEstablecimiento = async function (datosEstablecimiento){
             queryUpdateDatosEstablecimiento = ` UPDATE ${nombreBd}.config_establecimientos SET cone_establecimiento = ?, cone_nombre_establecimiento = ?, 
                                                 cone_direccion_sucursal = ?, cone_telefonos_sucursal = ? WHERE cone_id = ? AND cone_empresa_id = ?`;
 
-            poolMysql.query(queryUpdateDatosEstablecimiento, [establecimiento, nombreEmpresa, 
-                                                            direccion, telefono, idEstablecimiento, idEmpresa], function(err, results, fields) {
-                                
-                if(err){
-                    reject('error insertando datos establecimiento: ' + err);
-                    return; 
-                }
+            let results = await poolMysql.query(queryUpdateDatosEstablecimiento, [establecimiento, nombreEmpresa, 
+                                                            direccion, telefono, idEstablecimiento, idEmpresa]);
 
-                const affectedRows = results.affectedRows;
-                let updateDatosEmpresaResponse = {}
-                if(affectedRows === 0){
+            const affectedRows = results[0].affectedRows;
+            let updateDatosEmpresaResponse = {}
+            if(affectedRows === 0){
                     updateDatosEmpresaResponse['isSucess'] = false;
                     updateDatosEmpresaResponse['message'] = 'error al actualizar datos establecimiento';
-                }else{
+            }else{
                     updateDatosEmpresaResponse['isSucess'] = true;
-                }
+            }
 
-                resolve(updateDatosEmpresaResponse);
-
-            });
+            resolve(updateDatosEmpresaResponse);
 
         }catch(error){
             reject('error actualizando datos establecimiento: ' + error);
@@ -136,40 +122,29 @@ exports.actualizarDatosEstablecimiento = async function (datosEstablecimiento){
 }
 
 exports.getEstablecimientosByIdEmp = async (idEmpresa, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySelectEstablecimientos = `SELECT cone_id as id, cone_empresa_id, cone_establecimiento as numeroEstablecimiento, 
             cone_nombre_establecimiento as nombreEmpresa, cone_direccion_sucursal as direccion, cone_telefonos_sucursal as telefono 
             FROM ${nombreBd}.config_establecimientos WHERE cone_empresa_id = ?`
             
-            poolMysql.query(querySelectEstablecimientos, [idEmpresa], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: err
-                    });
-                    return;
-                }
+            let results = await poolMysql.query(querySelectEstablecimientos, [idEmpresa]); 
                 
-                if(!results | results == undefined | results == null | !results.length){
-                    resolve({
-                        isSucess: true,
-                        code: 400,
-                        message: 'no se encontro establecimientos'
-                    });
-
-                    return;
-                }
-
+            if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
                 resolve({
                     isSucess: true,
-                    code: 200,
-                    data: results
+                    code: 400,
+                    message: 'no se encontro establecimientos'
                 });
 
+                return;
+            }
+
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -180,38 +155,27 @@ exports.getEstablecimientosByIdEmp = async (idEmpresa, nombreBd) => {
 
 
 exports.getEstablecimientoByIdEmp = async (idEmpresa, idEstablecimiento,nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySelectEstablecimiento = `SELECT * FROM ${nombreBd}.config_establecimientos WHERE cone_empresa_id = ? AND cone_id = ? LIMIT 1`
             
-            poolMysql.query(querySelectEstablecimiento, [idEmpresa, idEstablecimiento], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: err
-                    });
-                    return;
-                }
+            let results = await poolMysql.query(querySelectEstablecimiento, [idEmpresa, idEstablecimiento]); 
                 
-                if(!results | results == undefined | results == null | !results.length){
-                    resolve({
-                        isSucess: true,
-                        code: 400,
-                        message: 'no se encontro establecimiento'
-                    });
-
-                    return;
-                }
-
+            if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
                 resolve({
                     isSucess: true,
-                    code: 200,
-                    data: results
+                    code: 400,
+                    message: 'no se encontro establecimiento'
                 });
 
+                return;
+            }
+
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -222,40 +186,28 @@ exports.getEstablecimientoByIdEmp = async (idEmpresa, idEstablecimiento,nombreBd
 }
 
 exports.getEstablecimientosByIdEmpNumEstab = async (idEmpresa, numeroEstablecimiento,nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySelectEstablecimiento = `SELECT * FROM ${nombreBd}.config_establecimientos WHERE cone_empresa_id = ? AND cone_establecimiento = ? LIMIT 1`
             
-            poolMysql.query(querySelectEstablecimiento, [idEmpresa, numeroEstablecimiento], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: err
-                    });
-                    return;
-                }
+            let results = await poolMysql.query(querySelectEstablecimiento, [idEmpresa, numeroEstablecimiento]); 
                 
-                if(!results | results == undefined | results == null | !results.length){
-                    resolve({
-                        isSucess: true,
-                        code: 400,
-                        message: 'no se encontro establecimiento'
-                    });
-
-                    return;
-                }
-
+            if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
                 resolve({
                     isSucess: true,
-                    code: 200,
-                    data: results
+                    code: 400,
+                    message: 'no se encontro establecimiento'
                 });
 
-            });
+                return;
+            }
 
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
+            });
         }catch(e){
             reject('error: ' + e);
         }
@@ -264,40 +216,29 @@ exports.getEstablecimientosByIdEmpNumEstab = async (idEmpresa, numeroEstablecimi
 }
 
 exports.deleteEstablecimiento = async (idEmpresa, idEstablecimiento, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             let queryDeleteEstablecimiento = `DELETE FROM ${nombreBd}.config_establecimientos WHERE cone_id = ? AND cone_empresa_id = ? LIMIT 1`;
 
-            poolMysql.query(queryDeleteEstablecimiento, [idEstablecimiento, idEmpresa], function(error, results, fields){
-                if(error){
-                    console.log(error);
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        tieneMovimientos: error.message.includes('a foreign key constraint fails') ? true : false
-                    });
-                    return;
+            let results = await poolMysql.query(queryDeleteEstablecimiento, [idEstablecimiento, idEmpresa]); 
+
+            const affectedRows = results[0].affectedRows;
+            if(affectedRows === 1){
+
+                const deleteEstablecimientoResponse = {
+                    'isSucess': true
                 }
-
-                const affectedRows = results.affectedRows;
-                if(affectedRows === 1){
-
-                    const deleteEstablecimientoResponse = {
-                        'isSucess': true
-                    }
     
-                    resolve(deleteEstablecimientoResponse);
-
-                }else{
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'error al eliminar el establecimiento, reintente',
-                        duplicate: true
-                    });
-                    return;
-                }
-            });
+                resolve(deleteEstablecimientoResponse);
+            }else{
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    message: 'error al eliminar el establecimiento, reintente',
+                    duplicate: true
+                });
+                return;
+            }
 
         }catch(error){
             reject({

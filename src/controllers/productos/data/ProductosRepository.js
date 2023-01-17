@@ -5,29 +5,18 @@ const fs = require('fs');
 
 exports.getListProductosByIdEmp = async (idEmpresa, nombreBd) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             
             let querySelectProductosByIdEmp = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? ORDER BY prod_id DESC `;
-            pool.query(querySelectProductosByIdEmp, [idEmpresa], function (error, results, fields){
+            let results = await pool.query(querySelectProductosByIdEmp, [idEmpresa]);
 
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
-
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
+
         }catch(err) {
             reject({
                 isSucess: false,
@@ -40,30 +29,17 @@ exports.getListProductosByIdEmp = async (idEmpresa, nombreBd) => {
 
 exports.getListProductosNoAnuladoByIdEmp = async (idEmpresa, nombreBd) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             
             let querySelectProductosByIdEmp = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC`;
-            pool.query(querySelectProductosByIdEmp, [idEmpresa, 1], function (error, results, fields){
-
-                if(error){
-                    console.log(error);
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: error
-                    });
-                    return;
-                }
-
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
-
+            let results = await pool.query(querySelectProductosByIdEmp, [idEmpresa, 1]); 
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
+
         }catch(err) {
             reject({
                 isSucess: false,
@@ -75,38 +51,26 @@ exports.getListProductosNoAnuladoByIdEmp = async (idEmpresa, nombreBd) => {
 }
 
 exports.getProductoByIdEmp = async (idProducto, idEmpresa, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySelectProducto = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_id = ? LIMIT 1`
             
-            pool.query(querySelectProducto, [idEmpresa, idProducto], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: err
-                    });
-                    return;
-                }
-                
-                if(!results | results == undefined | results == null | !results.length){
-                    resolve({
-                        isSucess: true,
-                        code: 400,
-                        message: 'no se encontro producto'
-                    });
-
-                    return;
-                }
-
+            let results = await pool.query(querySelectProducto, [idEmpresa, idProducto]); 
+            if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
                 resolve({
                     isSucess: true,
-                    code: 200,
-                    data: results
+                    code: 400,
+                    message: 'no se encontro producto'
                 });
 
+                return;
+            }
+
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -117,7 +81,7 @@ exports.getProductoByIdEmp = async (idProducto, idEmpresa, nombreBd) => {
 }
 
 exports.insertPoducto = async (datosProducto) => {
-    return new Promise((resolve, reject ) => {
+    return new Promise(async (resolve, reject ) => {
         try{
 
             const {idEmpresa, codigo, codigoBarras, nombre, pvp, 
@@ -129,30 +93,20 @@ exports.insertPoducto = async (datosProducto) => {
                                         prod_observaciones, pro_categoria, prod_marca, prod_activo_si_no, prod_fisico) 
                                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
                                         
-            pool.query(queryInsertProducto, [idEmpresa, codigo, codigoBarras?codigoBarras:'', nombre, costo,
+            let result = await pool.query(queryInsertProducto, [idEmpresa, codigo, codigoBarras?codigoBarras:'', nombre, costo,
                                             utilidad, pvp, iva, stock?stock:'0', unidadMedida, observacion, 
-                                            categoria, marca, activo,tipoProducto], function (error, result){
+                                            categoria, marca, activo,tipoProducto]);
+            console.log(result);                        
+            const insertId = result.insertId;
+            let insertProductoResponse = {}
+            if(insertId > 0){
+                insertProductoResponse['isSucess'] = true;
+            }else{
+                insertProductoResponse['isSucess'] = false;
+                insertProductoResponse['message'] = 'error al insertar Producto';
+            }
 
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: error
-                    });
-                    return;
-                }
-
-                const insertId = result.insertId;
-                let insertProductoResponse = {}
-                if(insertId > 0){
-                    insertProductoResponse['isSucess'] = true;
-                }else{
-                    insertProductoResponse['isSucess'] = false;
-                    insertProductoResponse['message'] = 'error al insertar Producto';
-                }
-
-                resolve(insertProductoResponse);
-        });
+            resolve(insertProductoResponse);
 
         }catch(error){
             reject({
@@ -181,7 +135,7 @@ exports.importListProductos = async (listProductos, nombreBd, idEmpresa) => {
                     let producto = listProductos[index];
                     let existproductoResult = await pool.query(selectExistProducto, [producto.prod_codigo, idEmpresa]);
                     
-                    const cantProducto = existproductoResult[0].CANT;
+                    const cantProducto = existproductoResult[0][0].CANT;
                     if(cantProducto >= 1){
                         let productoRes = producto;
                         productoRes.messageError = 'ya existe el producto';
@@ -233,7 +187,7 @@ exports.importListProductos = async (listProductos, nombreBd, idEmpresa) => {
 }
 
 exports.updateProducto = async (datosProducto) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             const {idEmpresa, idProducto, codigo, codigoBarras, nombre, pvp,
@@ -247,31 +201,20 @@ exports.updateProducto = async (datosProducto) => {
                                         prod_fisico = ?           
                                         WHERE prod_id = ? AND prod_empresa_id = ?`;
             
-            pool.query(queryUpdateProducto, [codigo, codigoBarras?codigoBarras:'', nombre, 
+            let result = await pool.query(queryUpdateProducto, [codigo, codigoBarras?codigoBarras:'', nombre, 
                 costo, utilidad, pvp, iva, stock?stock:'0', unidadMedida, observacion, categoria, marca, 
-                activo,tipoProducto, idProducto, idEmpresa], 
-                        function (error, result){
-                        
-                            if(error){
+                activo,tipoProducto, idProducto, idEmpresa]); 
 
-                                reject({
-                                    isSucess: false,
-                                    code: 400,
-                                    message: error
-                                });
-                                return;
-                            }
-                            const insertId = result.affectedRows;
-                            let insertProductoResponse = {}
-                            if(insertId > 0){
-                                insertProductoResponse['isSucess'] = true;
-                            }else{
-                                insertProductoResponse['isSucess'] = false;
-                                insertProductoResponse['message'] = 'error al actualizar producto';
-                            }
-                            resolve(insertProductoResponse);
-                            return;
-                        });
+            const insertId = result.affectedRows;
+            let insertProductoResponse = {}
+            if(insertId > 0){
+                insertProductoResponse['isSucess'] = true;
+            }else{
+                insertProductoResponse['isSucess'] = false;
+                insertProductoResponse['message'] = 'error al actualizar producto';
+            }
+            resolve(insertProductoResponse);
+            return;
 
         }catch(error){
             reject({
@@ -284,40 +227,29 @@ exports.updateProducto = async (datosProducto) => {
 }
 
 exports.deleteProducto = async (idEmpresa, idProducto, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             let queryDeleteProducto = `DELETE FROM ${nombreBd}.productos WHERE  prod_empresa_id = ? AND prod_id = ? LIMIT 1`;
 
-            pool.query(queryDeleteProducto, [idEmpresa, idProducto], function(error, results, fields){
-                if(error){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        tieneMovimientos: error.message.includes('a foreign key constraint fails') ? true : false
-                    });
-                    return;
+            let results = await pool.query(queryDeleteProducto, [idEmpresa, idProducto]); 
+            const affectedRows = results.affectedRows;
+            if(affectedRows === 1){
+
+                const deleteProductoResponse = {
+                    'isSucess': true
                 }
-
-                const affectedRows = results.affectedRows;
-                if(affectedRows === 1){
-
-                    const deleteProductoResponse = {
-                        'isSucess': true
-                    }
     
-                    resolve(deleteProductoResponse);
-                    return;
-
-                }else{
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'error al eliminar producto, reintente',
-                        duplicate: true
-                    });
-                    return;
-                }
-            });
+                resolve(deleteProductoResponse);
+                return;
+            }else{
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    message: 'error al eliminar producto, reintente',
+                    duplicate: true
+                });
+                return;
+            }
 
         }catch(error){
             reject({
@@ -330,39 +262,27 @@ exports.deleteProducto = async (idEmpresa, idProducto, nombreBd) => {
 }
 
 exports.getCategoriasByIdEmp = async (idEmpresa, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySelectCategoriasProducto = `SELECT DISTINCT pro_categoria FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND pro_categoria IS NOT NULL 
                                                 ORDER BY pro_categoria`
             
-            pool.query(querySelectCategoriasProducto, [idEmpresa], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: err
-                    });
-                    return;
-                }
-                
-                if(!results | results == undefined | results == null | !results.length){
-                    resolve({
-                        isSucess: true,
-                        code: 200,
-                        message: 'no se encontro categorias'
-                    });
-
-                    return;
-                }
-
+            let results = await pool.query(querySelectCategoriasProducto, [idEmpresa]); 
+            if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
                 resolve({
                     isSucess: true,
                     code: 200,
-                    data: results
+                    message: 'no se encontro categorias'
                 });
 
+                return;
+            }
+
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -373,39 +293,27 @@ exports.getCategoriasByIdEmp = async (idEmpresa, nombreBd) => {
 }
 
 exports.getMarcasByIdEmp = async (idEmpresa, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySelectMarcasProducto = `SELECT DISTINCT prod_marca FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_marca IS NOT NULL 
                                                 ORDER BY prod_marca`
             
-            pool.query(querySelectMarcasProducto, [idEmpresa], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: err
-                    });
-                    return;
-                }
-                
-                if(!results | results == undefined | results == null | !results.length){
-                    resolve({
-                        isSucess: true,
-                        code: 200,
-                        message: 'no se encontro marcas'
-                    });
-
-                    return;
-                }
-
+            let results = await pool.query(querySelectMarcasProducto, [idEmpresa]); 
+            if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
                 resolve({
                     isSucess: true,
                     code: 200,
-                    data: results
+                    message: 'no se encontro marcas'
                 });
 
+                return;
+            }
+
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -416,29 +324,17 @@ exports.getMarcasByIdEmp = async (idEmpresa, nombreBd) => {
 }
 
 exports.searchProductosByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySearchClientes = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND (prod_nombre LIKE ? || prod_codigo LIKE ?)
                                          ORDER BY prod_id DESC`
             
-            pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%'], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%']); 
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -449,29 +345,17 @@ exports.searchProductosByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
 }
 
 exports.searchProductosByIdEmpActivo = async (idEmpresa, textSearch, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
         try{
             let querySearchClientes = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND (prod_nombre LIKE ? || prod_codigo LIKE ?) AND prod_activo_si_no = ?
                                          ORDER BY prod_id DESC`
             
-            pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%', 1], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        messageError: err
-                    });
-                    return;
-                }
-                
-                resolve({
-                    isSucess: true,
-                    code: 200,
-                    data: results
-                });
-
+            let results = await pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%', 1]); 
+            resolve({
+                isSucess: true,
+                code: 200,
+                data: results[0]
             });
 
         }catch(e){
@@ -520,23 +404,14 @@ exports.getTemplateProductosExcel = async (idEmpresa, nombreBd) => {
 
 function createExcelFileProductos(idEmp, nombreBd){
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
 
             let querySelectProducto = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC`
             
-            pool.query(querySelectProducto, [idEmp, 1], (err, results) => {
-
-                if(err){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: err
-                    });
-                    return;
-                }
+            let results = await pool.query(querySelectProducto, [idEmp, 1]);
                 
-                const arrayData = Array.from(results);
+                const arrayData = Array.from(results[0]);
 
                 const workBook = new excelJS.Workbook(); // Create a new workbook
                 const worksheet = workBook.addWorksheet("Lista Productos");
@@ -617,10 +492,6 @@ function createExcelFileProductos(idEmp, nombreBd){
                         error: 'error creando archivo, reintente'
                     });
                 }
-
-            });
-
-
         }catch(exception){
             reject({
                 isSucess: false,
