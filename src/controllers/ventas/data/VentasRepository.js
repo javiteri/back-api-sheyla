@@ -141,30 +141,46 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
             const queryDeleteVentaDetalleByIdEmp = `DELETE FROM ${nombreBd}.ventas_detalles WHERE ventad_venta_id = ?`;
 
             await conexion.beginTransaction();
+
             if(estado == 0){
                 let results = await conexion.query(sqlSelectDetalleVenta, [idVenta]);
+
                 const listVentaDetalle = Array.from(results[0]);
 
-                listVentaDetalle.forEach(async (ventaDetalle, index) => {
-                    const cantidad = ventaDetalle.ventad_cantidad;
-                    const prodId = ventaDetalle.ventad_prod_id;
-                                
-                    await conexion.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId]);
+                if(listVentaDetalle.length == 0){
+                    await conexion.query(queryDeleteVentaByIdEmp, [idVenta,idEmpresa]);
 
-                    if(index == listVentaDetalle.length - 1){
-                        await conexion.query(queryDeleteVentaByIdEmp, [idVenta,idEmpresa]);
+                    await conexion.commit();
+                    conexion.release();
 
-                        await conexion.commit();
-                        conexion.release();
-
-                        resolve({
+                    resolve({
                             isSuccess: true,
                             message: 'Venta eliminada correctamente'
-                        })
+                    })
 
-                    }
+                }else{
+                    listVentaDetalle.forEach(async (ventaDetalle, index) => {
+                        const cantidad = ventaDetalle.ventad_cantidad;
+                        const prodId = ventaDetalle.ventad_prod_id;
+                                    
+                        await conexion.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId]);
 
-                });               
+                        if(index == listVentaDetalle.length - 1){
+                            console.log('inside finally');
+                            await conexion.query(queryDeleteVentaByIdEmp, [idVenta,idEmpresa]);
+
+                            await conexion.commit();
+                            conexion.release();
+
+                            resolve({
+                                isSuccess: true,
+                                message: 'Venta eliminada correctamente'
+                            })
+
+                        }
+
+                    });   
+                }
             }else{
                 await conexion.query(queryDeleteVentaByIdEmp, [idVenta, idEmpresa]);
                 await conexion.commit();
@@ -480,10 +496,10 @@ exports.getDataByIdVenta = async (idVenta, idEmp, ruc, nombreBd) => {
 }
 
 
-exports.importListVentas = (listVentas, nombreBd, idEmpresa) => {
-    return new Promise((resolve, reject ) => {
-        try{
+exports.importListVentas = async (listVentas, nombreBd, idEmpresa) => {
+    return new Promise(async (resolve, reject ) => {
 
+        
             let listVentasWithError = [];
         
             // INSERT VENTA Y OBTENER ID
@@ -505,29 +521,86 @@ exports.importListVentas = (listVentas, nombreBd, idEmpresa) => {
 
             const queryInsertCliente = `INSERT INTO ${nombreBd}.clientes (cli_empresa_id, cli_nacionalidad, cli_documento_identidad, cli_tipo_documento_identidad, 
                                                 cli_nombres_natural, cli_razon_social , cli_observacion , cli_fecha_nacimiento) VALUES (?,?,?,?,?,?,?,?)`;
+
+            let conexion = await pool.getConnection();
             
-            listVentas.forEach(async (datosVenta) => {
-                console.log('inside first loop datosVentas');              
+            for(let index = 0; index < listVentas.length; index++){
 
-                let conexion = await pool.getConnection();
-                await conexion.beginTransaction();
+                let datosVenta = listVentas[index];
 
-                let cliente = conexion.query(sqlQueryExistClient, [datosVenta.cc_ruc_pasaporte]);
-                console.log('datos Cliente');
-                console.log(cliente);
+                try{
+                    await conexion.beginTransaction();
 
-                console.log('fuera del pool get Connection return error cliente');
-                console.log('siguiente registro');
+                    let cliente = await conexion.query(sqlQueryExistClient, [datosVenta.cc_ruc_pasaporte]);
 
-            });
-            
-        }catch(error){
-            reject({
-                isSucess: false,
-                code: 400,
-                messageError: error
-            });
-        }
+                    let idCliente = 0;
+                    if(cliente[0].length > 0){
+                        idCliente = cliente[0][0].ID;
+                    }else{
+                        let resultCliente = await conexion.query(queryInsertCliente, [idEmpresa, 'ECUADOR', datosVenta.cc_ruc_pasaporte, 'CI', 
+                                                                    datosVenta.cliente, '', '', '2023-01-18']);
+                        idCliente = resultCliente[0].insertId;
+                    }
+
+                    //INSERT VENTA
+                    let arrayNumVenta = datosVenta.numero.split('-');
+                    let ventaUnico = `${idEmpresa}_${datosVenta.documento}_${arrayNumVenta[0]}_${arrayNumVenta[1]}_${arrayNumVenta[2]}`;
+
+                    let resultVenta = await conexion.query(sqlQueryInsertVenta, [idEmpresa, datosVenta.documento, arrayNumVenta[0],
+                                        arrayNumVenta[1], arrayNumVenta[2], datosVenta.fechaHora, datosVenta.idUsuario, idCliente,
+                                        datosVenta.subtotalIva, datosVenta.subtotalCero, datosVenta.valorIva, datosVenta.total, datosVenta.forma_pago,
+                                        '', ventaUnico]);
+
+                    let idVenta = resultVenta[0].insertId;
+                    let listVentaDetalle = datosVenta.listDetalle;
+
+                    for(const ventaDetalle of listVentaDetalle){
+                        //VERIFICAR SI EXISTE EL PRODUCTO 
+                        let resultProducto = await conexion.query(sqlQueryExistProduct, ventaDetalle.codigoproducto);
+                        if(resultProducto[0].length <= 0){
+                            throw new Error('El producto no existe');
+                        }
+
+                        
+                        let idProducto = resultProducto[0][0].prod_id;
+                        let nombreProducto = resultProducto[0][0].prod_nombre;
+ 
+                        //INSERTAR DETALLE DE LA VENTA
+                        await conexion.query(sqlQueryInsertVentaDetalle, [idVenta,idProducto, ventaDetalle.cantidad,
+                                                ventaDetalle.iva,nombreProducto,ventaDetalle.valorUnitario, '', 
+                                                ventaDetalle.totalDetalle]);
+
+                    }
+                    
+                    await conexion.commit();
+
+                    if(listVentas.length - 1 == index){
+                        conexion.release();
+                        resolve({
+                            isSucess: true,
+                            message: 'Ventas Insertadas Correctamente',
+                            listVentasWithError: listVentasWithError
+                        });
+                    }
+
+                }catch(exception){
+                    await conexion.rollback();
+                    conexion.release();
+
+                    let ventaResponse = datosVenta;
+                    ventaResponse.messageError =  'error insertando venta';
+                    ventaResponse.venta_error_server = true;
+                    listVentasWithError.push(ventaResponse);
+
+                    if(listVentas.length - 1 == index){
+                        resolve({
+                            isSucess: true,
+                            message: 'Ventas Insertadas Correctamente',
+                            listVentasWithError: listVentasWithError
+                        });
+                    }
+                }
+            }        
     });
 }
 
