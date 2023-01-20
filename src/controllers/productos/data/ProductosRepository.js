@@ -96,8 +96,8 @@ exports.insertPoducto = async (datosProducto) => {
             let result = await pool.query(queryInsertProducto, [idEmpresa, codigo, codigoBarras?codigoBarras:'', nombre, costo,
                                             utilidad, pvp, iva, stock?stock:'0', unidadMedida, observacion, 
                                             categoria, marca, activo,tipoProducto]);
-            console.log(result);                        
-            const insertId = result.insertId;
+                                    
+            const insertId = result[0].insertId;
             let insertProductoResponse = {}
             if(insertId > 0){
                 insertProductoResponse['isSucess'] = true;
@@ -205,7 +205,7 @@ exports.updateProducto = async (datosProducto) => {
                 costo, utilidad, pvp, iva, stock?stock:'0', unidadMedida, observacion, categoria, marca, 
                 activo,tipoProducto, idProducto, idEmpresa]); 
 
-            const insertId = result.affectedRows;
+            const insertId = result[0].affectedRows;
             let insertProductoResponse = {}
             if(insertId > 0){
                 insertProductoResponse['isSucess'] = true;
@@ -232,7 +232,7 @@ exports.deleteProducto = async (idEmpresa, idProducto, nombreBd) => {
             let queryDeleteProducto = `DELETE FROM ${nombreBd}.productos WHERE  prod_empresa_id = ? AND prod_id = ? LIMIT 1`;
 
             let results = await pool.query(queryDeleteProducto, [idEmpresa, idProducto]); 
-            const affectedRows = results.affectedRows;
+            const affectedRows = results[0].affectedRows;
             if(affectedRows === 1){
 
                 const deleteProductoResponse = {

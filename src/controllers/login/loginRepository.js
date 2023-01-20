@@ -4,36 +4,26 @@ const poolMysqlBd1 = require('../../connectiondb/mysqlconnectionlogin');
 const httpClient = require('http');
 
 exports.loginUser = function(user, password){
-    return new Promise((resolve, reject) => {
+    return new Promise(async(resolve, reject) => {
         try{
             
             let query = 'SELECT * FROM usuarios WHERE usu_nombre_usuario = ? AND usu_password = ? LIMIT 1';
             
-            poolMysql.query(query, [user, password], function(err, results, fields) {
-
-                                if(err){
-                                    reject('error: ' + err);
-                                    return;
-                                }
-
-                                if(!results | results == undefined | results == null){
+            let results = await poolMysql.query(query, [user, password]);
+            
+            if(!results | results == undefined | results == null){
                                     reject('error no existe usuario');
                                     return;
-                                }
+            }
                             
-                                let userMysqlData; 
-    
-                                Object.keys(results).forEach(function(key){
-                                    let row = results[key]
-                                    userMysqlData = {
-                                        'cedula': row.USU_CEDULA,
-                                        'nombre': row.USU_NOMBRE_USUARIO    
-                                    }
-                                });
-                                
-                                resolve(userMysqlData)                            
-                            }
-            );
+            let userMysqlData; 
+                
+            userMysqlData = {
+                'cedula': results[0][0].USU_CEDULA,
+                'nombre': results[0][0].USU_NOMBRE_USUARIO    
+            }
+
+            resolve(userMysqlData);
     
         }catch(error){
             resolve(`error query user login ${error}`)
@@ -43,46 +33,33 @@ exports.loginUser = function(user, password){
 
 exports.loginValidateExistEmpresaRucBd1 = function(ruc){
     
-    return new Promise((resolve, reject) => {
+    return new Promise(async(resolve, reject) => {
         try {
             let query = "SELECT * FROM empresas WHERE empresa_ruc = ? LIMIT 1";
     
-            poolMysqlBd1.query(query, [ruc], function(err, results, fields){
-
-                    if(err){
-                        reject('error en verify: ' + err);
-                        return;
-                    }
-
-                    if(!results | results == undefined | results == null | !results.length){
-                        reject('no existe empresa');
-                        return;
-                    }
+            let results = await poolMysqlBd1.query(query, [ruc]);
+            
+            if(!results[0] | results[0] == undefined | results[0] == null | !results.length){
+                reject('no existe empresa');
+                return;
+            }
+            
+            let existEmpresaResponse;
+            existEmpresaResponse = {
+                'isSuccess': true,
+                'ruc': ruc,
+                'nombre': results[0][0].EMPRESA_NOMBRE,
+                'finFacturacion': row.EMPRESA_FECHA_FIN_FACTURACION
+            }
                     
+            if(new Date(existEmpresaResponse.finFacturacion) >= new Date()){
+                existEmpresaResponse['isFacturacionAvailable'] = true;
+            }else{
+                existEmpresaResponse['isFacturacionAvailable'] = false;
+            }
 
-                    let existEmpresaResponse;
-
-                    Object.keys(results).forEach(function(key){
-                        let row = results[key]
-                        existEmpresaResponse = {
-                            'isSuccess': true,
-                            'ruc': ruc,
-                            'nombre': row.EMPRESA_NOMBRE,
-                            'finFacturacion': row.EMPRESA_FECHA_FIN_FACTURACION
-                        }
-                    });
-
-                    
-                    if(new Date(existEmpresaResponse.finFacturacion) >= new Date()){
-                        existEmpresaResponse['isFacturacionAvailable'] = true;
-                    }else{
-                        existEmpresaResponse['isFacturacionAvailable'] = false;
-                    }
-
-                    resolve(existEmpresaResponse);
-                }
-            );
-
+            resolve(existEmpresaResponse);
+        
         }catch(error){
             reject('error en verify empresa');
         }
@@ -112,8 +89,8 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                     let datosEmpresa = await poolMysqlBd1.query(queryNumDocAndLicenceDays, [ruc]);
 
                     const dateActual = new Date();
-                    const dateInit = new Date(datosEmpresa[0].finfactura);
-
+                    const dateInit = new Date(datosEmpresa[0][0].finfactura);
+                    
                     let time = dateInit.getTime() - dateActual.getTime(); 
                     let days = time / (1000 * 3600 * 24); //Diference in Days
 
@@ -139,12 +116,12 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                         return;
                     }
 
-                    let idEmpresa;
-                    let nombreEmpresa;
-                    Object.keys(resultEmpresa[0]).forEach(function(key) {
+                    let idEmpresa = resultEmpresa[0][0].EMP_ID;
+                    let nombreEmpresa = resultEmpresa[0][0].EMP_NOMBRE;
+                    /*Object.keys(resultEmpresa[0]).forEach(function(key) {
                         idEmpresa = resultEmpresa[0][key].EMP_ID;
                         nombreEmpresa = resultEmpresa[0][key].EMP_NOMBRE;
-                    });
+                    });*/
 
                     let results = await poolMysql.query(query, [username, password, idEmpresa]);
 
@@ -156,13 +133,13 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                         return;
                     }
                     
-                    let idUsuario;
-                    let nombreUsuario;
-                    Object.keys(results[0]).forEach(function(key){
+                    let idUsuario = results[0][0].usu_id;
+                    let nombreUsuario = results[0][0].usu_nombres;
+                    /*Object.keys(results[0]).forEach(function(key){
                         let row = results[0][key]
                         idUsuario = row.usu_id;
                         nombreUsuario = row.usu_nombres;
-                    });
+                    });*/
 
                     resolve({
                         isSuccess: true,
@@ -174,9 +151,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                         rucEmpresa: ruc,
                         redirectToHome: true,
                         nombreBd: result.value
-                    })
-
-                    
+                    })                  
                 },
                 function(error){
                     reject(error);
@@ -364,8 +339,7 @@ exports.createEmpresaByRuc = function(ruc){
                 });
 
                 response.on('end', function () {
-                    console.log('inside end');
-                    console.log(str);
+                    
                     if(str.includes('ERROR')){
                         resolve({
                             isSucess: true,
@@ -397,7 +371,7 @@ exports.createEmpresaByRuc = function(ruc){
                                 str1 += chunk;
                             });
             
-                            response.on('end', function () {
+                            response.on('end', async function () {
             
                                 if(str1.includes('NOEXISTE')){
                                     resolve({
@@ -422,39 +396,23 @@ exports.createEmpresaByRuc = function(ruc){
                                     let queryInsertUserDefaultEmpresa = `INSERT INTO ${dbName}.usuarios (usu_empresa_id, usu_identificacion, usu_nombres, usu_telefonos,usu_direccion, 
                                                 usu_mail, usu_fecha_nacimiento, usu_username, usu_password, usu_permiso_escritura)
                                                 VALUES (?,?,?,?,?,?,?,?,?,?)`;
-                                    poolMysql.query(querySelectEmpresa, [ruc], function(err, results, fields){
-                                                    
-                                                    if(err){
-                                                        reject('error en BD2');
-                                                        return;
-                                                    }
-                        
-                                                    let idEmpresa;
-                                                    Object.keys(results).forEach(function(key) {
-                                                        idEmpresa = results[key].EMP_ID;
-                                                    });
-
-                                                    poolMysql.query(queryInsertUserDefaultEmpresa, 
-                                                        [idEmpresa, '9999999999','Usuario Default','', '', '', '2000-01-01', 'ADMIN', 'ADMIN', 1], 
-                                                        function(err, resultsUser){
-                        
-                                                        if(err){
-                                                            reject('error insertando usuario: ' + err);
-                                                            return;
-                                                        }
-
-                                                        resolve({
-                                                            isSucess: true,
-                                                            isCreateEmp: true,
-                                                            username: 'ADMIN',
-                                                            password: 'ADMIN',
-                                                            rucEmpresa: ruc
-                                                        });
-                        
-                                                    });
-                        
-                                                });         
+                                    let results = await poolMysql.query(querySelectEmpresa, [ruc]);
                                     
+                                    let idEmpresa = results[0][0].EMP_ID;
+                                                   /* Object.keys(results).forEach(function(key) {
+                                                        idEmpresa = results[key].EMP_ID;
+                                                    });*/
+
+                                    await poolMysql.query(queryInsertUserDefaultEmpresa, [idEmpresa, '9999999999','Usuario Default','', '', '', 
+                                                                                            '2000-01-01', 'ADMIN', 'ADMIN', 1]);
+                                                        
+                                    resolve({
+                                        isSucess: true,
+                                        isCreateEmp: true,
+                                        username: 'ADMIN',
+                                        password: 'ADMIN',
+                                        rucEmpresa: ruc
+                                    });
 
                                 }
             
@@ -497,7 +455,7 @@ exports.recoveryPasswordByRucAndEmail = function(ruc, email){
                     str1 += chunk;
                 });
         
-                response.on('end', function () {
+                response.on('end', async function () {
         
                     if(str1.includes('NOEXISTE')){
                         resolve({
@@ -526,72 +484,54 @@ exports.recoveryPasswordByRucAndEmail = function(ruc, email){
 
                             params = [ruc,email];
 
-                            poolMysql.query(querySelectEmpresa, params, function(err, results, fields){
-                                if(err){
-                                    reject('error en BD2');
-                                    return;
-                                }
-                                let idEmpresa;
-                                Object.keys(results).forEach(function(key) {
+                            let results = await poolMysql.query(querySelectEmpresa, params);
+                            
+                            let idEmpresa = results[0][0].EMP_ID;
+                                /*Object.keys(results).forEach(function(key) {
                                     idEmpresa = results[key].EMP_ID;
-                                });
+                                });*/
     
-                                if(results.length === 0 ){
-                                    resolve({
-                                        isSucess: false,
-                                        existEmpresa: false
-                                    });
-                                    return;
-                                }
-                                
-                                poolMysql.query(queryUser,[idEmpresa],function(error, result){
-                                    if(error){
-                                        reject('Error obteniendo usuarios');
-                                        return;
-                                    }
-
-                                    if(!result && result.length === 0 ){
-                                        resolve({
-                                            isSucess: false,
-                                            existEmpresa: false,
-                                            message: 'no se encontro usuario predeterminado para empresa'
-                                        });
-                                        return;
-                                    }
-
-                                    /// SEND EMAIL TO URL FOR RECOVERY PASSWORD
-                                    sendEmailRecoveryAccount(ruc, email,result[0], resolve, reject);
-
+                            if(results.length === 0 ){
+                                resolve({
+                                    isSucess: false,
+                                    existEmpresa: false
                                 });
-                
-                            });
+                                return;
+                            }
+                                
+                            let result = poolMysql.query(queryUser,[idEmpresa]);
+                           
+                            if(!result[0] && result[0].length === 0 ){
+                                resolve({
+                                    isSucess: false,
+                                    existEmpresa: false,
+                                    message: 'no se encontro usuario predeterminado para empresa'
+                                });
+                                return;
+                            }
 
+                            /// SEND EMAIL TO URL FOR RECOVERY PASSWORD
+                            sendEmailRecoveryAccount(ruc, email,result[0], resolve, reject);
 
                         }else{
                             querySelectEmpresa = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? LIMIT 1`;
                             params = [ruc];
                             
-                            poolMysql.query(querySelectEmpresa, params, function(err, results, fields){
-                                if(err){
-                                    reject('error en BD2');
-                                    return;
-                                }
+                            let results = await poolMysql.query(querySelectEmpresa, params);
 
-                                if(!results | results == undefined | results == null | !results.length){
-                                    reject({
-                                        isSucess: false,
-                                        existEmpresa: false
-                                    });
-                                    return;
-                                }
-
-                                
-                                resolve({
-                                    isSucess: true,
-                                    existEmpresa: true
+                            if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
+                                reject({
+                                    isSucess: false,
+                                    existEmpresa: false
                                 });
-
+                                return;
+                            }
+    
+                            resolve({
+                                isSucess: true,
+                                existEmpresa: true
                             });
+
                         }
                     }
         
@@ -705,10 +645,10 @@ function getNameBdByRuc(ruc){
 }
 
 exports.validateDefaultUserByRuc = function(ruc){
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
             getNameBdByRuc(ruc).then(
-                function(result){
+                async function(result){
                     if(!result.existEmp){
                         resolve(result);
                         return;
@@ -720,49 +660,38 @@ exports.validateDefaultUserByRuc = function(ruc){
                     
                     let queryEmpresas = `SELECT * FROM ${nombreBd}.empresas WHERE emp_ruc = ? LIMIT 1`;
                     let query = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_username = "ADMIN" AND usu_password = "ADMIN" AND usu_empresa_id = ? LIMIT 1`;
+
+                    let resultEmpresa = await poolMysql.query(queryEmpresas, [ruc]);
                     
-                    poolMysql.query(queryEmpresas, [ruc], function(err, resultEmpresa, fields){
-                        if(err){
-                            console.log(err);
-                            reject('error en BD2');
-                            return;
-                        }
+                    if(!resultEmpresa[0] | resultEmpresa[0] == undefined | resultEmpresa[0] == null | !resultEmpresa[0].length){
+                        reject(' error, no se encontro la empresa');
+                        return;
+                    }
 
-                        if(!resultEmpresa | resultEmpresa == undefined | resultEmpresa == null | !resultEmpresa.length){
-                            reject(' error, no se encontro la empresa');
-                            return;
-                        }
-
-                        let idEmpresa;
-                        let nombreEmpresa;
-                        Object.keys(resultEmpresa).forEach(function(key) {
+                        let idEmpresa = resultEmpresa[0][0].EMP_ID;
+                        let nombreEmpresa = resultEmpresa[0][0].EMP_NOMBRE;
+                        /*Object.keys(resultEmpresa).forEach(function(key) {
                                 idEmpresa = resultEmpresa[key].EMP_ID;
                                 nombreEmpresa = resultEmpresa[key].EMP_NOMBRE;
-                        });
+                        });*/
+                        
+                        let results = await poolMysql.query(query, [idEmpresa]);
 
-                        poolMysql.query(query, [idEmpresa], function(err, results, fields) {
-                                if(err){
-                                    reject('error: ' + err);
-                                    return;
-                                }
-
-                                if(!results | results == undefined | results == null | !results.length){
-                                    resolve({
-                                        isSuccess: true,
-                                        existDefaultUser: false
-                                    });
-                                    return;
-                                }
+                        if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
+                            resolve({
+                                isSuccess: true,
+                                existDefaultUser: false
+                            });
+                            return;
+                        }
                                 
-                                resolve({
-                                    isSuccess: true,
-                                    existDefaultUser: true
-                                })
+                        resolve({
+                            isSuccess: true,
+                            existDefaultUser: true
+                        })
 
-                            }
-                        );
-                    });
                 },
+                
                 function(error){
                     reject(error);
                 }

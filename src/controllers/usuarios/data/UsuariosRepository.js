@@ -10,8 +10,8 @@ exports.getUsuarioByIdEmp = async (idUser, idEmpresa, nombreBd) => {
             let querySelectClientes = `SELECT * FROM ${nombreBd}.usuarios WHERE usu_empresa_id = ? AND usu_id = ? LIMIT 1`
             
             let usuarioResult = await pool.query(querySelectClientes, [idEmpresa, idUser]);
-
-            if(!usuarioResult | usuarioResult == undefined | usuarioResult == null | !usuarioResult.length){
+            
+            if(!usuarioResult[0] | usuarioResult[0] == undefined | usuarioResult[0] == null | !usuarioResult[0].length){
                 resolve({
                     isSucess: true,
                     code: 400,
@@ -70,7 +70,8 @@ exports.insertUsuario = async (datosCliente) => {
             
 
             let usuario = await pool.query(queryExistUsuario, [idEmpresa, identificacion]);
-            const cantUsers = usuario[0].CANT;
+            const cantUsers = usuario[0][0].CANT;
+            
             if(cantUsers >= 1){
                 reject({
                     isSucess: false,
@@ -117,46 +118,47 @@ exports.updateUsuario = async (datosUsuarioUpdate) => {
                                                  usu_telefonos = ?, usu_direccion = ?, usu_mail = ? , usu_fecha_nacimiento = ? ,
                                                  usu_username = ?, usu_password = ?, usu_permiso_escritura = ? WHERE usu_empresa_id = ? AND usu_id = ?`;
             
-                                                 console.log(queryUpdateUsuario);
+            
             let updateUsuario = await pool.query(queryExistUser, [idEmpresa, idUsuario]);
 
-                const cantUsuarios = updateUsuario[0].CANT;
-                if(cantUsuarios == 0){
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'No existe Usuario',
-                        duplicate: true
-                    });
-                    return;
-                }
-
-                if(cantUsuarios == 1){
+            const cantUsuarios = updateUsuario[0][0].CANT;
+            
+            if(cantUsuarios == 0){
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    message: 'No existe Usuario',
+                    duplicate: true
+                });
+                return;
+            }
+            
+            if(cantUsuarios == 1){
                     
-                    let updateUsuario = await pool.query(queryUpdateUsuario, [identificacion,idEmpresa, nombreNatural, telefono, direccion, email, fechaNacimiento,
-                        nombreUsuario, password, permisoEscritura, idEmpresa, idUsuario]);
+                let updateUsuario = await pool.query(queryUpdateUsuario, [identificacion,idEmpresa, nombreNatural, telefono, direccion, email, fechaNacimiento,
+                                                        nombreUsuario, password, permisoEscritura, idEmpresa, idUsuario]);
                         
-    
-                        const insertId = updateUsuario[0].affectedRows;
-                        let insertClienteResponse = {}
-                        if(insertId > 0){
-                            insertClienteResponse['isSucess'] = true;
-                        }else{
-                            insertClienteResponse['isSucess'] = false;
-                            insertClienteResponse['message'] = 'error al actualizar usuario';
-                        }
-    
-                        resolve(insertClienteResponse);
-                        return;
+                const insertId = updateUsuario[0].affectedRows;
+                
+                let insertClienteResponse = {}
+                if(insertId > 0){
+                    insertClienteResponse['isSucess'] = true;
                 }else{
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'identificacion ya esta en uso',
-                        duplicate: true
-                    });
-                    return;
+                    insertClienteResponse['isSucess'] = false;
+                    insertClienteResponse['message'] = 'error al actualizar usuario';
                 }
+    
+                resolve(insertClienteResponse);
+                    return;
+            }else{
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    message: 'identificacion ya esta en uso',
+                    duplicate: true
+                });
+                return;
+            }
                 
         }catch(error){
             reject({

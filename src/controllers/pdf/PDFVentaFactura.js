@@ -639,7 +639,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
   );
 
 
-  const icePosition = duePosition + 25;
+  /*const icePosition = duePosition + 25;
   generateTableRow(
     doc,
     icePosition,
@@ -648,11 +648,11 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     "ICE",
     "",
     formatCurrency(0.00)
-  );
+  );*/
 
   doc.font("Helvetica");
 
-  const iva12Position = icePosition + 25;
+  const iva12Position = duePosition + 30;
   generateTableRow(
     doc,
     iva12Position,

@@ -17,7 +17,8 @@ exports.insertConfigsList = async (datosConfig) => {
 
             await conexion.beginTransaction();
 
-            configsListArray.forEach(async (config, index) => {
+            for(let index = 0; index < configsListArray.length; index++){
+                let config = configsListArray[index];
 
                 const {idEmpresa,nombreConfig,valorConfig} = config;
 
@@ -47,8 +48,7 @@ exports.insertConfigsList = async (datosConfig) => {
                         });
                     }
                 }
-
-            });
+            }
 
         }catch(error){
             await conexion.rollback();

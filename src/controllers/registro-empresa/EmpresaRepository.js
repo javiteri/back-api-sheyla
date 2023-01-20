@@ -21,8 +21,9 @@ exports.getEmpresaByRuc = function (rucEmpresa, idEmpresa, nombreBd){
                 isSucess: true
             }
             
-            Object.keys(results[0]).forEach(function(key){
-                var row = results[0][key]
+            for(let index = 0; index < results[0].length; index++){
+                let row = results[0][index];
+
                 arrayData.push({
                     id: row.EMP_ID,
                     ruc: row.EMP_RUC,
@@ -39,9 +40,9 @@ exports.getEmpresaByRuc = function (rucEmpresa, idEmpresa, nombreBd){
                     direccionSucursal3: row.EMP_DIRECCION_SUCURSAL3,
                     propietario: row.EMP_PROPIETARIO,
                     comentarios: row.EMP_COMENTARIOS
-                })
-            });
-
+                });
+            }
+            
             datosEmpresaResponse['data'] = arrayData;
 
             resolve(datosEmpresaResponse);

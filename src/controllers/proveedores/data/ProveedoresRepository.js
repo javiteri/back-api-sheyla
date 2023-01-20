@@ -257,24 +257,23 @@ exports.deleteProveedor = async (idEmpresa, idProv, nombreBd) => {
             let queryDeleteProveedor = `DELETE FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_id = ? LIMIT 1`;
 
             let results = await pool.query(queryDeleteProveedor, [idEmpresa, idProv]);
-                const affectedRows = results[0].affectedRows;
-                if(affectedRows === 1){
-                    const deleteProveedorResponse = {
-                        'isSucess': true
-                    }
-    
-                    resolve(deleteProveedorResponse);
-                    return;
-
-                }else{
-                    reject({
-                        isSucess: false,
-                        code: 400,
-                        message: 'error al eliminar proveedor, reintente',
-                        duplicate: true
-                    });
-                    return;
+            const affectedRows = results[0].affectedRows;
+            if(affectedRows === 1){
+                const deleteProveedorResponse = {
+                    'isSucess': true
                 }
+    
+                resolve(deleteProveedorResponse);
+                return;
+            }else{
+                reject({
+                    isSucess: false,
+                    code: 400,
+                    message: 'error al eliminar proveedor, reintente',
+                    duplicate: true
+                });
+                return;
+            }
         }catch(error){
             console.log(error);
             reject({

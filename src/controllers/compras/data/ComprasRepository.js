@@ -105,18 +105,19 @@ exports.insertCompra = async (datosCompra) => {
             const idVentaGenerated = results[0].insertId;
     
             const arrayListCompraDetalle = Array.from(compraDetallesArray);
-            arrayListCompraDetalle.forEach(async (compraDetalle, index) => {
-        
+            for(let index = 0; index < arrayListCompraDetalle.length; index++){
+
+                let compraDetalle = arrayListCompraDetalle[index];
                 const {prodId, cantidad,iva,nombreProd,
-                        valorUnitario,descuento,valorTotal} = compraDetalle;
-                                        
+                    valorUnitario,descuento,valorTotal} = compraDetalle;
+                                    
                 await conexion.query(sqlQueryInsertCompraDetalle, [idVentaGenerated,prodId,
-                                cantidad,iva,nombreProd,valorUnitario,
-                                descuento,valorTotal]);
-                
+                                        cantidad,iva,nombreProd,valorUnitario,
+                                        descuento,valorTotal]);
+            
                 await conexion.query(isPlusInventario? sqlQueryUpdatePlusStockProducto : sqlQueryUpdateMinusStockProducto,
                                     [cantidad,empresaId,prodId]);
-                
+            
                 if(index == arrayListCompraDetalle.length - 1){
                     await conexion.commit();
                     conexion.release();
@@ -124,10 +125,10 @@ exports.insertCompra = async (datosCompra) => {
                     resolve({
                         isSuccess: true,
                         message: 'Compra insertada correctamente'
-                    })
+                    });
                     return;
                 }
-            });
+            }
             
         }catch(exp){            
             await conexion.rollback();
@@ -324,8 +325,9 @@ exports.deleteCompraByIdEmpresa = async (datos) => {
             let results = await conexion.query(sqlSelectDetalleCompra, [idCompra]);
 
             const listCompraDetalle = Array.from(results[0]);
-            listCompraDetalle.forEach(async (compraDetalle, index) => {
+            for(let index = 0; index < listCompraDetalle.length; index++){
 
+                let compraDetalle = listCompraDetalle[index];
                 const cantidad = compraDetalle.comprad_cantidad;
                 const prodId = compraDetalle.comprad_pro_id;
                             
@@ -343,7 +345,8 @@ exports.deleteCompraByIdEmpresa = async (datos) => {
                     })
 
                 }
-            });
+            }
+
         }catch(exception){
             await conexion.rollback();
             conexion.release();

@@ -40,8 +40,9 @@ exports.insertVenta = async (datosVenta) => {
             const idVentaGenerated = results[0].insertId;
 
             const arrayListVentaDetalle = Array.from(ventaDetallesArray);
-            arrayListVentaDetalle.forEach(async (ventaDetalle, index) => {
+            for(let index = 0; index < arrayListVentaDetalle.length; index++){
 
+                let ventaDetalle = arrayListVentaDetalle[index];
                 const {prodId, cantidad,iva,nombreProd,
                     valorUnitario,descuento,valorTotal} = ventaDetalle;
                     
@@ -62,12 +63,10 @@ exports.insertVenta = async (datosVenta) => {
                         ventaid: idVentaGenerated
                     })
                 }
-            });
+            }
             
         }catch(exp){
-            console.log('error insertando venta');
-            console.log(exp);
-            conexion.rollback();
+            await conexion.rollback();
             conexion.release();
 
             reject({
@@ -94,10 +93,10 @@ exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
             await conexion.query(sqlUpdateEstadoVenta, [estado,idVenta,idEmpresa]);
             let results = await conexion.query(sqlSelectDetalleVenta, [idVenta]);
 
-            console.log(results);
             const listVentaDetalle = Array.from(results[0]);
-                            
-            listVentaDetalle.forEach(async (ventaDetalle, index) => {
+            for(let index = 0; index < listVentaDetalle.length; index++){
+
+                let ventaDetalle = listVentaDetalle[index];
                 let cantidad = ventaDetalle.ventad_cantidad;
                 let prodId = ventaDetalle.ventad_prod_id;
                                 
@@ -112,11 +111,10 @@ exports.updateEstadoAnuladoVentaByIdEmpresa = async (datos) => {
                         message: 'Venta anulada correctamente'
                     })
                 }
-
-            });
+            }
 
         }catch(exp){
-            conexion.rollback();
+            await conexion.rollback();
             conexion.release();
             reject({
                 isSucess: false,
@@ -159,7 +157,10 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
                     })
 
                 }else{
-                    listVentaDetalle.forEach(async (ventaDetalle, index) => {
+                    for(let index = 0; index < listVentaDetalle.length; index++){
+                        
+                        let ventaDetalle = listVentaDetalle[index];
+
                         const cantidad = ventaDetalle.ventad_cantidad;
                         const prodId = ventaDetalle.ventad_prod_id;
                                     
@@ -178,8 +179,7 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
                             })
 
                         }
-
-                    });   
+                    } 
                 }
             }else{
                 await conexion.query(queryDeleteVentaByIdEmp, [idVenta, idEmpresa]);

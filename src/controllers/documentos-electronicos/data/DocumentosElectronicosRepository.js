@@ -46,7 +46,7 @@ exports.getNumDocByAutorizar = async(rucEmpresa) =>{
                                         FROM empresas WHERE EMPRESA_RUC = ?`;
             let resultPlan = await poolEFactra.query(queryPlanEnviados, [rucEmpresa]);
             
-            if(Object.entries(resultPlan[0]).length > 0){  
+            if(resultPlan[0].length > 0){  
                     
                 let planCantidad = Number(resultPlan[0][0].EMPRESA_WEB_PLAN_CANTIDAD);
                 let planEnviados = Number(resultPlan[0][0].EMPRESA_WEB_PLAN_ENVIADOS);
@@ -781,7 +781,6 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                 const responseSelectEmpresaAutorizacion = await poolEFactra.query(sqlQuerySelectEmpresa,[responseDatosEmpresa[0][0].EMP_RUC]);
                 const responsePlanEnviados = await poolEFactra.query(queryPlanEnviados, [responseDatosEmpresa[0][0].EMP_RUC]);
 
-                console.log(responsePlanEnviados);
                 if(responsePlanEnviados[0][0].isSucess == 1){
                     const responseXmlExist = await poolEFactra.query(sqlQueryExistXmlInsert,[claveActivacion]);
                     // SI EXISTE XML EN LA TABLA AUTORIZACIONES ENTONCES HACER OTRAS VALIDACIONES, CASO CONTRARIO SEGUIR CON LA INSERCION
@@ -791,7 +790,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                         // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
                         const queryUpdateFacAutorizacion = `DELETE FROM autorizaciones WHERE auto_clave_acceso = ?`;
                         const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
-                        console.log(responseXmlExist[0]);
+                        
                         if(responseXmlExist[0][0].auto_estado == 2){
 
                             await poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion]);

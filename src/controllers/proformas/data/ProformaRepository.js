@@ -36,8 +36,8 @@ exports.insertProforma = async (datosProforma) => {
             const idProformaGenerated = results[0].insertId;
 
             const arrayListProformaDetalle = Array.from(proformaDetallesArray);
-            arrayListProformaDetalle.forEach(async (proformaDetalle, index) => {
-
+            for(let index = 0; index < arrayListProformaDetalle; index++){
+                
                 const {prodId, cantidad,iva,nombreProd,valorUnitario,descuento,valorTotal} = proformaDetalle;
                     
                 await conexion.query(sqlQueryInsertProformaDetalle, [idProformaGenerated,prodId,
@@ -51,7 +51,7 @@ exports.insertProforma = async (datosProforma) => {
                         proformaId: idProformaGenerated
                     })
                 }
-            });            
+            }         
         }catch(exp){
             conexion.rollback();
             conexion.release();

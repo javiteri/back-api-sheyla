@@ -31,7 +31,7 @@ exports.insertCliente = async (datosCliente) => {
             
             let result = await pool.query(queryExistClient, [idEmpresa, documentoIdentidad]);
             
-            const cantClients = result[0].CANT;
+            const cantClients = result[0][0].CANT;
             if(cantClients >= 1){  
                 reject({
                     isSucess: false,
@@ -86,14 +86,14 @@ exports.importListClientes = async (listClientes, nombreBd, idEmpresa) => {
                 try{
                     let existClientResult = await pool.query(selectExistClient, [cliente.cli_documento_identidad, cliente.cli_empresa_id]);
                     
-                    const cantClients = existClientResult[0].CANT;
+                    const cantClients = existClientResult[0][0].CANT;
                     if(cantClients >= 1){
                         let clienteRes = cliente;
                         clienteRes.messageError = 'ya existe el cliente';
                         clienteRes.cli_error_server = true;
                         listClientsWithError.push(clienteRes);
                     }else{
-                        let responseInsertCliente = await pool.query(queryInsertUserDefaultEmpresa, [
+                        await pool.query(queryInsertUserDefaultEmpresa, [
                             idEmpresa, 'Ecuador', cliente.cli_documento_identidad, cliente.cli_tipo_documento_identidad, cliente.cli_nombres_natural,
                             cliente.cli_razon_social, cliente.cli_observacion, cliente.cli_fecha_nacimiento, cliente.cli_teleono, cliente.cli_celular,
                             cliente.cli_email, cliente.cli_direccion, cliente.cli_profesion
@@ -204,7 +204,7 @@ exports.updateCliente = async (datosClienteUpdate) => {
             
             let result = await pool.query(queryExistClient, [idEmpresa, documentoIdentidad]);
 
-            const cantClients = result[0].CANT;
+            const cantClients = result[0][0].CANT;
             if(cantClients == 0){
                 reject({
                     isSucess: false,
@@ -218,9 +218,7 @@ exports.updateCliente = async (datosClienteUpdate) => {
                 if(cantClients == 1){
                     
                     let result = await pool.query(queryUpdateClienteDefaultEmpresa, [nacionalidad, documentoIdentidad, tipoIdentificacion, nombreNatural, razonSocial, comentario,
-                        fechaNacimiento, telefonos, celular, email, direccion, profesion, idEmpresa, idCliente]);
-                    console.log('update cliente result');
-                    console.log(result);
+                                                    fechaNacimiento, telefonos, celular, email, direccion, profesion, idEmpresa, idCliente]);
 
                     let insertId = result[0].affectedRows;
                     let insertClienteResponse = {}
@@ -257,9 +255,10 @@ exports.deleteCliente = async (idEmpresa, idCliente, nombreBd) => {
     return new Promise(async (resolve, reject) => {
         try {
             let queryDeleteCliente = `DELETE FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND cli_id = ? LIMIT 1`;
-
+           
             let results = await pool.query(queryDeleteCliente, [idEmpresa, idCliente]);
             const affectedRows = results[0].affectedRows;
+            
             if(affectedRows === 1){
                 const deleteClienteResponse = {
                     'isSucess': true
@@ -278,6 +277,7 @@ exports.deleteCliente = async (idEmpresa, idCliente, nombreBd) => {
                 return;
             }
         }catch(error){
+            
             reject({
                 isSucess: false,
                 code: 400,

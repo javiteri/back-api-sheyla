@@ -8,7 +8,8 @@ exports.getInfoVentaDiaria = async (idEmpresa, fechaIni,fechaFin, nombreBd) => {
                                     venta_fecha_hora BETWEEN ? AND ? AND
                                     venta_anulado=0`
             
-            let results = await pool.query(querySelectVentaDiaria, [idEmpresa, fechaIni,fechaFin]);             
+            let results = await pool.query(querySelectVentaDiaria, [idEmpresa, fechaIni,fechaFin]);
+              
             resolve({
                 isSucess: true,
                 code: 200,
