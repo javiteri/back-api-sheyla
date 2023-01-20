@@ -208,4 +208,22 @@ router.post('/importlistventas', async (req, res) => {
     );
 });
 
+router.get('/gettemplateventasexcel', async(req, res) => {
+    const getTemplateVentasExcelPromise = ventasRepository.getTemplateVentasExcel(req.query.idEmp, req.query.nombreBd);
+
+    getTemplateVentasExcelPromise.then(
+        function (clientes){
+            res.download(clientes['pathFile'],((error) => {
+
+                fs.unlink(clientes['pathFile'], function(){
+                    console.log("File was deleted") // Callback
+                });
+            }));
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+});
+
 module.exports = router;

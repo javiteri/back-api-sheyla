@@ -886,3 +886,103 @@ function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noD
 }
 
 
+exports.getTemplateVentasExcel = async (idEmpresa, nombreBd) => {
+    return new Promise((resolve, reject) => {
+        try{
+            const valueResultPromise = createTemplateVentasExcel(idEmpresa, nombreBd);
+            valueResultPromise.then( 
+                function (data) {
+                    resolve(data);
+                },
+                function (error) {
+                    resolve(error);
+                }
+            );
+        }catch(exception){
+            reject('error creando excel');
+        }
+    });
+}
+
+function createTemplateVentasExcel(idEmp, nombreBd){
+
+    return new Promise((resolve, reject) => {
+        try{
+
+            const workBook = new excelJS.Workbook(); // Create a new workbook
+            const worksheet = workBook.addWorksheet("Lista Ventas");
+            const path = `./files/${idEmp}`;
+
+            worksheet.columns = [
+                {header: 'identificacion', key:'identificacion', width: 50},
+                {header: 'nombre', key:'nombre',width: 50},
+                {header: 'fecha', key:'pvp',width: 20},
+                {header: 'numeroventa', key:'numeroventa',width: 20},
+                {header: 'formapago', key:'formapago',width: 40},
+                {header: 'tipo_documento', key:'tipo_documento',width: 40},
+                {header: 'subtotal0', key:'subtotal0',width: 20},
+                {header: 'subtotal12', key:'subtotal12',width: 30},
+                {header: 'valortotal', key:'valortotal',width: 30},
+                {header: 'codigoproducto', key:'codigoproducto',width: 30},
+                {header: 'cantidad', key:'cantidad',width: 30},
+                {header: 'totaldetalle', key:'totaldetalle',width: 30},
+                {header: 'iva', key:'iva',width: 20}
+            ];
+
+            worksheet.getRow(1).eachCell((cell) => {
+                cell.font = {bold: true},
+                cell.border = {
+                    top: {style:'thin'},
+                    left: {style:'thin'},
+                    bottom: {style:'thin'},
+                    right: {style:'thin'}
+                }
+            });
+
+            try{
+
+                const nameFile = `/${Date.now()}_ventas_template.xlsx`;
+        
+                if(!fs.existsSync(`${path}`)){
+                    fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                        if (err) {
+                            return console.error(err);
+                        }
+        
+                        workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                            resolve({
+                                isSucess: true,
+                                message: 'archivo creado correctamente',
+                                pathFile: `${path}${nameFile}`
+                            });
+
+                        });
+                    });
+                }else{
+                    
+                    workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                        resolve({
+                            isSucess: true,
+                            message: 'archivo creado correctamente',
+                            pathFile: `${path}${nameFile}`
+                        });
+                    });
+                }
+        
+            }catch(exception){
+                reject({
+                    isSucess: false,
+                    error: 'error creando archivo, reintente'
+                });
+            }
+        }catch(exception){
+            reject({
+                isSucess: false,
+                error: 'error creando archivo plantilla, reintente'
+            });
+        }
+    });
+
+}
+
+
