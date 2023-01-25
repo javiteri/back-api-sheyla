@@ -1,4 +1,5 @@
-const PDFDocument = require('pdfkit');
+//const PDFDocument = require('pdfkit');
+const PDFDocument = require('pdfkit-table');
 const fs = require('fs');
 const util = require('util');
 const ftp = require("basic-ftp");
@@ -538,73 +539,52 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     //pdfDoc.rect(290,110,250,150).stroke();
 
     pdfDoc.text(`Razón Social / Nombres y Apellidos: ${datosCliente[0]['cli_nombres_natural']}`, 20, 315 );
-    pdfDoc.text(`Identificacion: ${datosCliente[0]['cli_documento_identidad']}`, 20, 330 );
-    pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20, 345);
-    pdfDoc.text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, 360);
+    pdfDoc.text(`Identificacion: ${datosCliente[0]['cli_documento_identidad']}`, 20 );
+    pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20);
+    pdfDoc.text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20);
 
     pdfDoc.rect(pdfDoc.x - 10, 320 - 10, 560, 80).stroke();
 }
 
 async function generateInvoiceTable(doc, datosVenta, datosCliente){
-  let i;
+  //let i;
   let invoiceTableTop = 420;
 
   doc.font("Helvetica-Bold");
- 
-  generateTableRow(
-    doc,
-    invoiceTableTop,
-    "Cod Principal",
-    "Descripcion",
-    "Cant",
-    "Precio Unitario",
-    "Precio Total"
-  );
 
-  generateHr(doc, invoiceTableTop + 15);
-  doc.font("Helvetica");
-
-  let index = 0;
-  let position = 0;
+  const listDetail = [];
   for (i = 0; i < datosVenta.listVentasDetalles.length; i++) {
 
-    const item = datosVenta.listVentasDetalles[i];
-    position = invoiceTableTop + (index + 1) * 30;
-    //position = invoiceTableTop + 1 * 30;
-    index++;
+    let item = datosVenta.listVentasDetalles[i];
 
-    if(position > 780){
-        index = 0
-        invoiceTableTop = 5;
-        position = invoiceTableTop + (index + 1) * 30;
-        //position = invoiceTableTop + 1 * 30;
-        index++;
-        doc.addPage();
-    }
-
-    const heightString = doc.heightOfString(item.ventad_producto,{width: 200});
-
-    generateTableRow1(
-        doc,
-        position,
-        item.prod_codigo,
-        item.ventad_producto,
-        item.ventad_cantidad,
-        formatCurrency(item.ventad_vu),
-        formatCurrency(item.ventad_vt)
-      );
-
-    generateHr(doc, position + (heightString - 10));
+    listDetail.push({
+        codigo: item.prod_codigo,
+        descripcion: item.ventad_producto,
+        cantidad: item.ventad_cantidad,
+        pu: formatCurrency(item.ventad_vu),
+        pt: formatCurrency(item.ventad_vt)
+    });
   }
 
-  if(position >= 600){
-    index = 0
-    invoiceTableTop = 5;
-    doc.addPage();
-  }
+  const table = {
+    headers: [ 
+      {label: "Cod Principal", property:'codigo', width: 95},
+      {label: "Descripcion", property:'descripcion', width: 180},
+      {label: "Cant", property:'cantidad', width: 95, align: "center"},
+      {label: "Precio Unitario", property:'pu', width: 95, align: "right"},
+      {label: "Precio Total", property:'pt', width: 95, align: "right"}
+    ],
 
-  const subtotalPosition = invoiceTableTop + (index + 1) * 30;
-  generateTableRow(
+    datas: listDetail
+  };
+
+  await doc.table(table,{
+    x: doc.x - 10,
+    y: invoiceTableTop
+  });
+
+  const subtotalPosition = doc.y + (1 + 1) * 10;
+  generateTableRow1(
     doc,
     subtotalPosition,
     "",
@@ -615,7 +595,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
   );
 
   const paidToDatePosition = subtotalPosition + 20;
-  generateTableRow(
+  generateTableRow1(
     doc,
     paidToDatePosition,
     "",
@@ -628,7 +608,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
   const duePosition = paidToDatePosition + 25;
 
   let subtotalSinImpuestos = (Number(datosVenta[0].venta_subtotal_0) + Number(datosVenta[0].venta_subtotal_12)).toString();
-  generateTableRow(
+  generateTableRow1(
     doc,
     duePosition,
     "",
@@ -653,7 +633,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
   doc.font("Helvetica");
 
   const iva12Position = duePosition + 30;
-  generateTableRow(
+  generateTableRow1(
     doc,
     iva12Position,
     "",
@@ -664,7 +644,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
   );
 
   const valorTotalPosition = iva12Position + 25;
-  generateTableRow(
+  generateTableRow1(
     doc,
     valorTotalPosition,
     "",
@@ -685,7 +665,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     let fontBold = 'Helvetica-Bold';
     pdfDoc.fontSize(9);
     
-    let ypositionzero = yposition + 20;
+    let ypositionzero = yposition;
     pdfDoc.font(fontBold).text('Informacion Adicional', 20, ypositionzero , {width: 250});
     let yposition1 = ypositionzero + 10;
     //pdfDoc.font(fontNormal).text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, yposition1 , {width: 250});
@@ -708,20 +688,20 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     if(datosVenta[0]['venta_observaciones'] && datosVenta[0]['venta_observaciones'].length > 0){
       pdfDoc.text(`Obs: ${datosVenta[0]['venta_observaciones']}`, {width: 250});
     }
-    pdfDoc.rect(pdfDoc.x - 10,yposition + 30,280, 100).stroke();
+    pdfDoc.rect(pdfDoc.x - 10,yposition - 5,280, 130).stroke();
 
     pdfDoc.lineCap('butt')
-    .moveTo(210, yposition6 + 50)
-    .lineTo(210, yposition6 + 90)
+    .moveTo(210, yposition6 + 60)
+    .lineTo(210, yposition6 + 100)
     .stroke()
   
-    row(pdfDoc, yposition6 + 50);
-    row(pdfDoc, yposition6 + 70);
+    row(pdfDoc, yposition6 + 60);
+    row(pdfDoc, yposition6 + 80);
 
-    textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 60);
-    textInRowFirstValor(pdfDoc,'Valor', yposition6 + 60);
-    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total), yposition6 + 80)
-    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosVenta[0].venta_forma_pago),yposition6 + 80);
+    textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 70);
+    textInRowFirstValor(pdfDoc,'Valor', yposition6 + 70);
+    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total), yposition6 + 90)
+    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosVenta[0].venta_forma_pago),yposition6 + 90);
     
     //textInRowFirst(pdfDoc, yposition6 + 60);
 }
@@ -815,17 +795,13 @@ function generateTableRow1(
   quantity,
   lineTotal
 ) {
-  //let descriptionCut = (description.length > 60)? description.slice(0,59)  : description;
-  let yAxisValue = y - 11;
 
-  doc
-    .fontSize(8)
-    .text(item, 20, yAxisValue)
-    .text(description, 150, yAxisValue ,{ width: 200})
-    .text(unitCost, 280, yAxisValue, { width: 90, align: "right" })
-    .text(quantity, 370, yAxisValue, { width: 90, align: "right" })
-    .text(lineTotal, 0, yAxisValue, { align: "right" });
-
+  doc.fontSize(10)
+      .text(item, 20, y)
+      .text(description, 150, y,{ width: 200})
+      .text(unitCost, 280, y, { width: 90, align: "right" })
+      .text(quantity, 370, y, { width: 90, align: "right" })
+      .text(lineTotal, 0, y, { align: "right" });
 }
 
 

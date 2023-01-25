@@ -1,8 +1,8 @@
 const pdfVentaFactura = require('./PDFVentaFactura');
 const pdfVentaFacturaGeneric = require('./PDFVentaFacturaGeneric');
 
-exports.generatePdfFromVenta = (datosEmpresa, datosCliente, 
-                                datosVenta, isPdfNormal, datosConfig, responseDatosEstablecimiento) => {
+exports.generatePdfFromVenta = (datosEmpresa, datosCliente, datosVenta, isPdfNormal, datosConfig,
+                                 responseDatosEstablecimiento) => {
 
     return new Promise((resolve, reject) => {
         try{

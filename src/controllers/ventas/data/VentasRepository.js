@@ -228,9 +228,10 @@ exports.getListVentasByIdEmpresa = async (idEmp, nombreOrCiRuc, noDoc, fechaIni,
                                          AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND 
                                          CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ?
                                          AND  venta_fecha_hora  BETWEEN ? AND ? ORDER BY venta_id DESC`;
+
             let results = await pool.query(queryGetListaVentas, 
-                [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc+"%", 
-                fechaIni+" 00:00:00",fechaFin+" 23:59:59"]); 
+                                            [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc+"%", 
+                                              fechaIni+" 00:00:00",fechaFin+" 23:59:59"]);
             
             resolve({
                 isSucess: true,
