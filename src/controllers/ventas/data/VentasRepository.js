@@ -509,8 +509,8 @@ exports.importListVentas = async (listVentas, nombreBd, idEmpresa) => {
             // SI TODO ESTA CORRECTO SEGUIR CON LA INSERCION DEL DETALLE DE LA VENTA
             // INSERT VENTA DETALLE CON EL ID DE LA VENTA RECIBIDO
             // EN CADA VENTA DETALLE SE DEBE BAJAR EL STOCK DEL PRODUCTO CORRESPONDIENTE
-            const sqlQueryExistClient = `SELECT cli_id AS ID FROM ${nombreBd}.clientes WHERE cli_documento_identidad = ?`;
-            const sqlQueryExistProduct = `SELECT * FROM ${nombreBd}.productos WHERE prod_codigo = ?`;
+            const sqlQueryExistClient = `SELECT cli_id AS ID FROM ${nombreBd}.clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ? LIMIT 1`;
+            const sqlQueryExistProduct = `SELECT * FROM ${nombreBd}.productos WHERE prod_codigo = ? AND prod_empresa_id = ? LIMIT 1`;
 
             const sqlQueryInsertVenta = `INSERT INTO ${nombreBd}.ventas (venta_empresa_id,venta_tipo, 
                                         venta_001,venta_002,venta_numero,venta_fecha_hora,venta_usu_id,venta_cliente_id, 
@@ -532,7 +532,7 @@ exports.importListVentas = async (listVentas, nombreBd, idEmpresa) => {
                 try{
                     await conexion.beginTransaction();
 
-                    let cliente = await conexion.query(sqlQueryExistClient, [datosVenta.cc_ruc_pasaporte]);
+                    let cliente = await conexion.query(sqlQueryExistClient, [datosVenta.cc_ruc_pasaporte, idEmpresa]);
 
                     let idCliente = 0;
                     if(cliente[0].length > 0){
@@ -557,7 +557,7 @@ exports.importListVentas = async (listVentas, nombreBd, idEmpresa) => {
 
                     for(const ventaDetalle of listVentaDetalle){
                         //VERIFICAR SI EXISTE EL PRODUCTO 
-                        let resultProducto = await conexion.query(sqlQueryExistProduct, ventaDetalle.codigoproducto);
+                        let resultProducto = await conexion.query(sqlQueryExistProduct, [ventaDetalle.codigoproducto, idEmpresa]);
                         if(resultProducto[0].length <= 0){
                             throw new Error('El producto no existe');
                         }

@@ -1,4 +1,4 @@
-const PDFDocument = require('pdfkit');
+const PDFDocument = require('pdfkit-table');
 const fs = require('fs');
 const util = require('util');
 const ftp = require("basic-ftp");
@@ -102,62 +102,41 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
   let invoiceTableTop = 330;
 
   doc.font("Helvetica-Bold");
- 
-  generateTableRow(
-    doc,
-    invoiceTableTop,
-    "Cod Principal",
-    "Descripcion",
-    "Cant",
-    "Precio Unitario",
-    "Precio Total"
-  );
+  
+  const listDetail = [];
+  for(i = 0; i < datosProforma.listProformasDetalles.length; i++){
 
-  generateHr(doc, invoiceTableTop + 10);
-  doc.font("Helvetica");
+    let item = datosProforma.listProformasDetalles[i];
 
-  let index = 0;
-  let position = 0;
-    
-  for (i = 0; i < datosProforma.listProformasDetalles.length; i++) {
-
-    const item = datosProforma.listProformasDetalles[i];
-    position = invoiceTableTop + (index + 1) * 30;
-
-    index++;
-
-    if(position > 780){
-        index = 0
-        invoiceTableTop = 5;
-        position = invoiceTableTop + (index + 1) * 30;
-        index++;
-        doc.addPage();
-    }
-
-    const heightString = doc.heightOfString(item.profd_producto,{width: 200});
-
-    generateTableRow1(
-        doc,
-        position,
-        item.prod_codigo,
-        item.profd_producto,
-        item.profd_cantidad,
-        formatCurrency(item.profd_vu),
-        formatCurrency(item.profd_vt)
-      );
-
-    
-    generateHr(doc, position + (heightString - 10));
+    listDetail.push({
+      codigo: item.prod_codigo,
+      descripcion: item.profd_producto,
+      cantidad: item.profd_cantidad,
+      pu: formatCurrency(item.profd_vu),
+      pt: formatCurrency(item.profd_vt)
+    });
   }
 
-  if(position >= 600){
-    index = 0
-    invoiceTableTop = 5;
-    doc.addPage();
-}
+
+  const table = {
+    headers: [ 
+      {label: "Cod Principal", property:'codigo', width: 95},
+      {label: "Descripcion", property:'descripcion', width: 180},
+      {label: "Cant", property:'cantidad', width: 95, align: "center"},
+      {label: "Precio Unitario", property:'pu', width: 95, align: "right"},
+      {label: "Precio Total", property:'pt', width: 95, align: "right"}
+    ],
+
+    datas: listDetail
+  };
+
+  await doc.table(table,{
+    x: doc.x - 10,
+    y: invoiceTableTop
+  });
 
 
-  const subtotalPosition = invoiceTableTop + (index + 1) * 30;
+  const subtotalPosition = doc.y + (1 + 1) * 10;
   
   generateTableRow(
     doc,

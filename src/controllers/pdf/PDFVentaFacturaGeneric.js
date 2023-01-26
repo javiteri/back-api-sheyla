@@ -1,4 +1,4 @@
-const PDFDocument = require('pdfkit');
+const PDFDocument = require('pdfkit-table');
 const fs = require('fs');
 const ftp = require("basic-ftp");
 const util = require('util');
@@ -148,61 +148,39 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
   let invoiceTableTop = 420;
 
   doc.font("Helvetica-Bold");
- 
-  generateTableRow(
-    doc,
-    invoiceTableTop,
-    "Cod Principal",
-    "Descripcion",
-    "Cant",
-    "Precio Unitario",
-    "Precio Total"
-  );
-
-  generateHr(doc, invoiceTableTop + 10);
-  doc.font("Helvetica");
-
-  let index = 0;
-  let position = 0;
+  
+  const listDetail = [];
   for (i = 0; i < datosVenta.listVentasDetalles.length; i++) {
 
-    const item = datosVenta.listVentasDetalles[i];
-    position = invoiceTableTop + (index + 1) * 30;
+    let item = datosVenta.listVentasDetalles[i];
 
-    index++;
-
-    if(position > 780){
-        index = 0
-        invoiceTableTop = 5;
-        position = invoiceTableTop + (index + 1) * 30;
-        index++;
-        doc.addPage();
-    }
-
-    const heightString = doc.heightOfString(item.ventad_producto,{width: 200});
-
-    generateTableRow1(
-        doc,
-        position,
-        item.prod_codigo,
-        item.ventad_producto,
-        item.ventad_cantidad,
-        formatCurrency(item.ventad_vu),
-        formatCurrency(item.ventad_vt)
-      );
-
-    
-    generateHr(doc, position + (heightString - 10));
+    listDetail.push({
+        codigo: item.prod_codigo,
+        descripcion: item.ventad_producto,
+        cantidad: item.ventad_cantidad,
+        pu: formatCurrency(item.ventad_vu),
+        pt: formatCurrency(item.ventad_vt)
+    });
   }
 
-  if(position >= 600){
-    index = 0
-    invoiceTableTop = 5;
-    doc.addPage();
-}
+  const table = {
+    headers: [ 
+      {label: "Cod Principal", property:'codigo', width: 95},
+      {label: "Descripcion", property:'descripcion', width: 180},
+      {label: "Cant", property:'cantidad', width: 95, align: "center"},
+      {label: "Precio Unitario", property:'pu', width: 95, align: "right"},
+      {label: "Precio Total", property:'pt', width: 95, align: "right"}
+    ],
 
+    datas: listDetail
+  };
 
-  const subtotalPosition = invoiceTableTop + (index + 1) * 30;
+  await doc.table(table,{
+    x: doc.x - 10,
+    y: invoiceTableTop
+  });
+
+  const subtotalPosition = doc.y + (1 + 1) * 10;
   
   generateTableRow(
     doc,
@@ -275,7 +253,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
 
     pdfDoc.fontSize(9);
     
-    let ypositionzero = yposition + 20;
+    let ypositionzero = yposition;
     pdfDoc.font(fontBold).text('Informacion Adicional', 20, ypositionzero , {width: 250});
     let yposition1 = ypositionzero + 10;
     pdfDoc.font(fontNormal).text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, yposition1 , {width: 250});
@@ -290,7 +268,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     let yposition6 = yposition5 + 10;
     pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
 
-    pdfDoc.rect(pdfDoc.x - 10,yposition + 30,280, 100).stroke();
+    pdfDoc.rect(pdfDoc.x - 10,yposition -5,280, 100).stroke();
 
 
     pdfDoc.lineCap('butt')

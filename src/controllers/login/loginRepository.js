@@ -108,7 +108,7 @@ exports.loginAndValidateEmp = function(ruc, username, password){
 
                     let queryEmpresas = `SELECT * FROM ${dbName}.empresas WHERE emp_ruc = ? LIMIT 1`;
                     let query = `SELECT * FROM ${dbName}.usuarios WHERE usu_username = ? AND usu_password = ? AND usu_empresa_id = ? LIMIT 1`;
-                        
+                    
                     let resultEmpresa = await poolMysql.query(queryEmpresas, [ruc]); 
                     
                     if(!resultEmpresa[0] | resultEmpresa[0] == undefined | resultEmpresa[0] == null | !resultEmpresa[0].length){
@@ -118,12 +118,9 @@ exports.loginAndValidateEmp = function(ruc, username, password){
 
                     let idEmpresa = resultEmpresa[0][0].EMP_ID;
                     let nombreEmpresa = resultEmpresa[0][0].EMP_NOMBRE;
-                    /*Object.keys(resultEmpresa[0]).forEach(function(key) {
-                        idEmpresa = resultEmpresa[0][key].EMP_ID;
-                        nombreEmpresa = resultEmpresa[0][key].EMP_NOMBRE;
-                    });*/
 
-                    let results = await poolMysql.query(query, [username, password, idEmpresa]);
+
+                    let results = await poolMysql.query(query,[username, password, idEmpresa]);
 
                     if(!results[0] | results[0] == undefined | results[0] == null | !results[0].length){
                         resolve({
@@ -135,11 +132,6 @@ exports.loginAndValidateEmp = function(ruc, username, password){
                     
                     let idUsuario = results[0][0].usu_id;
                     let nombreUsuario = results[0][0].usu_nombres;
-                    /*Object.keys(results[0]).forEach(function(key){
-                        let row = results[0][key]
-                        idUsuario = row.usu_id;
-                        nombreUsuario = row.usu_nombres;
-                    });*/
 
                     resolve({
                         isSuccess: true,

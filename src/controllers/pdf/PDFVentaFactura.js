@@ -137,7 +137,6 @@ async function generateHeaderPDFByXmlData(pdfDoc,datosFactura){
 
 async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
 
-  let infoAdicional = datosFactura['infoAdicional'];
   let infoFactura = datosFactura['infoFactura'];
   let listDetalle = (datosFactura['detalles'].length == undefined)? [datosFactura['detalles']] : datosFactura['detalles'];
 
@@ -151,7 +150,39 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
 
   doc.font("Helvetica-Bold");
  
-  generateTableRow(
+  const listDetail = [];
+  for (i = 0; i < listDetalle.length; i++) {
+    let item = listDetalle[i];
+
+    listDetail.push({
+      codigo: item.codigoPrincipal,
+      descripcion: removeAccentDiactricsFromString(item.descripcion),
+      cantidad: item.cantidad,
+      pu: formatCurrency(item.precioUnitario),
+      pt: formatCurrency(item.precioTotalSinImpuesto)
+    });
+
+  }
+
+
+  const table = {
+    headers: [ 
+      {label: "Cod Principal", property:'codigo', width: 95},
+      {label: "Descripcion", property:'descripcion', width: 180},
+      {label: "Cant", property:'cantidad', width: 95, align: "center"},
+      {label: "Precio Unitario", property:'pu', width: 95, align: "right"},
+      {label: "Precio Total", property:'pt', width: 95, align: "right"}
+    ],
+
+    datas: listDetail
+  };
+
+  await doc.table(table,{
+    x: doc.x - 10,
+    y: invoiceTableTop
+  });
+
+  /*generateTableRow(
     doc,
     invoiceTableTop,
     "Cod Principal",
@@ -210,10 +241,10 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     }else{
       valorSubtotal0 = elemento.baseImponible;
     }
-  });
+  });*/
 
 
-  const subtotalPosition = invoiceTableTop + (index + 1) * 30;
+  const subtotalPosition = doc.y + (1 + 1) * 10;;
   generateTableRow(
     doc,
     subtotalPosition,
@@ -249,20 +280,9 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
   );
 
 
-  const icePosition = duePosition + 25;
-  generateTableRow(
-    doc,
-    icePosition,
-    "",
-    "",
-    "ICE",
-    "",
-    formatCurrency(0.00)
-  );
-
   doc.font("Helvetica");
 
-  const iva12Position = icePosition + 25;
+  const iva12Position = duePosition + 25;
   generateTableRow(
     doc,
     iva12Position,
@@ -337,7 +357,7 @@ function getFormaPagoByCodigo(codigoFormaPago){
   }
 }
 
-function removeAccentDiactricsFromString(texto){    
+function removeAccentDiactricsFromString(texto){
   let textoNormlizeAccent = texto.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   let textoFinal = textoNormlizeAccent.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '')
 
@@ -691,17 +711,17 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     pdfDoc.rect(pdfDoc.x - 10,yposition - 5,280, 130).stroke();
 
     pdfDoc.lineCap('butt')
-    .moveTo(210, yposition6 + 60)
-    .lineTo(210, yposition6 + 100)
+    .moveTo(210, yposition6 + 50)
+    .lineTo(210, yposition6 + 90)
     .stroke()
   
-    row(pdfDoc, yposition6 + 60);
-    row(pdfDoc, yposition6 + 80);
+    row(pdfDoc, yposition6 + 50);
+    row(pdfDoc, yposition6 + 70);
 
-    textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 70);
-    textInRowFirstValor(pdfDoc,'Valor', yposition6 + 70);
-    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total), yposition6 + 90)
-    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosVenta[0].venta_forma_pago),yposition6 + 90);
+    textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 60);
+    textInRowFirstValor(pdfDoc,'Valor', yposition6 + 60);
+    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total), yposition6 + 80)
+    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosVenta[0].venta_forma_pago),yposition6 + 80);
     
     //textInRowFirst(pdfDoc, yposition6 + 60);
 }
