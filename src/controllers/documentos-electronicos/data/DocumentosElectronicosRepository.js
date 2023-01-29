@@ -790,7 +790,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                         // SE VERIFICA SI YA SE AUTORIZO O SIGUE EN ERROR
                         const queryUpdateFacAutorizacion = `DELETE FROM autorizaciones WHERE auto_clave_acceso = ?`;
                         const queryUpdateVentaEstado = `UPDATE ${nombreBd}.ventas SET venta_electronica_estado = ?, venta_electronica_observacion = ? WHERE venta_id = ?`;
-                        
+
                         if(responseXmlExist[0][0].auto_estado == 2){
 
                             await poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion]);
@@ -803,7 +803,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
 
                             prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo, nombreBd);
 
-                        }else if(responseXmlExist[0].auto_estado == 1){
+                        }else if(responseXmlExist[0][0].auto_estado == 1){
 
                             // YA SE AUTORIZO EL DOCUMENTO DEBO ACTUALIZAR ESE ESTADO EN LA VENTA
                             await pool.query(queryUpdateVentaEstado,[2,responseXmlExist[0][0].auto_mensaje,idVentaCompra]);
