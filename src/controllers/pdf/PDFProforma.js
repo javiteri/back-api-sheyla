@@ -160,6 +160,8 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
   );
 
   const duePosition = paidToDatePosition + 25;
+  let subtotalSinImpuestos = (Number(datosProforma[0].prof_subtotal_0) + Number(datosProforma[0].prof_subtotal_12)).toString();
+
   generateTableRow(
     doc,
     duePosition,
@@ -167,7 +169,7 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     "",
     "Subtotal Sin Impuestos",
     "",
-    formatCurrency(0.00)
+    formatCurrency(subtotalSinImpuestos)
   );
 
 
@@ -318,39 +320,10 @@ function generateTableRow(
       .text(description, 150, y)
       .text(unitCost, 280, y, { width: 90, align: "right" })
       .text(quantity, 370, y, { width: 90, align: "right" })
-      .text(lineTotal, 0, y, { align: "right" });
+      .text(lineTotal, doc.page.width - 115, y, {width: 90 , align: "right" });
 
 }
 
-function generateTableRow1(
-  doc,
-  y,
-  item,
-  description,
-  unitCost,
-  quantity,
-  lineTotal
-) {
-  let yAxisValue = y - 11;
-
-  doc
-    .fontSize(8)
-    .text(item, 20, yAxisValue)
-    .text(description, 150, yAxisValue ,{ width: 200})
-    .text(unitCost, 280, yAxisValue, { width: 90, align: "right" })
-    .text(quantity, 370, yAxisValue, { width: 90, align: "right" })
-    .text(lineTotal, 0, yAxisValue, { align: "right" });
-
-}
-
-function generateHr(doc, y) {
-    doc
-      .strokeColor("#aaaaaa")
-      .lineWidth(1)
-      .moveTo(20, y)
-      .lineTo(550, y)
-      .stroke();
-}
 
 function formatCurrency(cents) {
     //return "$" + (cents / 100).toFixed(2);
