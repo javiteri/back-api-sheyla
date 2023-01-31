@@ -711,17 +711,17 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     pdfDoc.rect(pdfDoc.x - 10,yposition - 5,280, 130).stroke();
 
     pdfDoc.lineCap('butt')
-    .moveTo(210, yposition6 + 50)
-    .lineTo(210, yposition6 + 90)
+    .moveTo(210, yposition6 + 60)
+    .lineTo(210, yposition6 + 100)
     .stroke()
   
-    row(pdfDoc, yposition6 + 50);
-    row(pdfDoc, yposition6 + 70);
+    row(pdfDoc, yposition6 + 60);
+    row(pdfDoc, yposition6 + 80);
 
-    textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 60);
-    textInRowFirstValor(pdfDoc,'Valor', yposition6 + 60);
-    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total), yposition6 + 80)
-    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosVenta[0].venta_forma_pago),yposition6 + 80);
+    textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 70);
+    textInRowFirstValor(pdfDoc,'Valor', yposition6 + 70);
+    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total), yposition6 + 90)
+    textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosVenta[0].venta_forma_pago),yposition6 + 90);
     
     //textInRowFirst(pdfDoc, yposition6 + 60);
 }
