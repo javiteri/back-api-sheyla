@@ -821,7 +821,7 @@ function generateTableRow1(
       .text(description, 150, y,{ width: 200})
       .text(unitCost, 280, y, { width: 90, align: "right" })
       .text(quantity, 370, y, { width: 90, align: "right" })
-      .text(lineTotal, 0, y, { align: "right" });
+      .text(lineTotal, doc.page.width - 115, y, { width: 90, align: "right" });
 }
 
 
