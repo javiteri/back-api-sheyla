@@ -702,7 +702,7 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
             const responseDatosCliente = await pool.query(sqlQuerySelectClienteByIdEmp, [identificacionClienteProv,idEmp]);
             const responseDatosVenta = await pool.query(sqlQuerySelectVentaByIdEmp, [idVentaCompra,idEmp]);
             const responseDatosVentaDetalles = await pool.query(sqlQuerySelectVentaDetallesByIdVenta, [idVentaCompra]);
-            const responseDatosEstablecimiento = await pool.query(sqlQuerySelectDatosEstablecimiento, [idEmp, responseDatosVenta[0].venta_001]);
+            const responseDatosEstablecimiento = await pool.query(sqlQuerySelectDatosEstablecimiento, [idEmp, responseDatosVenta[0][0].venta_001]);
 
             // GENERATE PDF WHIT DATA                            
             responseDatosVenta[0]['listVentasDetalles'] = responseDatosVentaDetalles[0];
