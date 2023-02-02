@@ -303,8 +303,7 @@ exports.getOrCreateConsFinalByIdEmp = async (idEmp, nombreBd) => {
 
             const responseConsumidorFinal = await pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`]);
             
-            if(!responseConsumidorFinal[0] | responseConsumidorFinal[0] == undefined | responseConsumidorFinal[0] == null){
-
+            if(responseConsumidorFinal[0].length == 0){
                 const respInsertDefaultConsumidorFinal = await pool.query(insertDefaultConsumidorFinal, [idEmp,'Ecuador','9999999999','CI',
                                                                             'CONSUMIDOR FINAL','0999999999',consumidorFinalName] );
 
