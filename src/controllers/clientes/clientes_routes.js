@@ -48,6 +48,19 @@ router.get('/', async (req, res) => {
     res.send(responseObj);
 }) 
 
+router.get('/getDatosClienteRucPhp', async (req, res) => {
+    const clienteData = clienteRepository.getDatosClienteByRucPhp(req.query.ruc);
+
+    clienteData.then(
+        function (datosCliente){
+            res.status(200).send(datosCliente);
+        },
+        function(error){
+            res.status(400).send(error);
+        }
+    );
+})
+
 router.get('/getClienteIdEmp', async (req, res) => {
     const clienteByIdEmp = clienteRepository.getClienteByIdEmp(req.query.idCliente, req.query.idEmp, req.query.nombreBd);
 

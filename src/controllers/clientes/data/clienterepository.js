@@ -1,6 +1,43 @@
 const pool = require('../../../connectiondb/mysqlconnection')
 const excelJS = require("exceljs");
 const fs = require('fs');
+const httpClient = require('http');
+
+exports.getDatosClienteByRucPhp = async(ruc) => {
+    return new Promise(async (resolve, reject) => {
+        
+        try{
+             // HACER UN REQUEST A http://sheyla2.dyndns.info/sheylaweb/VALIDAR_EMPRESA.php?SERIE=1718792656001
+             //https://sheyla.net/SRI/SRI.php
+             let options = {
+                host: 'sheyla.net',
+                path: `/SRI/SRI.php?ruc=${ruc}&actualizado=Y`
+            };
+
+            const callback = function(response){
+                let str = '';
+
+                //another chunk of data has been received, so append it to `str`
+                response.on('data', function (chunk) {
+                    str += chunk;
+                });
+
+                response.on('end', function () {
+                    console.log(str.trim());
+                    resolve({
+                        isSucess: true,
+                        data: str.trim()
+                    });
+                });
+            }
+
+            httpClient.request(options, callback).end();
+
+        }catch(error){
+            reject(error);
+        }
+    }); 
+}
 
 exports.getListClientes = async (limit) => {
     return new Promise(async (resolve, reject) => {
