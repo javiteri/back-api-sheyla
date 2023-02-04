@@ -1,6 +1,6 @@
-var express = require('express');
-var router = express.Router();
-var fs = require('fs');
+const express = require('express');
+const router = express.Router();
+const {deleteFile} = require('../../util/sharedfunctions');
 const usuarioRepository = require('./data/UsuariosRepository');
 
 
@@ -91,14 +91,8 @@ router.get('/getlistusersexcel', async(req, res) => {
 
     getListUserExcelPromise.then(
         function (clientes){
-            //res.status(200).send(clientes);
-            console.log(clientes['pathFile']);
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
-
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){

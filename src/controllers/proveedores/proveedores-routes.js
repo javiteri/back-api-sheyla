@@ -1,6 +1,6 @@
-var express = require('express');
-var router = express.Router();
-const fs = require('fs');
+const express = require('express');
+const router = express.Router();
+const {deleteFile} = require('../../util/sharedfunctions');
 const proveedoresRepository = require('./data/ProveedoresRepository');
 
 router.get('/getProveedoresByIdEmp', async (req, res) => {
@@ -109,10 +109,7 @@ router.get('/getlistproveedoresexcel', async(req, res) => {
     getListClientesExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){
@@ -127,10 +124,7 @@ router.get('/gettemplateproveedoressexcel', async(req, res) => {
     getTemplateProveedoresExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){

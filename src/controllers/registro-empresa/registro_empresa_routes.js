@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const empresaRepository = require('./EmpresaRepository');
-const fs = require('fs');
+const {deleteFile} = require('../../util/sharedfunctions');
 
 router.post('/getEmpresaByRuc', async (req, res, next) =>{
 
@@ -47,10 +47,7 @@ router.get('/getimagenlogobyrucempresa', async(req, res, next) =>{
     getImageLogoByRucEmpresa.then(
         function(data){
             res.download(data['path'],((error) => {
-
-                fs.unlink(data['path'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(data['path']);
             }));
         },
         function(error){

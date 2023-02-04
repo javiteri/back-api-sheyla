@@ -1,7 +1,6 @@
 const express = require('express')
 const router = express.Router()
-var fs = require('fs');
-
+const {deleteFile} = require('../../util/sharedfunctions');
 const ventasRepository = require('./data/VentasRepository');
 
 router.post('/insertar', async (req, res, next) => {
@@ -156,10 +155,7 @@ router.get('/getlistventasexcel', async(req, res) => {
                 return;
             }
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){
@@ -182,10 +178,7 @@ router.get('/getlistresumenventasexcel', async(req, res) => {
     getListaVentasExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){
@@ -214,10 +207,7 @@ router.get('/gettemplateventasexcel', async(req, res) => {
     getTemplateVentasExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){

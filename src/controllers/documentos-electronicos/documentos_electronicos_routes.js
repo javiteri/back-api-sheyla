@@ -1,6 +1,6 @@
-var express = require('express');
-var router = express.Router();
-const fs = require('fs');
+const express = require('express');
+const router = express.Router();
+const {deleteFile} = require('../../util/sharedfunctions');
 const documentosElectronicosRepository = require('./data/DocumentosElectronicosRepository');
 
 router.get('/getlistdocumentoselectronicos', async (req, res) => {
@@ -39,9 +39,7 @@ router.get('/generatepdffromventa', async(req, res) => {
             res.download(response['generatePath'],((error) => {
                 if(error){
                 }
-                fs.unlink(response['generatePath'], function(){
-                    console.log("File was deleted")
-                });
+                deleteFile(response['generatePath']);
             }));
 
         },
@@ -58,15 +56,10 @@ router.get('/getlistdocumentoselectronicosexcel', async(req, res) => {
     getListDocElectronicosExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){
-            console.log('error');
-            console.log(error);
             res.status(400).send(error);
         }
     );

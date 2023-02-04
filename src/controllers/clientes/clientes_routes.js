@@ -1,7 +1,8 @@
 let express = require('express');
 let router = express.Router();
-let fs = require('fs');
+const {deleteFile} = require('../../util/sharedfunctions');
 const clienteRepository = require('./data/clienterepository')
+
 
 /* GET clientes data. */
 router.get('/', async (req, res) => {
@@ -164,10 +165,7 @@ router.get('/getlistclientesexcel', async(req, res) => {
     getListClientesExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){
@@ -182,10 +180,7 @@ router.get('/gettemplateclientesexcel', async(req, res) => {
     getTemplateClientesExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){

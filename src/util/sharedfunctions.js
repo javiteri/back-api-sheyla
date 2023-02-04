@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const codDoc = [
     {
         nombre: 'Factura',
@@ -108,3 +110,22 @@ exports.getFormaDePagoRide = (formaPago) => {
         return 'OTROS CON UTILIZACION SISTEMA FINANCIERO';
     }
 }
+
+exports.deleteFile = async (filePath) => {
+    return new Promise((resolve, reject) => {
+        try{
+            fs.unlink(filePath, (err) => {
+                resolve('todo ok');
+            });
+        }catch(exception){}
+    });
+};
+
+exports.checkFileIfExists = async(filePath) => {
+    try{
+        await fs.promises.access(filePath);
+        return true;
+    }catch(error){
+        return false
+    }
+};

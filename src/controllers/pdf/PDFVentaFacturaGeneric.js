@@ -102,9 +102,7 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
     }
 
     if(pathImagen.includes('filesTMP')){
-      fs.unlink(pathImagen, function(){
-        console.log('imagen, eliminada');
-      });
+      sharedFunctions.deleteFile(pathImagen);
     }
 
     pdfDoc.fontSize(9);

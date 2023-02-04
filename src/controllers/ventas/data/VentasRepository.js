@@ -3,7 +3,6 @@ const excelJS = require("exceljs");
 const fs = require('fs');
 const sharedFunctions = require('../../../util/sharedfunctions');
 
-
 exports.insertVenta = async (datosVenta) => {
 
     return new Promise(async (resolve, reject) => {
@@ -167,7 +166,7 @@ exports.deleteVentaEstadoAnuladoByIdEmpresa = async (datos) => {
                         await conexion.query(sqlQueryUpdateStockProducto,[cantidad,idEmpresa,prodId]);
 
                         if(index == listVentaDetalle.length - 1){
-                            console.log('inside finally');
+                            
                             await conexion.query(queryDeleteVentaByIdEmp, [idVenta,idEmpresa]);
 
                             await conexion.commit();
@@ -866,9 +865,7 @@ function createExcelFileResumenVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noD
                     }
             
                 }catch(exception){
-                    console.log(`exception`);
-                    console.log(exception);
-            
+        
                     reject({
                         isSucess: false,
                         error: 'error creando archivo, reintente'
@@ -984,5 +981,3 @@ function createTemplateVentasExcel(idEmp, nombreBd){
     });
 
 }
-
-
