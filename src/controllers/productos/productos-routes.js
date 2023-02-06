@@ -1,6 +1,6 @@
-let express = require('express');
-let router = express.Router();
-let fs = require('fs');
+const express = require('express');
+const router = express.Router();
+const {deleteFile} = require('../../util/sharedfunctions');
 const productosRepository = require('./data/ProductosRepository');
 
 
@@ -158,10 +158,7 @@ router.get('/getlistproductosexcel', async(req, res) => {
     getListProductosExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){
@@ -176,10 +173,7 @@ router.get('/gettemplateproductosexcel', async(req, res) => {
     getTemplateProductosExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){

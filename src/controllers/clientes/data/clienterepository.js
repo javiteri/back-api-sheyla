@@ -23,7 +23,6 @@ exports.getDatosClienteByRucPhp = async(ruc) => {
                 });
 
                 response.on('end', function () {
-                    console.log(str.trim());
                     resolve({
                         isSucess: true,
                         data: str.trim()

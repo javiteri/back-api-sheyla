@@ -26,14 +26,10 @@ router.post('/insertfilefirmaelec',async (req, res) => {
             
             if(response && response.code == 226){
                 // TODO OK SE DEBE GUARDAR LA RUTA DE LA FIRMA FTP EN LA BASE DE DATOS CON NOMBRE DE ARCHIVO Y TODO   
-
                 let defaultPath = 'D:\\xampp\\htdocs\\firmas_electronicas\\';
                 
                 //ELIMINAR ARCHIVO P12
-                fs.unlink(`${path}/${req.file.filename}`, function(){
-                    console.log("File was deleted") // Callback
-                    //res.status(200).send(result);
-                });
+                await deleteFile(`${path}/${req.file.filename}`);
 
                 configRepository.insertFileNameFirmaElec(claveFirma,ruc,`${defaultPath}${ruc}${dateString}.p12`).then(
                     function(result){
@@ -84,5 +80,15 @@ async function sendFileFirmaToFtp(pathFileFirmaUpload, nombreFirmaFile){
         client.close();
     }
 }
+
+
+const deleteFile = (filePath) => {
+    return new Promise((resolve, reject) => {
+        fs.unlink(filePath, (err) => {
+            resolve('todo ok');
+        });
+    });
+};
+
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
+const {deleteFile} = require('../../util/sharedfunctions');
 const comprasRepository = require('./data/ComprasRepository');
 
 
@@ -123,10 +123,7 @@ router.get('/getlistcomprasexcel', async(req, res) => {
     getListaComprasExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){
@@ -149,10 +146,7 @@ router.get('/getlistresumencomprasexcel', async(req, res) => {
     getListaComprasExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){
@@ -199,9 +193,7 @@ router.post('/generatepdfxmlcompra', async(req, res) => {
             res.download(response['generatePath'],((error) => {
                 if(error){
                 }
-                fs.unlink(response['generatePath'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(response['generatePath']);
             }));
 
         },

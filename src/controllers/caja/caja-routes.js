@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const fs = require('fs');
+const {deleteFile} = require('../../util/sharedfunctions');
 const cajaRepository = require('./data/CajaRepository');
 
 router.get('/listaResumenCajaIdEmp', async(req, res, next) => {
@@ -101,10 +101,7 @@ router.get('/getlistmovimientoscajaexcel', async(req, res) => {
     getListaMovCajaExcelPromise.then(
         function (clientes){
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){

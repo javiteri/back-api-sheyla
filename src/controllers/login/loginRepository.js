@@ -1,6 +1,5 @@
 const poolMysql = require('../../connectiondb/mysqlconnection');
 const poolMysqlBd1 = require('../../connectiondb/mysqlconnectionlogin');
-
 const httpClient = require('http');
 
 exports.loginUser = function(user, password){

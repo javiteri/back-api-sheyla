@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
+const {deleteFile} = require('../../util/sharedfunctions');
 const proformaRepository = require('./data/ProformaRepository')
 
 
@@ -85,10 +85,7 @@ router.get('/getlistproformasexcel', async(req, res) => {
                 return;
             }
             res.download(clientes['pathFile'],((error) => {
-
-                fs.unlink(clientes['pathFile'], function(){
-                    console.log("File was deleted") // Callback
-                });
+                deleteFile(clientes['pathFile']);
             }));
         },
         function(error){
@@ -104,11 +101,7 @@ router.get('/generatepdffromproforma', async(req, res) => {
     generatePdfProformaPromise.then(
         function(response){
             res.download(response['generatePath'],((error) => {
-                if(error){
-                }
-                fs.unlink(response['generatePath'], function(){
-                    console.log("File was deleted") 
-                });
+                deleteFile(response['generatePath']);
             }));
 
         },

@@ -1,10 +1,10 @@
 const mysql = require('../../connectiondb/mysqlconnection');
 const mysqlEFactura = require('../../connectiondb/mysqlconnectionlogin');
 const httpClient = require('http');
-const fs = require('fs');
 const ftp = require("basic-ftp");
 const Readable = require('stream').Readable;
 const documentosElectronicosRepository = require('../../controllers/documentos-electronicos/data/DocumentosElectronicosRepository');
+const {deleteFile} = require('../../util/sharedfunctions');
 
 
 module.exports = async (job, done) => {
@@ -162,9 +162,7 @@ async function createPDFSendFTP(jobData){
             })
             await client.uploadFrom(promiseCreatePDF.generatePath,`${jobData.claveAct}.pdf`);
             
-            fs.unlink(promiseCreatePDF.generatePath, function(){
-                console.log(`PDF was eliminated ${promiseCreatePDF.generatePath}`) // Callback
-            });
+            await deleteFile(promiseCreatePDF.generatePath);
 
         }catch(exception){
             console.log(exception)
