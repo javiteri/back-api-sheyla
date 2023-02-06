@@ -52,7 +52,7 @@ router.get('/generatepdffromventa', async(req, res) => {
 });
 
 router.get('/getlistdocumentoselectronicosexcel', async(req, res) => {
-    
+
     const getListDocElectronicosExcelPromise = documentosElectronicosRepository.getListDocElectronicosExcel(req.query);
 
     getListDocElectronicosExcelPromise.then(
@@ -65,8 +65,6 @@ router.get('/getlistdocumentoselectronicosexcel', async(req, res) => {
             }));
         },
         function(error){
-            console.log('error');
-            console.log(error);
             res.status(400).send(error);
         }
     );

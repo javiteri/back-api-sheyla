@@ -51,7 +51,6 @@ exports.insertCompra = async (datosCompra) => {
         let conexion = await pool.getConnection();
         
         try{
-
             const {empresaId,tipoCompra,compraNumero,compraFechaHora,
                     usuId,proveedorId,subtotal12,subtotal0,valorIva,compraTotal,formaPago,
                     obs, sriSustento,compraAutorizacionSri,compraNcId, nombreBd} = datosCompra;
@@ -85,7 +84,7 @@ exports.insertCompra = async (datosCompra) => {
             
             await conexion.beginTransaction();
             let result = await conexion.query(sqlQueryExistCompra, [empresaId,tipoCompra,proveedorId,compraNumero]);
-
+            
             if(result[0].length > 0 | result[0]){
                 await conexion.rollback();
                 conexion.release();
@@ -105,19 +104,20 @@ exports.insertCompra = async (datosCompra) => {
             const idVentaGenerated = results[0].insertId;
     
             const arrayListCompraDetalle = Array.from(compraDetallesArray);
+            
             for(let index = 0; index < arrayListCompraDetalle.length; index++){
 
                 let compraDetalle = arrayListCompraDetalle[index];
                 const {prodId, cantidad,iva,nombreProd,
                     valorUnitario,descuento,valorTotal} = compraDetalle;
-                                    
+                
                 await conexion.query(sqlQueryInsertCompraDetalle, [idVentaGenerated,prodId,
                                         cantidad,iva,nombreProd,valorUnitario,
                                         descuento,valorTotal]);
             
                 await conexion.query(isPlusInventario? sqlQueryUpdatePlusStockProducto : sqlQueryUpdateMinusStockProducto,
                                     [cantidad,empresaId,prodId]);
-            
+                    
                 if(index == arrayListCompraDetalle.length - 1){
                     await conexion.commit();
                     conexion.release();
@@ -129,8 +129,7 @@ exports.insertCompra = async (datosCompra) => {
                     return;
                 }
             }
-            
-        }catch(exp){            
+        }catch(exp){           
             await conexion.rollback();
             conexion.release();
 
@@ -233,9 +232,9 @@ exports.getOrCreateProveedorGenericoByIdEmp = async (idEmp,nombreBd) => {
 
             let results = await pool.query(queryGetConsumidorFinal, [idEmp,`%${consumidorFinalName}%`]);
 
-            if(!results[0] | results[0] == undefined | results[0] == null){
+                if(results[0].length == 0){
 
-                let resultado = await pool.query(insertDefaultProveedorGenerico, [idEmp,'9999999999','CI',
+                    let resultado = await pool.query(insertDefaultProveedorGenerico, [idEmp,'9999999999','CI',
                                                 consumidorFinalName,'0999999999', consumidorFinalName]);
 
                     const idInserted = resultado[0].insertId;

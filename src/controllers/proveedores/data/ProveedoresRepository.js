@@ -293,7 +293,9 @@ exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
                                          ORDER BY pro_id DESC`
             
             let results = await pool.query(querySearchproveedors, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%']);
-                
+            
+            console.log(textSearch);
+            console.log(results[0]);
             resolve({
                 isSucess: true,
                 code: 200,

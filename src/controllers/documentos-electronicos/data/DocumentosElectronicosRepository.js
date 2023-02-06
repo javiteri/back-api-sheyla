@@ -577,7 +577,7 @@ function createExcelDocumentosElectronicos(datosFiltro){
             let results = await pool.query(sqlQueryDocumentosElectronicos, [idEmp,"%"+tipo,"%"+valueNombreClient+"%",
                             "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc+"%", idEmp,"%"+tipo,
                             fechaIni,fechaFin,"%"+valueNombreClient+"%","%"+valueCiRucClient+"%","%"+nodoc+"%"]);
-            
+
                 const arrayData = Array.from(results[0]);
                 const workBook = new excelJS.Workbook(); // Create a new workbook
                 const worksheet = workBook.addWorksheet("Lista Documentos Electronicos");
@@ -740,6 +740,7 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
 
 //--------------------------------------------------------------------------------------------------------------------------------
 async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,identificacion,tipo,nombreBd){
+    console.log('inside send document');
     // VERIFICAR SI ES UNA COMPRA O VENTA POR QUE DE ESO 
     // CONSULTAR Y OBTENER LOS DATOS DE - DATOS CLIENTE O PROVEEDOR
     // - DATOS DE LA VENTA - DATOS DETALLE DE LA VENTA O COMPRA
