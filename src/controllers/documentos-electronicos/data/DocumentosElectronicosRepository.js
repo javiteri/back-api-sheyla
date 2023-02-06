@@ -86,7 +86,6 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
                 }else{
                     queryStateDocumentoElectronicoError(idEmp, id,identificacion,VENTA_TIPO,nombreBd);
                 }
-
             }
             resolve({
                 isSucess: true,
@@ -147,7 +146,7 @@ exports.getDocumentosElectronicosByIdEmpNoAutorizados = async(datosFiltrar) => {
         try{
             const {idEmp, nombreBd} = datosFiltrar;
             
-            const sqlQueryDocumentosElectronicos = `SELECT VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
+            const sqlQueryDocumentosElectronicos = `SELECT venta_electronica_observacion,VENTA_TIPO,venta_id AS id,venta_fecha_hora as fecha, 
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
             venta_forma_pago AS formaPago, venta_electronica_estado AS estado 
             FROM ${nombreBd}.ventas,${nombreBd}.clientes WHERE venta_empresa_id = ? 
@@ -777,7 +776,6 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
 
 //--------------------------------------------------------------------------------------------------------------------------------
 async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,identificacion,tipo,nombreBd){
-    console.log('inside send document');
     // VERIFICAR SI ES UNA COMPRA O VENTA POR QUE DE ESO 
     // CONSULTAR Y OBTENER LOS DATOS DE - DATOS CLIENTE O PROVEEDOR
     // - DATOS DE LA VENTA - DATOS DETALLE DE LA VENTA O COMPRA
@@ -806,7 +804,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
         const pathFile = valorGenerateXmlResponse.pathFile;
         const claveActivacion = valorGenerateXmlResponse.claveAct;
 
-                //INSERT XML FILE IN DB BLOB
+        //INSERT XML FILE IN DB BLOB
         const sqlQuerySelectEmpresa = `SELECT empresa_id FROM empresas WHERE empresa_ruc = ? LIMIT 1`;
         const sqlQueryInsertXmlBlob = `INSERT INTO autorizaciones (auto_id_empresa,auto_clave_acceso, auto_xml) VALUES (?,?,?)`;
         const sqlQueryExistXmlInsert = `SELECT * FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
