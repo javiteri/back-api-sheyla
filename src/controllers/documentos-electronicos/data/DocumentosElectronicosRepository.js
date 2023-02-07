@@ -87,6 +87,7 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
                     queryStateDocumentoElectronicoError(idEmp, id,identificacion,VENTA_TIPO,nombreBd);
                 }
             }
+            
             resolve({
                 isSucess: true,
                 mensaje: 'Documentos Enviados para su autorizacion, deberia esperar'
