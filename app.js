@@ -35,7 +35,11 @@ const arenaConfig = Arena({
       type: 'bull',
       name: "docelectronicos",
       hostId: 'Cola de Envios Documentos Electronicos'
-    },
+    },{
+      type: 'bull',
+      name:'docelectronicos-validar',
+      hostId: 'Cola de Validacion de Envios'
+    }
   ],
 },
 {

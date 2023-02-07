@@ -567,21 +567,27 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
 }
 
 async function generateInvoiceTable(doc, datosVenta, datosCliente){
-  //let i;
   let invoiceTableTop = 420;
 
   doc.font("Helvetica-Bold");
 
   const listDetail = [];
+  let valorDescuentoSum = 0.0;
+
   for (i = 0; i < datosVenta.listVentasDetalles.length; i++) {
 
     let item = datosVenta.listVentasDetalles[i];
+
+    if(item.ventad_descuento){
+      valorDescuentoSum += ((Number(item.ventad_cantidad) * Number(item.ventad_vu)) * Number(item.ventad_descuento)) / 100;
+    }
 
     listDetail.push({
         codigo: item.prod_codigo,
         descripcion: item.ventad_producto,
         cantidad: item.ventad_cantidad,
         pu: formatCurrency(item.ventad_vu),
+        descPercent: formatPercent(item.ventad_descuento),
         pt: formatCurrency(item.ventad_vt)
     });
   }
@@ -590,9 +596,10 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     headers: [ 
       {label: "Cod Principal", property:'codigo', width: 95},
       {label: "Descripcion", property:'descripcion', width: 180},
-      {label: "Cant", property:'cantidad', width: 95, align: "center"},
-      {label: "Precio Unitario", property:'pu', width: 95, align: "right"},
-      {label: "Precio Total", property:'pt', width: 95, align: "right"}
+      {label: "Cant", property:'cantidad', width: 45, align: "center"},
+      {label: "Precio Unitario", property:'pu', width: 90, align: "right"},
+      {label: "Desc %", property:'descPercent', width: 60, align: "right"},
+      {label: "Precio Total", property:'pt', width: 90, align: "right"}
     ],
 
     datas: listDetail
@@ -652,7 +659,18 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
 
   doc.font("Helvetica");
 
-  const iva12Position = duePosition + 30;
+  const descuentoPosition = duePosition + 30;
+  generateTableRow1(
+    doc,
+    descuentoPosition,
+    "",
+    "",
+    "Descuento",
+    "",
+    formatCurrency(valorDescuentoSum)
+  );
+
+  const iva12Position = descuentoPosition + 25;
   generateTableRow1(
     doc,
     iva12Position,
@@ -836,6 +854,10 @@ function generateHr(doc, y) {
  
 function formatCurrency(cents) {
   return "$" + Number((cents)).toFixed(2);
+}
+
+function formatPercent(cents) {
+  return "" + Number((cents)).toFixed(2);
 }
 
 async function getImagenByRucEmp(rucEmp){
