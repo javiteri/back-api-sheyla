@@ -319,14 +319,12 @@ function createExcelDocumentosElectronicos(datosFiltro){
                             });
                         });
                     }
-            
                 }catch(error){
                     reject({
                         isSucess: false,
                         error: 'error creando archivo, reintente'
                     });
-                }
-                
+                }          
         }catch(exception){
             reject({
                 isSucess: false,
@@ -339,7 +337,6 @@ function createExcelDocumentosElectronicos(datosFiltro){
 
 exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClienteProv, isPdfNormal, nombreBd) => {
     return new Promise(async (resolve, reject) => {
-        
         const querySelectConfigFactElectr = `SELECT * FROM ${nombreBd}.config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
         const sqlQuerySelectEmp = `SELECT * FROM ${nombreBd}.empresas WHERE emp_id = ? LIMIT 1`;
         const sqlQuerySelectClienteByIdEmp = `SELECT * FROM ${nombreBd}.clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ? LIMIT 1`;
