@@ -14,7 +14,7 @@ docElectronicosValidarQueue.process(async (job, done) => {
 });
 docElectronicosValidarQueue.on('completed', job => {
     
-    if(job.data.returnvalue){
+    if(job.returnvalue){
         console.log('send data to worker');
         docElectronicoQueue.add(job,{
             removeOnComplete: true,
@@ -25,6 +25,8 @@ docElectronicosValidarQueue.on('completed', job => {
                 delay: 60000
             }
         });
+    }else{
+        console.log('inside excel');
     }
 });
 

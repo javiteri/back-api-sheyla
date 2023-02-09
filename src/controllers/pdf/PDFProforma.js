@@ -104,16 +104,22 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
   doc.font("Helvetica-Bold");
   
   const listDetail = [];
+  let valorDescuentoSum = 0.0;
+
   for(i = 0; i < datosProforma.listProformasDetalles.length; i++){
 
     let item = datosProforma.listProformasDetalles[i];
-
+    if(item.profd_descuento.trim()){
+      valorDescuentoSum += ((Number(item.profd_cantidad) * Number(item.profd_vu)) * Number(item.profd_descuento)) / 100;
+    }
+    
     listDetail.push({
       codigo: item.prod_codigo,
       descripcion: item.profd_producto,
       cantidad: item.profd_cantidad,
-      pu: formatCurrency(item.profd_vu),
-      pt: formatCurrency(item.profd_vt)
+      pu: formatCurrency(item.profd_vu, 3),
+      descPercent: formatPercent(item.profd_descuento),
+      pt: formatCurrency(item.profd_vt, 3)
     });
   }
 
@@ -122,9 +128,10 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     headers: [ 
       {label: "Cod Principal", property:'codigo', width: 95},
       {label: "Descripcion", property:'descripcion', width: 180},
-      {label: "Cant", property:'cantidad', width: 95, align: "center"},
-      {label: "Precio Unitario", property:'pu', width: 95, align: "right"},
-      {label: "Precio Total", property:'pt', width: 95, align: "right"}
+      {label: "Cant", property:'cantidad', width: 45, align: "center"},
+      {label: "Precio Unitario", property:'pu', width: 90, align: "right"},
+      {label: "Desc %", property:'descPercent', width: 60, align: "right"},
+      {label: "Precio Total", property:'pt', width: 90, align: "right"}
     ],
 
     datas: listDetail
@@ -145,7 +152,7 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     "",
     "Subtotal 12%",
     "",
-    formatCurrency(datosProforma[0].prof_subtotal_12)
+    formatCurrency(datosProforma[0].prof_subtotal_12, 2)
   );
 
   const paidToDatePosition = subtotalPosition + 20;
@@ -156,7 +163,7 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     "",
     "Subtotal 0%",
     "",
-    formatCurrency(datosProforma[0].prof_subtotal_0)
+    formatCurrency(datosProforma[0].prof_subtotal_0, 2)
   );
 
   const duePosition = paidToDatePosition + 25;
@@ -169,15 +176,26 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     "",
     "Subtotal Sin Impuestos",
     "",
-    formatCurrency(subtotalSinImpuestos)
+    formatCurrency(subtotalSinImpuestos, 2)
   );
 
 
   //const icePosition = duePosition + 25;
   
   doc.font("Helvetica");
+  
+  const descuentoPosition = duePosition + 30;
+  generateTableRow(
+    doc,
+    descuentoPosition,
+    "",
+    "",
+    "Descuento",
+    "",
+    formatCurrency(valorDescuentoSum, 2)
+  );
 
-  const iva12Position = duePosition + 25;
+  const iva12Position = descuentoPosition + 25;
   generateTableRow(
     doc,
     iva12Position,
@@ -185,7 +203,7 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     "",
     "IVA 12%",
     "",
-    formatCurrency(datosProforma[0].prof_valor_iva)
+    formatCurrency(datosProforma[0].prof_valor_iva, 2)
   );
 
   const valorTotalPosition = iva12Position + 25;
@@ -196,7 +214,7 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     "",
     "VALOR TOTAL",
     "",
-    formatCurrency(datosProforma[0].prof_total)
+    formatCurrency(datosProforma[0].prof_total, 2)
   );
 
   doc.font("Helvetica");
@@ -239,7 +257,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosProforma, ypositio
 
     textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 60);
     textInRowFirstValor(pdfDoc,'Valor', yposition6 + 60);
-    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosProforma[0].prof_total), yposition6 + 80)
+    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosProforma[0].prof_total, 2), yposition6 + 80)
     textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosProforma[0].prof_forma_pago),yposition6 + 80);
 
     //textInRowFirst(pdfDoc, yposition6 + 60);
@@ -325,9 +343,12 @@ function generateTableRow(
 }
 
 
-function formatCurrency(cents) {
-    //return "$" + (cents / 100).toFixed(2);
-    return "$" + Number((cents)).toFixed(2);
+function formatCurrency(cents, decimals) {
+    return "$" + Number((cents)).toFixed(decimals);
+}
+
+function formatPercent(cents) {
+  return "" + Number((cents)).toFixed(2);
 }
 
 async function getImagenByRucEmp(rucEmp){

@@ -85,9 +85,9 @@ module.exports = async (job, done) => {
                 // ENVIAR A UNA URL EL CORREO 
                 let resultExistClient = await mysqlEFactura.query(queryClienteIfExist,[rucCliente, empresaId]);
                     
-                if(resultExistClient[0].length == 0 || resultExistClient[0] === null || resultExistClient[0] === undefined){
+                if(resultExistClient[0].length == 0){
                     // INSERTAR CLIENTE EN LA BASE DE DATOS PARA LUEGO INSERTAR EN LA TABLA DOCUMENTOS
-                    let resultInsertClient = await mysqlEFactura.query(sqlInsertCliente,[rucCliente, nombreCliente,empresaId,rucCliente]);        
+                    let resultInsertClient = await mysqlEFactura.query(sqlInsertCliente,[rucCliente, nombreCliente,empresaId,rucCliente]);
                     let idClienteReturned = resultInsertClient[0].insertId;
 
                     // INSERTAR EN LA TABLA DOCUMENTOS
@@ -112,19 +112,20 @@ module.exports = async (job, done) => {
 
 //---------------------------------------------------------------------------------------------------------------------
 async function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
-                            ventaValor,claveAcceso, done,resultMensaje,ventaId, jobData){
+                                ventaValor,claveAcceso, done,resultMensaje,ventaId, jobData){
 
     const sqlInsertDocumento = `INSERT INTO documentos (documento_tipo, documento_fecha,documento_numero,
                                  documento_cliente_id,documento_valor,documento_clave_acceso) VALUES (?,?,?,?,?,?)`;
 
     await mysqlEFactura.query(sqlInsertDocumento, [ventaTipo,ventaFecha,ventaNumero,clienteId, ventaValor,claveAcceso]); 
     updateEstadoVentaDocumentoElectronico('2',resultMensaje[0].auto_mensaje,ventaId, jobData.nombreBd).then(
-    function(result){
-        createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso,done, jobData);
-    },
-    function(error){
-        done(null,job.data);
-    });
+        function(result){
+            createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso,done, jobData);
+        },
+        function(error){
+            done(null,job.data);
+        }
+    );
 }
 
 async function createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso, done, jobData){
@@ -229,15 +230,16 @@ function sendEmailToClient(claveAcceso, jobData, done){
     }
     
     if(emailCliente && emailCliente.length > 0 && emailCliente !== ' '){
-        let firstEmailCliente = '';
+        //let firstEmailCliente = '';
         let arrayEmails = null;
         
         if(emailCliente.includes(',')){
             arrayEmails = emailCliente.split(',');
         }else{
             
-            firstEmailCliente = emailCliente;
-            let options = {
+            arrayEmails = [emailCliente];
+           // firstEmailCliente = [emailCliente];
+            /*let options = {
                 host: 'sheyla2.dyndns.info',
                 path: encodeURI(`/CORREOS_VARIOS/MYSQL_MAIL.php?FECHA=${dateString}&FECHAGAR=${dateString}&TIPO=2&EMPRESA=${nombreEmpresa}
                 &ACCESO=${claveAcceso}&EMAIL=${firstEmailCliente}&CLIENTE=${nombreCliente}&DOCUMENTO=${tipoDocumento} ${numeroDocumento}
@@ -248,7 +250,7 @@ function sendEmailToClient(claveAcceso, jobData, done){
 
             done(null,jobData);
 
-            return;
+            return;*/
         }
 
         arrayEmails.forEach((element, index) => {

@@ -158,8 +158,8 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
       codigo: item.codigoPrincipal,
       descripcion: removeAccentDiactricsFromString(item.descripcion),
       cantidad: item.cantidad,
-      pu: formatCurrency(item.precioUnitario),
-      pt: formatCurrency(item.precioTotalSinImpuesto)
+      pu: formatCurrency(item.precioUnitario, 3),
+      pt: formatCurrency(item.precioTotalSinImpuesto, 3)
     });
 
   }
@@ -252,7 +252,7 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     "",
     "Subtotal 12%",
     "",
-    formatCurrency(valorSubtotal12)
+    formatCurrency(valorSubtotal12, 2)
   );
 
   const paidToDatePosition = subtotalPosition + 20;
@@ -263,7 +263,7 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     "",
     "Subtotal 0%",
     "",
-    formatCurrency(valorSubtotal0)
+    formatCurrency(valorSubtotal0, 2)
   );
 
   const duePosition = paidToDatePosition + 25;
@@ -276,7 +276,7 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     "",
     "Subtotal Sin Impuestos",
     "",
-    formatCurrency(infoFactura.totalSinImpuestos)
+    formatCurrency(infoFactura.totalSinImpuestos, 2)
   );
 
 
@@ -290,7 +290,7 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     "",
     "IVA 12%",
     "",
-    formatCurrency(valorIva12)
+    formatCurrency(valorIva12, 2)
   );
 
   const valorTotalPosition = iva12Position + 25;
@@ -301,7 +301,7 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     "",
     "VALOR TOTAL",
     "",
-    formatCurrency(infoFactura.importeTotal)
+    formatCurrency(infoFactura.importeTotal, 2)
   );
 
   doc.font("Helvetica");
@@ -343,7 +343,7 @@ async function generateFooterTablePDFXml(pdfDoc,datosFactura, yposition){
 
   textInRowFirst(pdfDoc,'Forma de Pago', yValueNow + 10);
   textInRowFirstValor(pdfDoc,'Valor', yValueNow + 10);
-  textInRowFirstValorTotal(pdfDoc,formatCurrency(infoFactura.importeTotal), yValueNow + 30)
+  textInRowFirstValorTotal(pdfDoc,formatCurrency(infoFactura.importeTotal, 2), yValueNow + 30)
   textInRowValorFormaPago(pdfDoc,getFormaPagoByCodigo(infoFactura['pagos']['pago'].formaPago),yValueNow + 30);
   
 }
@@ -586,9 +586,9 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
         codigo: item.prod_codigo,
         descripcion: item.ventad_producto,
         cantidad: item.ventad_cantidad,
-        pu: formatCurrency(item.ventad_vu),
+        pu: formatCurrency(item.ventad_vu, 3),
         descPercent: formatPercent(item.ventad_descuento),
-        pt: formatCurrency(item.ventad_vt)
+        pt: formatCurrency(item.ventad_vt, 3)
     });
   }
 
@@ -618,7 +618,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     "",
     "Subtotal 12%",
     "",
-    formatCurrency(datosVenta[0].venta_subtotal_12)
+    formatCurrency(datosVenta[0].venta_subtotal_12, 2)
   );
 
   const paidToDatePosition = subtotalPosition + 20;
@@ -629,7 +629,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     "",
     "Subtotal 0%",
     "",
-    formatCurrency(datosVenta[0].venta_subtotal_0)
+    formatCurrency(datosVenta[0].venta_subtotal_0, 2)
   );
 
   const duePosition = paidToDatePosition + 25;
@@ -642,7 +642,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     "",
     "Subtotal Sin Impuestos",
     "",
-    formatCurrency(subtotalSinImpuestos)
+    formatCurrency(subtotalSinImpuestos, 2)
   );
 
 
@@ -667,7 +667,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     "",
     "Descuento",
     "",
-    formatCurrency(valorDescuentoSum)
+    formatCurrency(valorDescuentoSum, 2)
   );
 
   const iva12Position = descuentoPosition + 25;
@@ -678,7 +678,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     "",
     "IVA 12%",
     "",
-    formatCurrency(datosVenta[0].venta_valor_iva)
+    formatCurrency(datosVenta[0].venta_valor_iva, 2)
   );
 
   const valorTotalPosition = iva12Position + 25;
@@ -689,7 +689,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     "",
     "VALOR TOTAL",
     "",
-    formatCurrency(datosVenta[0].venta_total)
+    formatCurrency(datosVenta[0].venta_total, 2)
   );
 
   doc.font("Helvetica");
@@ -738,7 +738,7 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
 
     textInRowFirst(pdfDoc,'Forma de Pago', yposition6 + 70);
     textInRowFirstValor(pdfDoc,'Valor', yposition6 + 70);
-    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total), yposition6 + 90)
+    textInRowFirstValorTotal(pdfDoc,formatCurrency(datosVenta[0].venta_total, 2), yposition6 + 90)
     textInRowValorFormaPago(pdfDoc,sharedFunctions.getFormaDePagoRide(datosVenta[0].venta_forma_pago),yposition6 + 90);
     
     //textInRowFirst(pdfDoc, yposition6 + 60);
@@ -852,8 +852,8 @@ function generateHr(doc, y) {
       .stroke();
 }
  
-function formatCurrency(cents) {
-  return "$" + Number((cents)).toFixed(2);
+function formatCurrency(cents, decimals) {
+  return "$" + Number((cents)).toFixed(decimals);
 }
 
 function formatPercent(cents) {

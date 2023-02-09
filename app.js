@@ -95,8 +95,8 @@ app.use(function(err, req, res, next) {
   console.log('error en app js error handler');
   console.log(err.message);
 
-  console.log(err);
-  console.log('error found route')
+  /*console.log(err);
+  console.log('error found route')*/
   
   // render the error page
   res.status(err.status || 500);

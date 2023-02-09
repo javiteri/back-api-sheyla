@@ -368,8 +368,7 @@ function generateTableRow(
 
 
 function formatCurrency(cents) {
-    //return "$" + (cents / 100).toFixed(2);
-    return "$" + Number((cents)).toFixed(2);
+    return "$" + Number((cents)).toFixed(3);
 }
 
 async function getImagenByRucEmp(rucEmp){

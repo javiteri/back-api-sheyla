@@ -8,7 +8,6 @@ exports.insertProforma = async (datosProforma) => {
     return new Promise(async (resolve, reject) => {
 
         let conexion = await pool.getConnection();
-
         try{
 
             const {empresaId,proformaNumero,proformaFechaHora, usuId,clienteId,subtotal12,subtotal0,valorIva,
@@ -36,15 +35,17 @@ exports.insertProforma = async (datosProforma) => {
             const idProformaGenerated = results[0].insertId;
 
             const arrayListProformaDetalle = Array.from(proformaDetallesArray);
-            for(let index = 0; index < arrayListProformaDetalle; index++){
+            for(let index = 0; index < arrayListProformaDetalle.length; index++){
                 
+                let proformaDetalle = arrayListProformaDetalle[index];
                 const {prodId, cantidad,iva,nombreProd,valorUnitario,descuento,valorTotal} = proformaDetalle;
-                    
+
                 await conexion.query(sqlQueryInsertProformaDetalle, [idProformaGenerated,prodId,
                                     cantidad,iva,nombreProd,valorUnitario,
                                     descuento,valorTotal]);
                 if(index == arrayListProformaDetalle.length - 1){
                     await conexion.commit();
+                    conexion.release();
                     resolve({
                         isSuccess: true,
                         message: 'proforma insertada correctamente',
@@ -55,6 +56,7 @@ exports.insertProforma = async (datosProforma) => {
         }catch(exp){
             conexion.rollback();
             conexion.release();
+            console.log(exp);
             reject({
                 isSuccess: false,
                 error: 'error insertando Proforma',
