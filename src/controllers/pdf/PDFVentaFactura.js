@@ -868,7 +868,7 @@ async function getImagenByRucEmp(rucEmp){
 
     // Convert callback based methods to promise
     // based methods
-    const makeDir = util.promisify(fs.mkdir);  
+    const makeDir = util.promisify(fs.mkdir);
 
     await makeDir(`${path}`,{recursive: true});
 
@@ -899,7 +899,7 @@ async function getImagenByRucEmp(rucEmp){
         
     }catch(ex){
         client.close();
-        console.log(ex);
+        //console.log(ex);
         return '';
     }
   }catch(error){

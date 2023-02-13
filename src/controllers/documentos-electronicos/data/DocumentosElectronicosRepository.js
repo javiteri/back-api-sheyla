@@ -136,7 +136,7 @@ exports.getDocumentosElectronicosByIdEmp = async(datosFiltrar) => {
             venta_forma_pago AS formaPago, venta_electronica_estado AS estado 
             FROM ${nombreBd}.ventas,${nombreBd}.clientes WHERE venta_empresa_id = ?  AND venta_cliente_id=cli_id AND venta_tipo = ?
             AND (cli_nombres_natural LIKE ? && cli_documento_identidad LIKE ?) AND venta_fecha_hora BETWEEN ? AND ?
-            AND CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ? AND venta_anulado=0 `;
+            AND CONCAT(venta_001,'-',venta_002,'-',venta_numero) LIKE ? AND venta_anulado=0 ORDER BY venta_id DESC`;
 
             let results = await pool.query(sqlQueryDocumentosElectronicos, [idEmp,'FACTURA',"%"+valueNombreClient+"%",
                             "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc+"%", idEmp,"%"+tipo,
@@ -165,9 +165,9 @@ exports.getDocumentosElectronicosByIdEmpNoAutorizados = async(datosFiltrar) => {
             CONCAT(venta_001,'-',venta_002,'-',venta_numero) AS numeroFactura, venta_total AS total,cli_nombres_natural AS cliente, cli_documento_identidad AS identificacion, 
             venta_forma_pago AS formaPago, venta_electronica_estado AS estado 
             FROM ${nombreBd}.ventas,${nombreBd}.clientes WHERE venta_empresa_id = ? 
-            AND venta_cliente_id=cli_id AND venta_electronica_estado != 2 AND venta_anulado= 0 AND VENTA_TIPO = ?`;
+            AND venta_cliente_id=cli_id AND venta_electronica_estado != 2 AND venta_anulado= 0 AND VENTA_TIPO = ? ORDER BY venta_id DESC`;
 
-            let results = await pool.query(sqlQueryDocumentosElectronicos, [idEmp, 'FACTURA']); 
+            let results = await pool.query(sqlQueryDocumentosElectronicos, [idEmp, 'FACTURA']);
             resolve({
                 isSucess: true,
                 data: results[0]

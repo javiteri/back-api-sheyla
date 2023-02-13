@@ -4,7 +4,6 @@ const {deleteFile} = require('../../util/sharedfunctions');
 const ventasRepository = require('./data/VentasRepository');
 
 router.post('/insertar', async (req, res, next) => {
-    
     const resultInsertVentaProm = ventasRepository.insertVenta(req.body);
     resultInsertVentaProm.then(
         function(result){

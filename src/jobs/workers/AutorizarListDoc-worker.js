@@ -193,7 +193,7 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
                 
                 //ENVIAR A  LA COLA PARA QUE GUARDE LOS DATOS DEL XML Y ENVIE POR CORREO
                 sendDataToWorkerAutorizacion(claveActivacion,results[0][0].auto_id_empresa,datosEmpresa,
-                                                datosCliente,datosVenta,nombreBd)
+                                                datosCliente,datosVenta,nombreBd, done)
                 return{estado:'ok'}
             }else if(results[0][0].auto_estado == 0){
                 await pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra]);

@@ -177,7 +177,7 @@ exports.getListClientesByIdEmp = async (idEmpresa, nombreBd) => {
     return new Promise(async (resolve, reject) => {
         
         try{
-            let querySelectClientes = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? ORDER BY cli_id DESC `
+            let querySelectClientes = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? ORDER BY cli_id DESC LIMIT 200`
             
             let results = await pool.query(querySelectClientes, [idEmpresa]); 
             resolve({
@@ -328,7 +328,7 @@ exports.searchClientesByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
         
         try{
             let querySearchClientes = `SELECT * FROM ${nombreBd}.clientes WHERE cli_empresa_id = ? AND (cli_nombres_natural LIKE ? || cli_documento_identidad LIKE ?)
-                                         ORDER BY cli_id DESC`
+                                         ORDER BY cli_id DESC LIMIT 200`
             
             let results = await pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%']);
             resolve({

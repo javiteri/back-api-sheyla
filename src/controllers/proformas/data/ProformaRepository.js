@@ -363,7 +363,7 @@ exports.getDataByIdProforma = async (idProforma, idEmp, ruc, nombreBd) => {
                                         profd_prod_id,profd_producto,profd_prof_id,profd_vt,profd_vu,prod_codigo 
                                         FROM ${nombreBd}.proformas_detalles, ${nombreBd}.productos 
                                         WHERE profd_prod_id = prod_id AND profd_prof_id = ?`;
-            const queryGetListaProforma = `SELECT prof_id as id, prof_fecha_hora AS fechaHora, prof_numero AS numero,
+            const queryGetListaProforma = `SELECT prof_id as id, prof_fecha_hora AS fechaHora, - AS numero,
                                          prof_anulado as anulado, prof_total AS total, prof_subtotal_12 AS subtotal12, prof_subtotal_0 AS subtotal0, 
                                          prof_valor_iva AS valorIva,
                                          usu_username AS usuario,cli_nombres_natural AS cliente,cli_id as clienteId,cli_teleono as clienteTele,

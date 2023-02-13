@@ -32,7 +32,7 @@ exports.getListProductosNoAnuladoByIdEmp = async (idEmpresa, nombreBd) => {
     return new Promise(async (resolve, reject) => {
         try {
             
-            let querySelectProductosByIdEmp = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC`;
+            let querySelectProductosByIdEmp = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND prod_activo_si_no = ? ORDER BY prod_id DESC LIMIT 200`;
             let results = await pool.query(querySelectProductosByIdEmp, [idEmpresa, 1]); 
             resolve({
                 isSucess: true,
@@ -349,7 +349,7 @@ exports.searchProductosByIdEmpActivo = async (idEmpresa, textSearch, nombreBd) =
         
         try{
             let querySearchClientes = `SELECT * FROM ${nombreBd}.productos WHERE prod_empresa_id = ? AND (prod_nombre LIKE ? || prod_codigo LIKE ?) AND prod_activo_si_no = ?
-                                         ORDER BY prod_id DESC`
+                                         ORDER BY prod_id DESC LIMIT 200`
             
             let results = await pool.query(querySearchClientes, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%', 1]); 
             resolve({
