@@ -102,8 +102,6 @@ router.get('/searchProveedorByIdEmp', async (req, res) => {
 });
 
 router.get('/getlistproveedoresexcel', async(req, res) => {
-    
-    
     const getListClientesExcelPromise = proveedoresRepository.getListProveedoresExcel(req.query.idEmp,req.query.nombreBd);
 
     getListClientesExcelPromise.then(

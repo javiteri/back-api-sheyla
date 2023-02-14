@@ -6,9 +6,8 @@ exports.getListProveedoresByIdEmp = async (idEmpresa,nombreBd) => {
 
     return new Promise(async (resolve, reject) => {
         try {
-            
-            let querySelectProveedoresByIdEmp = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? ORDER BY pro_id DESC`;
-            let results = await pool.query(querySelectProveedoresByIdEmp, [idEmpresa]); 
+            let querySelectProveedoresByIdEmp = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? ORDER BY pro_id DESC LIMIT 200`;
+            let results = await pool.query(querySelectProveedoresByIdEmp, [idEmpresa]);
             resolve({
                 isSucess: true,
                 code: 200,
@@ -27,7 +26,6 @@ exports.getListProveedoresByIdEmp = async (idEmpresa,nombreBd) => {
 
 exports.getProveedorByIdEmp = async (idProv, idEmpresa, nombreBd) => {
     return new Promise(async (resolve, reject) => {
-        
         try{
             let querySelectProveedor = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND pro_id = ? LIMIT 1`
             
@@ -105,8 +103,6 @@ exports.insertProveedor = async (datosProveedor) => {
             }
 
             resolve(insertproveedorResponse);
-
-                
         }catch(error){
             reject({
                 isSucess: false,
@@ -290,12 +286,10 @@ exports.searchProveedoresByIdEmp = async (idEmpresa, textSearch, nombreBd) => {
         
         try{
             let querySearchproveedors = `SELECT * FROM ${nombreBd}.proveedores WHERE pro_empresa_id = ? AND (pro_nombre_natural LIKE ? || pro_documento_identidad LIKE ?)
-                                         ORDER BY pro_id DESC`
+                                         ORDER BY pro_id DESC LIMIT 200`
             
             let results = await pool.query(querySearchproveedors, [idEmpresa, '%'+textSearch+'%', '%'+textSearch+'%']);
             
-            console.log(textSearch);
-            console.log(results[0]);
             resolve({
                 isSucess: true,
                 code: 200,
@@ -422,7 +416,6 @@ function createExcelFileProveedores(idEmp, nombreBd){
                     }
             
                 }catch(exception){
-                    console.log(`exception`);
                     console.log(exception);
             
                     reject({
