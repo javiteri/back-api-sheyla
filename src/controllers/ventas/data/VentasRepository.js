@@ -33,8 +33,8 @@ exports.insertVenta = async (datosVenta) => {
             await conexion.beginTransaction();
             
             let results = await conexion.query(sqlQueryInsertVenta, [empresaId,tipoVenta,venta001,venta002,ventaNumero,
-                ventaFechaHora,usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,
-                formaPago,obs, `${empresaId}_${tipoVenta}_${venta001}_${venta002}_${ventaNumero}`]);
+                                ventaFechaHora,usuId,clienteId,subtotal12,subtotal0,valorIva,ventaTotal,
+                                formaPago,obs, `${empresaId}_${tipoVenta}_${venta001}_${venta002}_${ventaNumero}`]);
 
             const idVentaGenerated = results[0].insertId;
 

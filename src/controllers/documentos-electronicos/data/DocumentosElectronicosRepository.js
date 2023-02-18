@@ -337,6 +337,8 @@ function createExcelDocumentosElectronicos(datosFiltro){
 
 exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClienteProv, isPdfNormal, nombreBd) => {
     return new Promise(async (resolve, reject) => {
+
+        // const queryValorIvaEmp = `SELECT * FROM ${nombreBd}.config WHERE con_empresa_id = ? AND con_nombre_config LIKE ?`;
         const querySelectConfigFactElectr = `SELECT * FROM ${nombreBd}.config WHERE con_empresa_id= ? AND con_nombre_config LIKE ? `;
         const sqlQuerySelectEmp = `SELECT * FROM ${nombreBd}.empresas WHERE emp_id = ? LIMIT 1`;
         const sqlQuerySelectClienteByIdEmp = `SELECT * FROM ${nombreBd}.clientes WHERE cli_documento_identidad = ? AND cli_empresa_id = ? LIMIT 1`;
@@ -346,6 +348,8 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
         const sqlQuerySelectDatosEstablecimiento = `SELECT * FROM ${nombreBd}.config_establecimientos WHERE cone_empresa_id = ? AND cone_establecimiento = ? LIMIT 1`;
 
         try{
+
+            // const responseConfigValorIva = await pool.query(queryValorIvaEmp, [idEmp, '%FACTURA_VALORIVA%']);
             const responseDatosConfig = await pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%']);
             const responseDatosEmpresa = await pool.query(sqlQuerySelectEmp,[idEmp]);
             const responseDatosCliente = await pool.query(sqlQuerySelectClienteByIdEmp, [identificacionClienteProv,idEmp]);
@@ -353,11 +357,25 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
             const responseDatosVentaDetalles = await pool.query(sqlQuerySelectVentaDetallesByIdVenta, [idVentaCompra]);
             const responseDatosEstablecimiento = await pool.query(sqlQuerySelectDatosEstablecimiento, [idEmp, responseDatosVenta[0][0].venta_001]);
 
+            let valorIva = "12";
+            if(responseDatosVentaDetalles[0].length > 0){
+                let valor = responseDatosVentaDetalles[0].find((value) => {
+                    return Number(value['ventad_iva']) == 8;
+                });
+                if(valor){
+                    valorIva = "8"
+                }
+            }
+            /*if(responseConfigValorIva[0].length > 0){
+                valorIva = responseConfigValorIva[0][0].con_valor; 
+            }*/
+            
             // GENERATE PDF WHIT DATA                            
             responseDatosVenta[0]['listVentasDetalles'] = responseDatosVentaDetalles[0];
             
-            const pathPdfGeneratedProm = pdfGenerator.generatePdfFromVenta(responseDatosEmpresa[0],responseDatosCliente[0],
-                                                responseDatosVenta[0], isPdfNormal, responseDatosConfig[0], responseDatosEstablecimiento[0]);
+            const pathPdfGeneratedProm = pdfGenerator.generatePdfFromVenta(valorIva, responseDatosEmpresa[0],responseDatosCliente[0],
+                                                                            responseDatosVenta[0], isPdfNormal, responseDatosConfig[0], 
+                                                                            responseDatosEstablecimiento[0]);
 
             pathPdfGeneratedProm.then(
                 function(result){

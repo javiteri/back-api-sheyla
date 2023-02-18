@@ -327,7 +327,18 @@ exports.generateDownloadPdfFromProforma = (idEmp, idProforma, identificacionClie
             // GENERATE PDF WITH DATA                            
             responseDatosProforma[0]['listProformasDetalles'] = responseDatosProformaDetalles[0];
             
-            const pathPdfGenerated = pdfGenerator.generatePdfFromProforma(responseDatosEmpresa[0],responseDatosCliente[0], responseDatosProforma[0]);
+            let valorIva = "12";
+            if(responseDatosProformaDetalles[0].length > 0){
+                let valor = responseDatosProformaDetalles[0].find((value) => {
+                    return Number(value['profd_iva']) == 8;
+                });
+                if(valor){
+                    valorIva = "8"
+                }
+            }
+
+            console.log(valorIva);
+            const pathPdfGenerated = pdfGenerator.generatePdfFromProforma(valorIva, responseDatosEmpresa[0],responseDatosCliente[0], responseDatosProforma[0]);
 
             pathPdfGenerated.then(
                 function(result){
@@ -363,7 +374,7 @@ exports.getDataByIdProforma = async (idProforma, idEmp, ruc, nombreBd) => {
                                         profd_prod_id,profd_producto,profd_prof_id,profd_vt,profd_vu,prod_codigo 
                                         FROM ${nombreBd}.proformas_detalles, ${nombreBd}.productos 
                                         WHERE profd_prod_id = prod_id AND profd_prof_id = ?`;
-            const queryGetListaProforma = `SELECT prof_id as id, prof_fecha_hora AS fechaHora, - AS numero,
+            const queryGetListaProforma = `SELECT prof_id as id, prof_fecha_hora AS fechaHora, prof_numero AS numero,
                                          prof_anulado as anulado, prof_total AS total, prof_subtotal_12 AS subtotal12, prof_subtotal_0 AS subtotal0, 
                                          prof_valor_iva AS valorIva,
                                          usu_username AS usuario,cli_nombres_natural AS cliente,cli_id as clienteId,cli_teleono as clienteTele,

@@ -108,7 +108,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                             
                     await poolEFactra.query(sqlQueryInsertXmlBlob,[responseSelectEmpresaAutorizacion[0][0].empresa_id,claveActivacion, str]);
                     //DELETE XML FILE GENERATED
-                    await deleteFile(pathFile);
+                    deleteFile(pathFile);
 
                     sendDataToWorkerAutorizacion(claveActivacion, responseSelectEmpresaAutorizacion[0][0].empresa_id, responseDatosEmpresa[0][0],
                                                         responseDatosCliente[0][0], responseDatosVenta[0][0], nombreBd, done);
@@ -265,7 +265,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                                                                                 datosCliente.cli_tipo_documento_identidad);
 
             let identificacionComprador = (datosCliente.cli_nombres_natural == 'CONSUMIDOR FINAL' ? '9999999999999' : datosCliente.cli_documento_identidad);
-            let showDireccionComprador = ((datosCliente.cli_direccion && datosCliente.cli_direccion.length > 0));
+            let showDireccionComprador = ((datosCliente.cli_direccion.trim() && datosCliente.cli_direccion.trim().length > 0));
 
             let totalSinImpuestos = (Number(datosVenta.venta_subtotal_0) + Number(datosVenta.venta_subtotal_12)).toFixed(2);
             let totalDescuento = 0.00;
@@ -337,6 +337,8 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             
             let baseImponibleIva12 = 0.0;
             let valorIva12BI = 0.0;
+            let baseImponibleIva8 = 0.0;
+            let valorIva8BI = 0.0;
             let baseImponibleIva0 = 0.0;
             
             for(let i = 0; i < listVentaDetalle.length; i++){
@@ -353,20 +355,40 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                     }
                     
                     let valorIva = 0
-                    if(listVentaDetalle[i].ventad_iva == '12.00'){
-                        valorIva = (Number(valorTotal * 12) / 100);
+                    if(Number(listVentaDetalle[i].ventad_iva) > 0){
+                        valorIva = (Number(valorTotal) * Number(listVentaDetalle[i].ventad_iva) / 100)
                     }else{
                         valorIva = 0;
                     }
 
-                    if(listVentaDetalle[i].ventad_iva == '12.00'){
+                    if(parseInt(listVentaDetalle[i].ventad_iva) == 12){
+                        baseImponibleIva12 += valorTotal;
+                        valorIva12BI += valorIva;
+                    }else if((parseInt(listVentaDetalle[i].ventad_iva) == 8)){
+                        baseImponibleIva8 += valorTotal;
+                        valorIva8BI += valorIva;
+                    }else{
+                        baseImponibleIva0 += valorTotal;
+                    }
+
+                    /*if(listVentaDetalle[i].ventad_iva == '12.00'){
+                        valorIva = (Number(valorTotal * 12) / 100);
+                    }else{
+                        valorIva = 0;
+                    }*/
+
+                    /*if(listVentaDetalle[i].ventad_iva == '12.00'){
                         baseImponibleIva12 += valorTotal;
                         valorIva12BI += valorIva;
                     }else{
                         baseImponibleIva0 += valorTotal;
-                    }
+                    }*/
             }
 
+            if(baseImponibleIva8 > 0){
+                totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','8').up()
+                            .ele('baseImponible',(baseImponibleIva8.toFixed(2)).toString()).up().ele('valor',valorIva8BI.toFixed(2)).up().up().up()
+            }
             if(baseImponibleIva12 > 0){
                 totalImpuestosEle.ele('totalImpuesto').ele('codigo','2').up().ele('codigoPorcentaje','2').up()
                             .ele('baseImponible',(baseImponibleIva12.toFixed(2)).toString()).up().ele('valor',valorIva12BI.toFixed(2)).up().up().up()
@@ -398,12 +420,17 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                     valorTotal = Number(listVentaDetalle[i].ventad_cantidad) * Number(listVentaDetalle[i].ventad_vu);
                 }
                 
-                let valorIva = 0
-                if(listVentaDetalle[i].ventad_iva == '12.00'){
-                    valorIva = (Number(valorTotal * 12) / 100);
+                let valorIva = 0;
+                if(Number(listVentaDetalle[i].ventad_iva) > 0){
+                    valorIva = (Number(valorTotal) * Number(listVentaDetalle[i].ventad_iva)) / 100;
                 }else{
                     valorIva = 0;
                 }
+                /*if(listVentaDetalle[i].ventad_iva == '12.00'){
+                    valorIva = (Number(valorTotal * 12) / 100);
+                }else{
+                    valorIva = 0;
+                }*/
 
                 detallesNode = detallesNode.ele('detalle').ele('codigoPrincipal',removeAccentDiactricsFromString(listVentaDetalle[i].prod_codigo)).up()
                 .ele('codigoAuxiliar',listVentaDetalle[i].prod_codigo).up().ele('descripcion',removeAccentDiactricsFromString(listVentaDetalle[i].prod_nombre)).up()
@@ -420,17 +447,31 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                 
                 detallesNode = detallesNode.ele('codigo','2').up();
 
-                if(listVentaDetalle[i].ventad_iva == '12.00'){
+                /*if(listVentaDetalle[i].ventad_iva == '12.00'){
                     detallesNode = detallesNode.ele('codigoPorcentaje','2').up()
+                }else{
+                    detallesNode = detallesNode.ele('codigoPorcentaje','0').up()
+                }*/
+                if(parseInt(listVentaDetalle[i].ventad_iva) == 12){
+                    detallesNode = detallesNode.ele('codigoPorcentaje','2').up()
+                }else if(parseInt(listVentaDetalle[i].ventad_iva) == 8){
+                    detallesNode = detallesNode.ele('codigoPorcentaje','8').up()
                 }else{
                     detallesNode = detallesNode.ele('codigoPorcentaje','0').up()
                 }
 
-                if(listVentaDetalle[i].ventad_iva == '12.00'){
+                if(parseInt(listVentaDetalle[i].ventad_iva) == 12){
                     detallesNode = detallesNode.ele('tarifa','12.00').up()
+                }else if(parseInt(listVentaDetalle[i].ventad_iva) == 8){
+                    detallesNode = detallesNode.ele('tarifa','08.00').up()
                 }else{
                     detallesNode = detallesNode.ele('tarifa','0').up()
                 }
+                /*if(listVentaDetalle[i].ventad_iva == '12.00'){
+                    detallesNode = detallesNode.ele('tarifa','12.00').up()
+                }else{
+                    detallesNode = detallesNode.ele('tarifa','0').up()
+                }*/
                 detallesNode = detallesNode.ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up().up();
 
             }

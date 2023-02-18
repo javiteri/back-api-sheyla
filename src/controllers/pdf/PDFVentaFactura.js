@@ -367,7 +367,7 @@ function removeAccentDiactricsFromString(texto){
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
-exports.generatePdfFromVentaFactura = (datosEmpresa,datosCliente,datosVenta,datosConfig,responseDatosEstablecimiento,
+exports.generatePdfFromVentaFactura = (valorIva, datosEmpresa,datosCliente,datosVenta,datosConfig,responseDatosEstablecimiento,
                                         resolve, reject) => {
     try{
         //GENERATE PDF FROM VENTA
@@ -379,10 +379,10 @@ exports.generatePdfFromVentaFactura = (datosEmpresa,datosCliente,datosVenta,dato
                 if (err) {
                     return console.error(err);
                 }                
-                generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, responseDatosEstablecimiento,resolve, reject);
+                generatePDF(valorIva, doc,datosEmpresa,datosCliente,datosVenta,datosConfig, responseDatosEstablecimiento,resolve, reject);
             });
         }else{
-            generatePDF(doc,datosEmpresa,datosCliente,datosVenta,datosConfig, responseDatosEstablecimiento, resolve, reject);
+            generatePDF(valorIva, doc,datosEmpresa,datosCliente,datosVenta,datosConfig, responseDatosEstablecimiento, resolve, reject);
         }
 
     }catch(exception){
@@ -394,12 +394,12 @@ exports.generatePdfFromVentaFactura = (datosEmpresa,datosCliente,datosVenta,dato
     }
 }
 
-async function generatePDF(pdfDoc, datosEmpresa, datosCliente,datosVenta,datosConfig, responseDatosEstablecimiento,resolve, reject){
+async function generatePDF(valorIva, pdfDoc, datosEmpresa, datosCliente,datosVenta,datosConfig, responseDatosEstablecimiento,resolve, reject){
     const path = `./files/pdf`;
     const nameFile = `/${Date.now()}_pdf_venta.pdf`;
 
     await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,datosConfig, responseDatosEstablecimiento);
-    await generateInvoiceTable(pdfDoc,datosVenta, datosCliente);
+    await generateInvoiceTable(valorIva, pdfDoc,datosVenta, datosCliente);
 
     let stream = fs.createWriteStream(`${path}${nameFile}`);
     pdfDoc.pipe(stream).on('finish', function () {
@@ -566,7 +566,7 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     pdfDoc.rect(pdfDoc.x - 10, 320 - 10, 560, 80).stroke();
 }
 
-async function generateInvoiceTable(doc, datosVenta, datosCliente){
+async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
   let invoiceTableTop = 420;
 
   doc.font("Helvetica-Bold");
@@ -616,7 +616,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     subtotalPosition,
     "",
     "",
-    "Subtotal 12%",
+    `Subtotal ${parseInt(valorIva)}%`,
     "",
     formatCurrency(datosVenta[0].venta_subtotal_12, 2)
   );
@@ -676,7 +676,7 @@ async function generateInvoiceTable(doc, datosVenta, datosCliente){
     iva12Position,
     "",
     "",
-    "IVA 12%",
+    `IVA ${parseInt(valorIva)}%`,
     "",
     formatCurrency(datosVenta[0].venta_valor_iva, 2)
   );

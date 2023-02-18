@@ -4,7 +4,7 @@ const util = require('util');
 const ftp = require("basic-ftp");
 const sharedFunctions = require('../../util/sharedfunctions');
 
-exports.generatePdfFromProforma = (datosEmpresa,datosCliente,datosProforma) => {
+exports.generatePdfFromProforma = (valorIva, datosEmpresa,datosCliente,datosProforma) => {
     return new Promise((resolve, reject) => {
 
         try{
@@ -17,10 +17,10 @@ exports.generatePdfFromProforma = (datosEmpresa,datosCliente,datosProforma) => {
                     if (err) {
                         return console.error(err);
                     }                
-                    generatePDF(doc,datosEmpresa,datosCliente,datosProforma, resolve, reject);
+                    generatePDF(valorIva, doc,datosEmpresa,datosCliente,datosProforma, resolve, reject);
                 });
             }else{
-                generatePDF(doc,datosEmpresa,datosCliente,datosProforma, resolve, reject);
+                generatePDF(valorIva, doc,datosEmpresa,datosCliente,datosProforma, resolve, reject);
             }
     
         }catch(exception){
@@ -33,12 +33,12 @@ exports.generatePdfFromProforma = (datosEmpresa,datosCliente,datosProforma) => {
     });
 }
 
-async function generatePDF(pdfDoc, datosEmpresa, datosCliente, datosProforma,resolve, reject){
+async function generatePDF(valorIva, pdfDoc, datosEmpresa, datosCliente, datosProforma,resolve, reject){
     const path = `./files/pdf`;
     const nameFile = `/${Date.now()}_pdf_proforma.pdf`;
 
     await generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosProforma);
-    await generateInvoiceTable(pdfDoc,datosProforma, datosCliente);
+    await generateInvoiceTable(valorIva, pdfDoc,datosProforma, datosCliente);
 
     let stream = fs.createWriteStream(`${path}${nameFile}`);
     pdfDoc.pipe(stream).on('finish', function () {
@@ -97,7 +97,7 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosProforma)
     pdfDoc.rect(pdfDoc.x - 10, 230 - 10, 560, 80).stroke();
 }
 
-async function generateInvoiceTable(doc, datosProforma, datosCliente){
+async function generateInvoiceTable(valorIva, doc, datosProforma, datosCliente){
   let i;
   let invoiceTableTop = 330;
 
@@ -150,7 +150,7 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     subtotalPosition,
     "",
     "",
-    "Subtotal 12%",
+    `Subtotal ${valorIva}%`,
     "",
     formatCurrency(datosProforma[0].prof_subtotal_12, 2)
   );
@@ -201,7 +201,7 @@ async function generateInvoiceTable(doc, datosProforma, datosCliente){
     iva12Position,
     "",
     "",
-    "IVA 12%",
+    `IVA ${valorIva}%`,
     "",
     formatCurrency(datosProforma[0].prof_valor_iva, 2)
   );
