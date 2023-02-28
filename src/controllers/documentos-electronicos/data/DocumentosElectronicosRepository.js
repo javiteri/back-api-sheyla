@@ -366,9 +366,6 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
                     valorIva = "8"
                 }
             }
-            /*if(responseConfigValorIva[0].length > 0){
-                valorIva = responseConfigValorIva[0][0].con_valor; 
-            }*/
             
             // GENERATE PDF WHIT DATA                            
             responseDatosVenta[0]['listVentasDetalles'] = responseDatosVentaDetalles[0];
