@@ -53,7 +53,8 @@ exports.insertCompra = async (datosCompra) => {
         try{
             const {empresaId,tipoCompra,compraNumero,compraFechaHora,
                     usuId,proveedorId,subtotal12,subtotal0,valorIva,compraTotal,formaPago,
-                    obs, sriSustento,compraAutorizacionSri,compraNcId, nombreBd} = datosCompra;
+                    obs, sriSustento,compraAutorizacionSri,compraNcId, nombreBd,
+                    refrescarPvpSegunUltimaCompra} = datosCompra;
             const compraDetallesArray = datosCompra['compraDetalles'];
             
             let isPlusInventario;
@@ -65,9 +66,9 @@ exports.insertCompra = async (datosCompra) => {
             }
 
             // INSERT VENTA Y OBTENER ID
-                // INSERTAR EN EL CAMPO UNICO CORRESPONDIENTE
-                // SI SALTA QUE YA EXISTE ENTONCES ENVIAR UN MENSAJE AL CLIENTE PARA QUE SE MUESTRE
-                // SI TODO ESTA CORRECTO SEGUIR CON LA INSERCION DEL DETALLE DE LA VENTA
+            // INSERTAR EN EL CAMPO UNICO CORRESPONDIENTE
+            // SI SALTA QUE YA EXISTE ENTONCES ENVIAR UN MENSAJE AL CLIENTE PARA QUE SE MUESTRE
+            // SI TODO ESTA CORRECTO SEGUIR CON LA INSERCION DEL DETALLE DE LA VENTA
             // INSERT VENTA DETALLE CON EL ID DE LA VENTA RECIBIDO
             // EN CADA VENTA DETALLE SE DEBE BAJAR EL STOCK DEL PRODUCTO CORRESPONDIENTE
             const sqlQueryExistCompra = `SELECT * FROM ${nombreBd}.compras WHERE compra_empresa_id = ? AND compra_tipo = ? 
@@ -75,12 +76,15 @@ exports.insertCompra = async (datosCompra) => {
             const sqlQueryInsertCompra = `INSERT INTO ${nombreBd}.compras (
                 compra_empresa_id,compra_tipo,compra_numero,compra_fecha_hora,compra_usu_id,compra_proveedor_id,
                 compra_subtotal_12,compra_subtotal_0,compra_valor_iva,compra_total,compra_forma_pago,compra_observaciones,
-                compra_sri_sustento,compra_autorizacion_sri,compra_nc_nd_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+                compra_sri_sustento,compra_autorizacion_sri,compra_nc_nd_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
             const sqlQueryInsertCompraDetalle = `INSERT INTO ${nombreBd}.compras_detalles (comprad_compra_id,comprad_pro_id,comprad_cantidad, 
-                comprad_iva,comprad_producto,comprad_vu,comprad_descuento,comprad_vt) VALUES (?,?,?,?,?,?,?,?)`
+                comprad_iva,comprad_producto,comprad_vu,comprad_descuento,comprad_vt) VALUES (?,?,?,?,?,?,?,?)`;
 
-            const sqlQueryUpdatePlusStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`
-            const sqlQueryUpdateMinusStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ?`
+            const sqlQueryUtilidadProduto = `SELECT prod_utilidad FROM ${nombreBd}.productos WHERE prod_id = ?`;
+            const sqlQueryUpdatePvpSegunNuevoPrecio = `UPDATE ${nombreBd}.productos SET prod_costo = ?, prod_pvp = ? WHERE prod_empresa_id = ? AND prod_id = ?`;
+
+            const sqlQueryUpdatePlusStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock + ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
+            const sqlQueryUpdateMinusStockProducto = `UPDATE ${nombreBd}.productos SET prod_stock = (prod_stock - ?) WHERE prod_empresa_id = ? AND prod_id = ?`;
             
             await conexion.beginTransaction();
             let result = await conexion.query(sqlQueryExistCompra, [empresaId,tipoCompra,proveedorId,compraNumero]);
@@ -117,7 +121,22 @@ exports.insertCompra = async (datosCompra) => {
             
                 await conexion.query(isPlusInventario? sqlQueryUpdatePlusStockProducto : sqlQueryUpdateMinusStockProducto,
                                     [cantidad,empresaId,prodId]);
+                
+                //UPDATE PVP SEGUN UTILIDAD DEL PRODUCTO 
+                if(refrescarPvpSegunUltimaCompra){
+                    let responseUtilidadProducto = await conexion.query(sqlQueryUtilidadProduto, prodId);
                     
+                    if(responseUtilidadProducto[0].length > 0 && Number(responseUtilidadProducto[0][0].prod_utilidad) > 0){
+                        let utilidadPercent = Number(responseUtilidadProducto[0][0].prod_utilidad);
+                        let costoProductoActual = Number(valorUnitario);
+
+                        const valorUtilidad = ((costoProductoActual * utilidadPercent) / 100).toFixed(3);
+                        const valorPrecio = (Number(valorUtilidad) + Number(costoProductoActual)).toFixed(3);
+
+                        await conexion.query(sqlQueryUpdatePvpSegunNuevoPrecio, [costoProductoActual, valorPrecio, empresaId, prodId]);
+                    }
+                }
+
                 if(index == arrayListCompraDetalle.length - 1){
                     await conexion.commit();
                     conexion.release();
@@ -129,7 +148,8 @@ exports.insertCompra = async (datosCompra) => {
                     return;
                 }
             }
-        }catch(exp){           
+
+        }catch(exp){
             await conexion.rollback();
             conexion.release();
 
@@ -291,7 +311,6 @@ exports.getNextNumeroSecuencialByIdEmp = async(idEmp,tipoDoc,idProveedor,compraN
             });
 
         }catch(exception){
-            console.log('error obteniendo siguiente secuencial');
             reject('error obteniendo siguiente secuencial');
         }
     });

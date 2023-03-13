@@ -88,16 +88,16 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
                     tipoVenta: VENTA_TIPO,
                     estado: estado,
                     nombreBd: nombreBd
-                }   
+                }
 
                 // SEND DATA TO QUEUE
                 docElectronicosValidarQueue.add(objSendJob,{
                     removeOnComplete: true,
                     removeOnFail: true,
-                    attempts: 100,
+                    attempts: 50,
                     backoff: {
                         type: 'fixed',
-                        delay: 60000
+                        delay: 30000
                     }
                 });
             }
