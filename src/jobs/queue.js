@@ -10,6 +10,7 @@ docElectronicoQueue.process(async (job, done) => docElectronicoworker(job, done)
 
 
 docElectronicosValidarQueue.process(async (job, done) => {
+    console.log('enviando a autorizarListWorker');
     autorizarListWorker(job, done);
 });
 docElectronicosValidarQueue.on('completed', job => {
