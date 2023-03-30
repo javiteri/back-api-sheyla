@@ -94,11 +94,11 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
                 await docElectronicosValidarQueue.add(objSendJob,{
                     removeOnComplete: true,
                     removeOnFail: true,
-                    /*attempts: 100,
+                    attempts: 50,
                     backoff: {
                         type: 'fixed',
-                        delay: 30000
-                    }*/
+                        delay: 15000
+                    }
                 });
 
             }

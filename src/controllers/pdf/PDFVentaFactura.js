@@ -372,7 +372,7 @@ exports.generatePdfFromVentaFactura = (valorIva, datosEmpresa,datosCliente,datos
     try{
         //GENERATE PDF FROM VENTA
         const path = `./files/pdf`;
-        let doc = new PDFDocument({margin: 50, size: 'A4'});
+        let doc = new PDFDocument({margin: 10, size: 'A4'});
         
         if(!fs.existsSync(`${path}`)){
             fs.mkdir(`${path}`,{recursive: true}, (err) => {
@@ -558,16 +558,16 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
 
     //pdfDoc.rect(290,110,250,150).stroke();
 
-    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${datosCliente[0]['cli_nombres_natural']}`, 20, 315 );
+    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${datosCliente[0]['cli_nombres_natural']}`, 20, 305 );
     pdfDoc.text(`Identificacion: ${datosCliente[0]['cli_documento_identidad']}`, 20 );
     pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20);
     pdfDoc.text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20);
 
-    pdfDoc.rect(pdfDoc.x - 10, 320 - 10, 560, 80).stroke();
+    pdfDoc.rect(pdfDoc.x - 10, 310 - 10, 560, 80).stroke();
 }
 
 async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
-  let invoiceTableTop = 420;
+  let invoiceTableTop = 400;
 
   doc.font("Helvetica-Bold");
 
@@ -609,8 +609,13 @@ async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
     x: doc.x - 10,
     y: invoiceTableTop
   });
+  
 
-  const subtotalPosition = doc.y + (1 + 1) * 10;
+  if(doc.y >= 642){
+    doc.addPage();
+  }
+  
+  const subtotalPosition = doc.y + 10;
   generateTableRow1(
     doc,
     subtotalPosition,
@@ -834,7 +839,7 @@ function generateTableRow1(
   lineTotal
 ) {
 
-  doc.fontSize(10)
+  doc.fontSize(9)
       .text(item, 20, y)
       .text(description, 150, y,{ width: 200})
       .text(unitCost, 280, y, { width: 90, align: "right" })
