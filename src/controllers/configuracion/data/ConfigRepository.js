@@ -123,7 +123,7 @@ exports.getConfigByIdEmp = async (idEmpresa, nombreConfig, nombreBd) => {
     return new Promise(async (resolve, reject) => {
         
         try{
-            let querySelectConfigs = `SELECT * FROM ${nombreBd}.config WHERE con_empresa_id = ? AND con_nombre_config = ? ORDER BY con_id DESC `;
+            let querySelectConfigs = `SELECT * FROM ${nombreBd}.config WHERE con_empresa_id = ? AND con_nombre_config LIKE ? ORDER BY con_id DESC `;
             
             let results = await pool.query(querySelectConfigs, [idEmpresa, nombreConfig]);
             resolve({

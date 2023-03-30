@@ -95,15 +95,14 @@ module.exports = async (job, done) => {
                     insertDocumento(ventaTipo, ventaFecha,ventaNumero,idClienteReturned,ventaValor,
                                     claveAcceso, done, resultMensaje[0],ventaId, data);
 
-                    }else{
-                        let clienteId = resultExistClient[0][0].CLI_CODIGO;
-                        // INSERTAR EN LA TABLA DOCUMENTOS
-                        insertDocumento(ventaTipo, ventaFecha,ventaNumero,clienteId,ventaValor,
+                }else{
+                    let clienteId = resultExistClient[0][0].CLI_CODIGO;
+                    // INSERTAR EN LA TABLA DOCUMENTOS
+                    insertDocumento(ventaTipo, ventaFecha,ventaNumero,clienteId,ventaValor,
                                         claveAcceso, done,resultMensaje[0],ventaId, data);
-                    }
+                }
             }
         }
-            
     }catch(exception){
         console.log(exception);
         done(null);
@@ -124,9 +123,7 @@ async function insertDocumento(ventaTipo,ventaFecha,ventaNumero,clienteId,
         function(result){
             createXMLPDFUtorizadoFTPAndSendEmail(claveAcceso,done, jobData);
         },
-        function(error){
-            done(null,job.data);
-        }
+        function(error){ done(null, jobData); }
     );
 }
 
@@ -238,21 +235,7 @@ function sendEmailToClient(claveAcceso, jobData, done){
         if(emailCliente.includes(',')){
             arrayEmails = emailCliente.split(',');
         }else{
-            
             arrayEmails = [emailCliente];
-           // firstEmailCliente = [emailCliente];
-            /*let options = {
-                host: 'sheyla2.dyndns.info',
-                path: encodeURI(`/CORREOS_VARIOS/MYSQL_MAIL.php?FECHA=${dateString}&FECHAGAR=${dateString}&TIPO=2&EMPRESA=${nombreEmpresa}
-                &ACCESO=${claveAcceso}&EMAIL=${firstEmailCliente}&CLIENTE=${nombreCliente}&DOCUMENTO=${tipoDocumento} ${numeroDocumento}
-                &WEB=${paginaWeb}&TIME=00:00 `) 
-            };
-
-            httpClient.request(options, callback).end();
-
-            done(null,jobData);
-
-            return;*/
         }
 
         arrayEmails.forEach((element, index) => {

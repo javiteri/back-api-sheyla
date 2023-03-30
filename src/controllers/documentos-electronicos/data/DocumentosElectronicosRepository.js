@@ -88,7 +88,7 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
                     tipoVenta: VENTA_TIPO,
                     estado: estado,
                     nombreBd: nombreBd
-                }   
+                }
 
                 // SEND DATA TO QUEUE
                 await docElectronicosValidarQueue.add(objSendJob,{
@@ -367,9 +367,6 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
                     valorIva = "8"
                 }
             }
-            /*if(responseConfigValorIva[0].length > 0){
-                valorIva = responseConfigValorIva[0][0].con_valor; 
-            }*/
             
             // GENERATE PDF WHIT DATA                            
             responseDatosVenta[0]['listVentasDetalles'] = responseDatosVentaDetalles[0];
