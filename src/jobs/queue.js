@@ -12,22 +12,26 @@ docElectronicoQueue.process(async (job, done) => docElectronicoworker(job, done)
 docElectronicosValidarQueue.process(async (job, done) => {
     autorizarListWorker(job, done);
 });
-docElectronicosValidarQueue.on('completed', job => {
+docElectronicosValidarQueue.on('completed', async (job) => {
     
     if(job.returnvalue){
         console.log('send data to worker');
-        docElectronicoQueue.add(job,{
+        await docElectronicoQueue.add(job,{
             removeOnComplete: true,
             removeOnFail: true,
-            attempts: 100,
+            attempts: 70,
             backoff: {
                 type: 'fixed',
-                delay: 60000
+                delay: 15000
             }
         });
+        
     }else{
         console.log('inside excel');
     }
+});
+docElectronicosValidarQueue.on('failed', (job, err) => {
+    console.log('dentro de error');
 });
 
 

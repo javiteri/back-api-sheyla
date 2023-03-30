@@ -105,7 +105,8 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
 
                 stream.on('end', async function() {
                     let str = xmlString.replace(/[\n\r\t]+/g, '');
-                            
+                        
+                    console.log('inside insert xml string ');
                     await poolEFactra.query(sqlQueryInsertXmlBlob,[responseSelectEmpresaAutorizacion[0][0].empresa_id,claveActivacion, str]);
                     //DELETE XML FILE GENERATED
                     deleteFile(pathFile);

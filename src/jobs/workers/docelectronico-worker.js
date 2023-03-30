@@ -12,6 +12,7 @@ module.exports = async (job, done) => {
 
         const data = job.data.returnvalue;
 
+        console.log(`data in worker autorizar ${data}`);
         const sqlQueryAutoMessage = `SELECT auto_mensaje, auto_estado FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
         const queryClienteIfExist = `SELECT * FROM clientes WHERE CLI_RUC = ? AND CLI_EMPRESA_ID = ? LIMIT 1`;
         const sqlInsertCliente = `INSERT INTO clientes (CLI_RUC, CLI_NOMBRE,CLI_EMPRESA_ID,CLI_CLAVE) VALUES (?,?,?,?)`;
@@ -105,7 +106,8 @@ module.exports = async (job, done) => {
             
     }catch(exception){
         console.log(exception);
-        done(exception);
+        done(null);
+        //done(exception);
     }
 };
 
