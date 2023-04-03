@@ -134,16 +134,16 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosVenta,dat
 
     pdfDoc.rect(pdfDoc.x - 10,170 - 5,300,pdfDoc.y - 145).stroke();
 
-    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${datosCliente[0]['cli_nombres_natural']}`, 20, 320 );
-    pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20, 340);
-    pdfDoc.text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20, 360);
+    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${datosCliente[0]['cli_nombres_natural']}`, 20, 285 );
+    pdfDoc.text(`Fecha Emision: ${dayVenta}/${monthVenta}/${yearVenta}`, 20);
+    pdfDoc.text(`Direccion: ${datosCliente[0]['cli_direccion']}`, 20);
 
-    pdfDoc.rect(pdfDoc.x - 10, 320 - 10, 560, 80).stroke();
+    pdfDoc.rect(pdfDoc.x - 10, 280, 560, 80).stroke();
 }
 
 async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
   let i;
-  let invoiceTableTop = 420;
+  let invoiceTableTop = 380;
 
   doc.font("Helvetica-Bold");
   
@@ -178,7 +178,11 @@ async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
     y: invoiceTableTop
   });
 
-  const subtotalPosition = doc.y + (1 + 1) * 10;
+  if(doc.y >= 642){
+    doc.addPage();
+  }
+
+  const subtotalPosition = doc.y + 10;
   
   generateTableRow(
     doc,
@@ -268,7 +272,12 @@ async function generateFooterTable(pdfDoc, datosCliente, datosVenta, yposition){
     let yposition6 = yposition5 + 10;
     pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
 
-    pdfDoc.rect(pdfDoc.x - 10,yposition -5,280, 100).stroke();
+    if(datosVenta[0]['venta_observaciones'] && datosVenta[0]['venta_observaciones'].length > 0){
+      pdfDoc.text(`Obs: ${datosVenta[0]['venta_observaciones']}`, {width: 250});
+    }
+    
+
+    pdfDoc.rect(pdfDoc.x - 10,yposition -5, 280, 115).stroke();
 
 
     pdfDoc.lineCap('butt')

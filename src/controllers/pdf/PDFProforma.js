@@ -99,7 +99,7 @@ async function generateHeaderPDF(pdfDoc,datosEmpresa,datosCliente,datosProforma)
 
 async function generateInvoiceTable(valorIva, doc, datosProforma, datosCliente){
   let i;
-  let invoiceTableTop = 330;
+  let invoiceTableTop = 315;
 
   doc.font("Helvetica-Bold");
   
@@ -142,8 +142,11 @@ async function generateInvoiceTable(valorIva, doc, datosProforma, datosCliente){
     y: invoiceTableTop
   });
 
+  if(doc.y >= 642){
+    doc.addPage();
+  }
 
-  const subtotalPosition = doc.y + (1 + 1) * 10;
+  const subtotalPosition = doc.y + 10;
   
   generateTableRow(
     doc,
@@ -243,6 +246,10 @@ async function generateFooterTable(pdfDoc, datosCliente, datosProforma, ypositio
     pdfDoc.text(`TELEFONO: ${datosCliente[0]['cli_teleono']}`, 20, yposition5 , {width: 250});
     let yposition6 = yposition5 + 10;
     pdfDoc.text(`CELULAR: ${datosCliente[0]['cli_celular']}`, 20, yposition6, {width: 250});
+
+    if(datosProforma[0]['prof_observaciones'] && datosProforma[0]['prof_observaciones'].length > 0){
+      pdfDoc.text(`Obs: ${datosProforma[0]['prof_observaciones']}`, {width: 250});
+    }
 
     pdfDoc.rect(pdfDoc.x - 10,yposition + 30,280, 100).stroke();
 

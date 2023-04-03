@@ -123,7 +123,7 @@ async function generateHeaderPDFByXmlData(pdfDoc,datosFactura){
         .fontSize(28).text(`${infoTributaria.estab}-${infoTributaria.ptoEmi}-${secuencial}12`, 280, 230);
     pdfDoc.font(fontNormal).fontSize(9).text(`${infoTributaria.claveAcceso}`, 280, 250);
 
-    pdfDoc.rect(pdfDoc.x - 10,50,300,pdfDoc.y - 20).stroke();
+    //pdfDoc.rect(pdfDoc.x - 10,50,300,pdfDoc.y - 15).stroke();
 
     //pdfDoc.rect(290,110,250,150).stroke();
 
@@ -182,66 +182,6 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     y: invoiceTableTop
   });
 
-  /*generateTableRow(
-    doc,
-    invoiceTableTop,
-    "Cod Principal",
-    "Description",
-    "Cant",
-    "Precio Unitario",
-    "Precio Total"
-  );
-
-  generateHr(doc, invoiceTableTop + 20);
-  doc.font("Helvetica");
-
-  let index = 0;
-  let position = 0;
-  for (i = 0; i < listDetalle.length; i++) {
-
-    const item = listDetalle[i];
-    position = invoiceTableTop + (index + 1) * 30;
-
-    index++;
-
-    if(position > 800){
-        index = 0
-        invoiceTableTop = 5;
-        position = invoiceTableTop + (index + 1) * 30;
-        index++;
-        doc.addPage();
-    }
-
-    generateTableRow(
-        doc,
-        position,
-        item.codigoPrincipal,
-        removeAccentDiactricsFromString(item.descripcion),
-        item.cantidad,
-        formatCurrency(item.precioUnitario),
-        formatCurrency(item.precioTotalSinImpuesto)
-      );
-
-    
-    generateHr(doc, position + 20);
-  }
-
-  if(position >= 600){
-    index = 0
-    invoiceTableTop = 5;
-    doc.addPage();
-  }
-
-  let listTotalImpuestos = (totalImpuestos.length == undefined)? [totalImpuestos]: totalImpuestos;
-
-  listTotalImpuestos.forEach((elemento) => {
-    if(elemento.codigoPorcentaje == "2"){
-      valorSubtotal12 = elemento.baseImponible;
-      valorIva12 = elemento.valor;
-    }else{
-      valorSubtotal0 = elemento.baseImponible;
-    }
-  });*/
 
 
   const subtotalPosition = doc.y + (1 + 1) * 10;;
@@ -312,6 +252,7 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
 
 async function generateFooterTablePDFXml(pdfDoc,datosFactura, yposition){
 
+  
   let infoAdicional = datosFactura['infoAdicional'].campoAdicional;
   let infoFactura = datosFactura['infoFactura'];
 
@@ -323,6 +264,10 @@ async function generateFooterTablePDFXml(pdfDoc,datosFactura, yposition){
 
   ypositionzero = yposition + 20;
   pdfDoc.font(fontBold).text('Informacion Adicional', 20, ypositionzero , {width: 250});
+
+  console.log(datosFactura['infoAdicional']);
+  console.log(datosFactura);
+  //console.log(infoAdicional);
 
   infoAdicional.forEach((elemento, index) => {
     pdfDoc.font(fontNormal).text(`${elemento['$'].nombre}: ${elemento['_']}`, {width: 250});  
