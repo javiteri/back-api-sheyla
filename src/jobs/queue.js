@@ -6,9 +6,9 @@ const {autorizarListWorker} = require('./workers');
 const docElectronicosValidarQueue = new Queue('docelectronicos-validar');
 const docElectronicoQueue = new Queue('docelectronicos');
 
-docElectronicoQueue.process(async (job, done) => {
+docElectronicoQueue.process(2, async (job, done) => {
     try{
-        docElectronicoworker(job, done) 
+        await docElectronicoworker(job, done) 
     }catch(e){
         console.log(e);
         done(null);
@@ -17,9 +17,9 @@ docElectronicoQueue.process(async (job, done) => {
 );
 
 
-docElectronicosValidarQueue.process(async (job, done) => {
+docElectronicosValidarQueue.process(2, async (job, done) => {
     try{
-        autorizarListWorker(job, done);
+        await autorizarListWorker(job, done);
     }catch(e){
         console.log(e);
         done(null);

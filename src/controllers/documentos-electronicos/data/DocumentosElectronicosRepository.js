@@ -94,7 +94,7 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
                 await docElectronicosValidarQueue.add(objSendJob,{
                     removeOnComplete: true,
                     removeOnFail: true,
-                    attempts: 50,
+                    attempts: 70,
                     backoff: {
                         type: 'fixed',
                         delay: 15000

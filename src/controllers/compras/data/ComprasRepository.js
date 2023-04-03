@@ -5,17 +5,46 @@ const soapRequest = require('easy-soap-request');
 const pdfGenerator = require('../../pdf/PDFGenerator');
 
 exports.verifyListProductXml = async (idEmpresa, listProductosXml, nombreBd) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
 
         const sqlQueryExistProduct = `SELECT * FROM ${nombreBd}.PRODUCTOS WHERE prod_empresa_id = ? AND (prod_codigo_xml = ? || prod_codigo = ?) LIMIT 1 `;
 
         let resultProductsExist = [];
 
-        listProductosXml.forEach(async (elemento, index) => {
+        for(const elemento of listProductosXml){
+            let results = await pool.query(sqlQueryExistProduct, [idEmpresa, elemento.codigoPrincipal, elemento.codigoPrincipal]);
+            
+            let elementTmp = elemento;
+            if(results[0][0]){
+                    
+                    elementTmp['codigoXml'] = elemento.codigoPrincipal;
+                    elementTmp['exist'] = true;
+                    elementTmp['codigoInterno'] =  results[0][0].prod_codigo;
+                    elementTmp['descripcionInterna'] = results[0][0].prod_nombre;
+
+                    resultProductsExist.push(elementTmp);
+
+            }else{
+                    elementTmp['codigoXml'] = elemento.codigoPrincipal;
+                    elementTmp['exist'] = (!results[0] | results[0] == undefined | results[0] == null | !results[0].length) ? false : true;
+
+                    resultProductsExist.push(elementTmp);
+            }
+
+            if(resultProductsExist.length == listProductosXml.length){
+                    resolve({
+                        isSuccess: true,
+                        mensaje: 'ok',
+                        listProductosXml: resultProductsExist
+                    });
+            }
+
+        }});
+        /*listProductosXml.forEach(async (elemento, index) => {
 
             let results = await pool.query(sqlQueryExistProduct, [idEmpresa, elemento.codigoPrincipal, elemento.codigoPrincipal]);
             
-
+            console.log(results);
             let elementTmp = elemento;
             if(!(!results[0] | results[0] == undefined | results[0] == null | !results[0].length)){
                     
@@ -41,7 +70,7 @@ exports.verifyListProductXml = async (idEmpresa, listProductosXml, nombreBd) => 
                     });
                 }
             });
-        });
+        });*/
 }
 
 exports.insertCompra = async (datosCompra) => {
