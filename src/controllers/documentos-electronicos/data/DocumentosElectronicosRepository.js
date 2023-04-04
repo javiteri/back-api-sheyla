@@ -4,9 +4,10 @@ const excelJS = require("exceljs");
 const fs = require('fs');
 const pdfGenerator = require('../../pdf/PDFGenerator');
 const sharedFunctions = require('../../../util/sharedfunctions');
+const { processDocumento } = require('../../../jobs/workers/AutorizarListHandler');
 
 //const {docElectronicoQueue} = require('../../../jobs/queue');
-const {docElectronicosValidarQueue} = require('../../../jobs/queue');
+//const {docElectronicosValidarQueue} = require('../../../jobs/queue');
 
 const codDoc = [
     {
@@ -90,8 +91,10 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
                     nombreBd: nombreBd
                 }
 
+                processDocumento(objSendJob);
+
                 // SEND DATA TO QUEUE
-                await docElectronicosValidarQueue.add(objSendJob,{
+                /*await docElectronicosValidarQueue.add(objSendJob,{
                     removeOnComplete: true,
                     removeOnFail: true,
                     attempts: 70,
@@ -99,7 +102,7 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
                         type: 'fixed',
                         delay: 15000
                     }
-                });
+                });*/
 
             }
             

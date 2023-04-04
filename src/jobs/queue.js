@@ -1,14 +1,14 @@
 const Queue = require('bull');
 const {docElectronicoworker} = require('./workers');
-const {autorizarListWorker} = require('./workers');
+//const {autorizarListWorker} = require('./workers');
 
 //Colas para los procesos de autorizacion de facturaas y asi desacoplar los repositorios
-const docElectronicosValidarQueue = new Queue('docelectronicos-validar');
+//const docElectronicosValidarQueue = new Queue('docelectronicos-validar');
 const docElectronicoQueue = new Queue('docelectronicos');
 
 docElectronicoQueue.process(2, async (job, done) => {
     try{
-        await docElectronicoworker(job, done) 
+        docElectronicoworker(job, done) 
     }catch(e){
         console.log(e);
         done(null);
@@ -16,16 +16,7 @@ docElectronicoQueue.process(2, async (job, done) => {
 }
 );
 
-
-docElectronicosValidarQueue.process(2, async (job, done) => {
-    try{
-        await autorizarListWorker(job, done);
-    }catch(e){
-        console.log(e);
-        done(null);
-    }
-});
-docElectronicosValidarQueue.on('completed', async (job) => {
+/*docElectronicosValidarQueue.on('completed', async (job) => {
     
     if(job.returnvalue){
         console.log('send data to worker');
@@ -47,6 +38,14 @@ docElectronicosValidarQueue.on('failed', (job, err) => {
     console.log('dentro de error');
 });
 
+docElectronicosValidarQueue.process(2, async (job, done) => {
+    try{
+        await autorizarListWorker(job, done);
+    }catch(e){
+        console.log(e);
+        done(null);
+    }
+});*/
 
-module.exports = {docElectronicosValidarQueue};
-//module.exports = {docElectronicoQueue};
+//module.exports = {docElectronicosValidarQueue};
+module.exports = {docElectronicoQueue};

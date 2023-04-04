@@ -61,7 +61,6 @@ async function generateHeaderPDFByXmlData(pdfDoc,datosFactura){
     let perteneceRegimenRimpe = (infoTributaria.contribuyenteRimpe != null || infoTributaria.contribuyenteRimpe != null)? true : false;
     let agenteDeRetencion = (infoTributaria.agenteRetencion != null || infoTributaria.agenteRetencion != null)? infoTributaria.agenteRetencion :  '';
 
-
     let pathImagen = await getImagenByRucEmp(infoTributaria.ruc);
     
     if(!pathImagen){
@@ -123,16 +122,16 @@ async function generateHeaderPDFByXmlData(pdfDoc,datosFactura){
         .fontSize(28).text(`${infoTributaria.estab}-${infoTributaria.ptoEmi}-${secuencial}12`, 280, 230);
     pdfDoc.font(fontNormal).fontSize(9).text(`${infoTributaria.claveAcceso}`, 280, 250);
 
-    //pdfDoc.rect(pdfDoc.x - 10,50,300,pdfDoc.y - 15).stroke();
+    pdfDoc.rect(pdfDoc.x - 10,50,300,pdfDoc.y - 30).stroke();
 
     //pdfDoc.rect(290,110,250,150).stroke();
 
-    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${infoFactura.razonSocialComprador}`, 20, 315 );
-    pdfDoc.text(`Identificacion: ${infoFactura.identificacionComprador}`, 20, 330 );
-    pdfDoc.text(`Fecha Emision: ${infoFactura.fechaEmision}`, 20, 345);
-    pdfDoc.text(`Direccion: ${infoFactura.direccionComprador}`, 20, 360);
+    pdfDoc.text(`Razón Social / Nombres y Apellidos: ${infoFactura.razonSocialComprador}`, 20, 300 );
+    pdfDoc.text(`Identificacion: ${infoFactura.identificacionComprador}`, 20, 315 );
+    pdfDoc.text(`Fecha Emision: ${infoFactura.fechaEmision}`, 20, 330);
+    pdfDoc.text(`Direccion: ${infoFactura.direccionComprador ? infoFactura.direccionComprador : ''}`, 20, 345);
 
-    pdfDoc.rect(pdfDoc.x - 10, 320 - 10, 560, 80).stroke();
+    pdfDoc.rect(pdfDoc.x - 10, 320 - 30, 560, 80).stroke();
 }
 
 async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
@@ -141,12 +140,21 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
   let listDetalle = (datosFactura['detalles'].length == undefined)? [datosFactura['detalles']] : datosFactura['detalles'];
 
   let totalImpuestos = infoFactura['totalConImpuestos'].totalImpuesto;
-  let valorSubtotal12 = '0.0';
+  let valorSubtotal12 = 0.00;
   let valorIva12 = '0.0';
-  let valorSubtotal0 = '';
+  let valorSubtotal0 = 0.00;
+
 
   let i;
-  let invoiceTableTop = 420;
+  let invoiceTableTop = 390;
+
+  for(const impuesto of totalImpuestos){
+    if(impuesto['codigoPorcentaje'] == '0'){
+      valorSubtotal0 += Number(impuesto['baseImponible']);
+    }else{
+      valorSubtotal12 += Number(impuesto['baseImponible']);
+    }
+  }
 
   doc.font("Helvetica-Bold");
  
@@ -182,9 +190,11 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     y: invoiceTableTop
   });
 
+  if(doc.y >= 642){
+    doc.addPage();
+  }
 
-
-  const subtotalPosition = doc.y + (1 + 1) * 10;;
+  const subtotalPosition = doc.y + 10;
   generateTableRow(
     doc,
     subtotalPosition,
@@ -252,7 +262,6 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
 
 async function generateFooterTablePDFXml(pdfDoc,datosFactura, yposition){
 
-  
   let infoAdicional = datosFactura['infoAdicional'].campoAdicional;
   let infoFactura = datosFactura['infoFactura'];
 
@@ -262,19 +271,19 @@ async function generateFooterTablePDFXml(pdfDoc,datosFactura, yposition){
   
   let ypositionzero = 0.0;
 
-  ypositionzero = yposition + 20;
+  ypositionzero = yposition;
   pdfDoc.font(fontBold).text('Informacion Adicional', 20, ypositionzero , {width: 250});
 
-  console.log(datosFactura['infoAdicional']);
-  console.log(datosFactura);
-  //console.log(infoAdicional);
+  if(!(Array.isArray(datosFactura['infoAdicional']))){
+    infoAdicional = [infoAdicional];
+  }
+
 
   infoAdicional.forEach((elemento, index) => {
     pdfDoc.font(fontNormal).text(`${elemento['$'].nombre}: ${elemento['_']}`, {width: 250});  
-
   })
 
-  pdfDoc.rect(pdfDoc.x - 10,yposition + 30,280, 100).stroke();
+  pdfDoc.rect(pdfDoc.x - 10,yposition - 5,280, 90).stroke();
 
   let yValueNow = pdfDoc.y + 60;
 
@@ -765,12 +774,12 @@ function generateTableRow(
     //let descriptionCut = (description.length > 60)? description.slice(0,59)  : description;
     
     doc
-      .fontSize(10)
+      .fontSize(9)
       .text(item, 20, y)
       .text(description, 150, y,{ width: 200})
       .text(unitCost, 280, y, { width: 90, align: "right" })
       .text(quantity, 370, y, { width: 90, align: "right" })
-      .text(lineTotal, 0, y, { align: "right" });
+      .text(lineTotal, doc.page.width - 115, y, { width: 90, align: "right" });
 
 }
 

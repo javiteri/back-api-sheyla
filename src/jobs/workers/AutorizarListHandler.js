@@ -4,8 +4,12 @@ const fs = require('fs');
 const xmlBuilder = require('xmlbuilder');
 const sharedFunctions = require('../../util/sharedfunctions');
 
-module.exports = async(datosDocumento/*job, done*/) => {
+const {docElectronicoQueue} = require('../queue');
+
+exports.processDocumento = async (datosDocumento/*job, done*/) => {
     
+    console.log('inside process documento');
+
     let idEmp = datosDocumento.idEmp;
     let idVenta = datosDocumento.id;
     let identificacion = datosDocumento.identificacion;
@@ -21,15 +25,15 @@ module.exports = async(datosDocumento/*job, done*/) => {
     let nombreBd = job.data.nombreBd;*/
 
     if(estado == 0){
-        prepareAndSendDocumentoElectronicoAsync(idEmp, idVenta, identificacion, tipoVenta, nombreBd, done);
+        prepareAndSendDocumentoElectronicoAsync(idEmp, idVenta, identificacion, tipoVenta, nombreBd/*, done*/);
     }else {
-        queryStateDocumentoElectronicoError(idEmp, idVenta, identificacion, tipoVenta, nombreBd, done);
+        queryStateDocumentoElectronicoError(idEmp, idVenta, identificacion, tipoVenta, nombreBd/*, done*/);
     }
 };
 
 
 //----------------------------------------------------------------
-async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,identificacion,tipo,nombreBd, done){
+async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,identificacion,tipo,nombreBd/*, done*/){
     // VERIFICAR SI ES UNA COMPRA O VENTA POR QUE DE ESO 
     // CONSULTAR Y OBTENER LOS DATOS DE - DATOS CLIENTE O PROVEEDOR
     // - DATOS DE LA VENTA - DATOS DETALLE DE LA VENTA O COMPRA
@@ -93,11 +97,12 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                     //DELETE XML FILE GENERATED
                     await deleteFile(pathFile);
                     sendDataToWorkerAutorizacion(claveActivacion, responseSelectEmpresaAutorizacion[0][0].empresa_id, responseDatosEmpresa[0][0],
-                                                        responseDatosCliente[0][0], responseDatosVenta[0][0], nombreBd, done);
+                                                        responseDatosCliente[0][0], responseDatosVenta[0][0], nombreBd/*, done*/);
                 }else{
                     //DELETE XML FILE GENERATED
+                    console.log('inside xml estado pendiente');
                     await deleteFile(pathFile);
-                    return done(null, null)
+                    return; //done(null, null)
                 }
 
             }else{
@@ -119,7 +124,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                     deleteFile(pathFile);
 
                     sendDataToWorkerAutorizacion(claveActivacion, responseSelectEmpresaAutorizacion[0][0].empresa_id, responseDatosEmpresa[0][0],
-                                                        responseDatosCliente[0][0], responseDatosVenta[0][0], nombreBd, done);
+                                                        responseDatosCliente[0][0], responseDatosVenta[0][0], nombreBd/*, done*/);
                 });
             }
         }
@@ -130,7 +135,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
 }
 
 
-async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identificacion, tipo, nombreBd, done){
+async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identificacion, tipo, nombreBd, /*done*/){
    
     const querySelectVenta = `SELECT ventas.*, usuarios.usu_nombres FROM ${nombreBd}.ventas, 
                             ${nombreBd}.usuarios WHERE venta_usu_id = usu_id AND venta_empresa_id = ?  AND venta_id = ? LIMIT 1`;
@@ -179,7 +184,7 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
         if(results[0].length <= 0){
             // no existe en la tabla autorizaciones
             //enviar otra vez el xml al servicio
-            prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo, nombreBd, done);
+            prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo, nombreBd/*, done*/);
             return{estado:'ok'};
         }else{
             // SE OBTENIENE EL ESTADO DE LA FACTURA EN LA TABLA AUTORIZACION
@@ -192,7 +197,7 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
                 await poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion]);                     
                 await pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra]);
                             
-                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo, nombreBd, done);
+                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo, nombreBd/*, done*/);
 
                 return{estado:'ok'}
             }else if(results[0][0].auto_estado == 1){
@@ -201,10 +206,14 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
                 
                 //ENVIAR A  LA COLA PARA QUE GUARDE LOS DATOS DEL XML Y ENVIE POR CORREO
                 sendDataToWorkerAutorizacion(claveActivacion,results[0][0].auto_id_empresa,datosEmpresa,
-                                                datosCliente,datosVenta,nombreBd, done)
+                                                datosCliente,datosVenta,nombreBd/*, done*/)
                 return{estado:'ok'}
             }else if(results[0][0].auto_estado == 0){
                 await pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra]);
+
+                sendDataToWorkerAutorizacion(claveActivacion,results[0][0].auto_id_empresa,datosEmpresa,
+                                            datosCliente,datosVenta,nombreBd/*, done*/)
+
                 return{estado:'ok'}
             }
         }
@@ -606,7 +615,7 @@ function getCodigoFormaPago(formaPago){
     }
 }
 
-async function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmpresa, datosCliente, datosVenta, nombreBd, done){
+async function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmpresa, datosCliente, datosVenta, nombreBd/*, done*/){
 
     const dateVenta = new Date(datosVenta.venta_fecha_hora);
     
@@ -631,6 +640,15 @@ async function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmp
         nombreBd: nombreBd
     }
 
+    await docElectronicoQueue.add(objSendJob,{
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 70,
+        backoff: {
+            type: 'fixed',
+            delay: 15000
+        }
+    });
     //done(null, objSendJob);
 }
 

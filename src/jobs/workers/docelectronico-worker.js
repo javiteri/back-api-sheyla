@@ -10,7 +10,7 @@ const {deleteFile} = require('../../util/sharedfunctions');
 module.exports = async (job, done) => {
     try{
 
-        const data = job.data.returnvalue;
+        const data = job.data;
 
         console.log(`data in worker autorizar `);
         const sqlQueryAutoMessage = `SELECT auto_mensaje, auto_estado FROM autorizaciones WHERE auto_clave_acceso = ? LIMIT 1`;
@@ -58,9 +58,7 @@ module.exports = async (job, done) => {
                     console.log('todo ok insertando estado venta error');
                     done(null,data);
                 },
-                function(error){
-                    done(null,data);
-                }
+                function(error){done(null,data);}
             );
         }else{
             // SUMA EN 1 A LA PROPIEDAD EMRESAS_WEB_PLAN_ENVIADOS
@@ -71,12 +69,8 @@ module.exports = async (job, done) => {
                 // TODO OK, ENVIAR EMAIL TO URL 
                 // UPDATE TABLA VENTA CON EL ESTADO SI TODO OK
                 updateEstadoVentaDocumentoElectronico('2',valorMensajeElectronica,ventaId, nombreBd).then(
-                    function(result){
-                        done(null, data);
-                    },
-                    function(error){
-                        done(null, data);
-                    }
+                    function(result){done(null, data);},
+                    function(error){done(null, data);}
                 );
                     
             }else{
