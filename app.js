@@ -1,4 +1,5 @@
 var express = require('express');
+var helmet = require('helmet');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require('cors')
@@ -51,6 +52,8 @@ const arenaConfig = Arena({
 });
 
 var app = express();
+
+app.use(helmet());
 app.use(express.json({
   limit: '50mb'
 }));

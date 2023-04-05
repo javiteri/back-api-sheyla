@@ -157,6 +157,7 @@ async function createPDFSendFTP(jobData){
             await deleteFile(promiseCreatePDF.generatePath);
 
         }catch(exception){
+            console.log('error subiendo ride ftp');
             console.log(exception)
         }
 

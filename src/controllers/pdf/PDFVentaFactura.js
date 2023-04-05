@@ -139,20 +139,30 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
   let infoFactura = datosFactura['infoFactura'];
   let listDetalle = (datosFactura['detalles'].length == undefined)? [datosFactura['detalles']] : datosFactura['detalles'];
 
-  let totalImpuestos = infoFactura['totalConImpuestos'].totalImpuesto;
-  let valorSubtotal12 = 0.00;
-  let valorIva12 = '0.0';
-  let valorSubtotal0 = 0.00;
+  let totalImpuestos = [];
+  if(Array.isArray(infoFactura['totalConImpuestos'])){
+    totalImpuestos = infoFactura['totalConImpuestos'].totalImpuesto;
+  }else{
+    totalImpuestos = [infoFactura['totalConImpuestos'].totalImpuesto];
+  }
 
+  let valorSubtotal12 = 0.00;
+  let valorIva12 = 0.0;
+  let valorSubtotal0 = 0.00;
 
   let i;
   let invoiceTableTop = 390;
+
+  if(totalImpuestos.length > 1){
+    totalImpuestos = totalImpuestos[0];
+  }
 
   for(const impuesto of totalImpuestos){
     if(impuesto['codigoPorcentaje'] == '0'){
       valorSubtotal0 += Number(impuesto['baseImponible']);
     }else{
       valorSubtotal12 += Number(impuesto['baseImponible']);
+      valorIva12 += Number(impuesto['valor']);
     }
   }
 
@@ -171,7 +181,6 @@ async function generateInvoiceTablePdfByXmlData(doc, datosFactura){
     });
 
   }
-
 
   const table = {
     headers: [ 
@@ -274,14 +283,13 @@ async function generateFooterTablePDFXml(pdfDoc,datosFactura, yposition){
   ypositionzero = yposition;
   pdfDoc.font(fontBold).text('Informacion Adicional', 20, ypositionzero , {width: 250});
 
-  if(!(Array.isArray(datosFactura['infoAdicional']))){
+  if(!(Array.isArray(datosFactura['infoAdicional']['campoAdicional']))){
     infoAdicional = [infoAdicional];
   }
 
-
   infoAdicional.forEach((elemento, index) => {
     pdfDoc.font(fontNormal).text(`${elemento['$'].nombre}: ${elemento['_']}`, {width: 250});  
-  })
+  });
 
   pdfDoc.rect(pdfDoc.x - 10,yposition - 5,280, 90).stroke();
 
@@ -299,7 +307,6 @@ async function generateFooterTablePDFXml(pdfDoc,datosFactura, yposition){
   textInRowFirstValor(pdfDoc,'Valor', yValueNow + 10);
   textInRowFirstValorTotal(pdfDoc,formatCurrency(infoFactura.importeTotal, 2), yValueNow + 30)
   textInRowValorFormaPago(pdfDoc,getFormaPagoByCodigo(infoFactura['pagos']['pago'].formaPago),yValueNow + 30);
-  
 }
 
 function getFormaPagoByCodigo(codigoFormaPago){
