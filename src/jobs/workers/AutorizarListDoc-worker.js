@@ -13,13 +13,6 @@ module.exports = async(datosDocumento/*job, done*/) => {
     let estado = datosDocumento.estado;
     let nombreBd = datosDocumento.nombreBd;
 
-    /*let idEmp = job.data.idEmp;
-    let idVenta = job.data.id;
-    let identificacion = job.data.identificacion;
-    let tipoVenta = job.data.VENTA_TIPO;
-    let estado = job.data.estado;
-    let nombreBd = job.data.nombreBd;*/
-
     if(estado == 0){
         prepareAndSendDocumentoElectronicoAsync(idEmp, idVenta, identificacion, tipoVenta, nombreBd, done);
     }else {
@@ -378,19 +371,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                     }else{
                         baseImponibleIva0 += valorTotal;
                     }
-
-                    /*if(listVentaDetalle[i].ventad_iva == '12.00'){
-                        valorIva = (Number(valorTotal * 12) / 100);
-                    }else{
-                        valorIva = 0;
-                    }*/
-
-                    /*if(listVentaDetalle[i].ventad_iva == '12.00'){
-                        baseImponibleIva12 += valorTotal;
-                        valorIva12BI += valorIva;
-                    }else{
-                        baseImponibleIva0 += valorTotal;
-                    }*/
             }
 
             if(baseImponibleIva8 > 0){
@@ -434,11 +414,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                 }else{
                     valorIva = 0;
                 }
-                /*if(listVentaDetalle[i].ventad_iva == '12.00'){
-                    valorIva = (Number(valorTotal * 12) / 100);
-                }else{
-                    valorIva = 0;
-                }*/
 
                 detallesNode = detallesNode.ele('detalle').ele('codigoPrincipal',removeAccentDiactricsFromString(listVentaDetalle[i].prod_codigo)).up()
                 .ele('codigoAuxiliar',listVentaDetalle[i].prod_codigo).up().ele('descripcion',removeAccentDiactricsFromString(listVentaDetalle[i].prod_nombre)).up()
@@ -455,11 +430,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                 
                 detallesNode = detallesNode.ele('codigo','2').up();
 
-                /*if(listVentaDetalle[i].ventad_iva == '12.00'){
-                    detallesNode = detallesNode.ele('codigoPorcentaje','2').up()
-                }else{
-                    detallesNode = detallesNode.ele('codigoPorcentaje','0').up()
-                }*/
                 if(parseInt(listVentaDetalle[i].ventad_iva) == 12){
                     detallesNode = detallesNode.ele('codigoPorcentaje','2').up()
                 }else if(parseInt(listVentaDetalle[i].ventad_iva) == 8){
@@ -475,13 +445,8 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                 }else{
                     detallesNode = detallesNode.ele('tarifa','0').up()
                 }
-                /*if(listVentaDetalle[i].ventad_iva == '12.00'){
-                    detallesNode = detallesNode.ele('tarifa','12.00').up()
-                }else{
-                    detallesNode = detallesNode.ele('tarifa','0').up()
-                }*/
-                detallesNode = detallesNode.ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up().up();
 
+                detallesNode = detallesNode.ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up().up();
             }
          
             rootElement = rootElement.ele('infoAdicional');
