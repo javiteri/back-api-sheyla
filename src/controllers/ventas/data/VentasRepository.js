@@ -669,7 +669,7 @@ function createExcelFileListaVentas(idEmp,fechaIni,fechaFin,nombreOrCiRuc, noDoc
 
             let results = await pool.query(queryGetListaVentas, 
                         [idEmp, "%"+valueNombreClient+"%", "%"+valueCiRucClient+"%", "%"+noDoc, 
-                        fechaIni,fechaFin]); 
+                        fechaIni,fechaFin]);
                 
             const arrayData = Array.from(results[0]);
 
