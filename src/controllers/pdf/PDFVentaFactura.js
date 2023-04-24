@@ -1,4 +1,3 @@
-//const PDFDocument = require('pdfkit');
 const PDFDocument = require('pdfkit-table');
 const fs = require('fs');
 const util = require('util');
