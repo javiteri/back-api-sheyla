@@ -583,7 +583,7 @@ async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
     "",
     `Subtotal ${parseInt(valorIva)}%`,
     "",
-    formatCurrency(datosVenta[0].venta_subtotal_12, 2)
+    formatCurrency(datosVenta[0].venta_subtotal_12, 3)
   );
 
   const paidToDatePosition = subtotalPosition + 20;
@@ -594,7 +594,7 @@ async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
     "",
     "Subtotal 0%",
     "",
-    formatCurrency(datosVenta[0].venta_subtotal_0, 2)
+    formatCurrency(datosVenta[0].venta_subtotal_0, 3)
   );
 
   const duePosition = paidToDatePosition + 25;
@@ -607,7 +607,7 @@ async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
     "",
     "Subtotal Sin Impuestos",
     "",
-    formatCurrency(subtotalSinImpuestos, 2)
+    formatCurrency(subtotalSinImpuestos, 3)
   );
 
 
@@ -632,7 +632,7 @@ async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
     "",
     "Descuento",
     "",
-    formatCurrency(valorDescuentoSum, 2)
+    formatCurrency(valorDescuentoSum, 3)
   );
 
   const iva12Position = descuentoPosition + 25;
@@ -643,7 +643,7 @@ async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
     "",
     `IVA ${parseInt(valorIva)}%`,
     "",
-    formatCurrency(datosVenta[0].venta_valor_iva, 2)
+    formatCurrency(datosVenta[0].venta_valor_iva, 3)
   );
 
   const valorTotalPosition = iva12Position + 25;
@@ -654,7 +654,7 @@ async function generateInvoiceTable(valorIva, doc, datosVenta, datosCliente){
     "",
     "VALOR TOTAL",
     "",
-    formatCurrency(datosVenta[0].venta_total, 2)
+    formatCurrency(datosVenta[0].venta_total, 3)
   );
 
   doc.font("Helvetica");
