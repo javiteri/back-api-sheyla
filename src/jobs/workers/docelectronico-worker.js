@@ -185,6 +185,7 @@ async function createXMLSendFTP(stringXmlAutorizado, claveAcceso){
         s._readableState.buffer.clear();
         s._readableState.length = 0;
     }catch(exception){
+        console.log('error subiendo archimo XML FTP');
         console.log(exception)
     }
     

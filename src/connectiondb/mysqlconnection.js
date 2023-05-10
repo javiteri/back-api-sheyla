@@ -1,5 +1,4 @@
 const mysql = require('mysql2/promise');
-const util = require('util');
 
 const pool = mysql.createPool({
     connectionLimit: 30,
@@ -30,7 +29,5 @@ pool.getConnection((err, connection) => {
 
     return;
 });
-
-//pool.query = util.promisify(pool.query).bind(pool);
 
 module.exports = pool;

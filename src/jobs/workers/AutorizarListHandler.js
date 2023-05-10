@@ -6,7 +6,7 @@ const sharedFunctions = require('../../util/sharedfunctions');
 
 const {docElectronicoQueue} = require('../queue');
 
-exports.processDocumento = async (datosDocumento/*job, done*/) => {
+exports.processDocumento = async (datosDocumento) => {
     
     console.log('inside process documento');
 
@@ -18,15 +18,15 @@ exports.processDocumento = async (datosDocumento/*job, done*/) => {
     let nombreBd = datosDocumento.nombreBd;
 
     if(estado == 0){
-        prepareAndSendDocumentoElectronicoAsync(idEmp, idVenta, identificacion, tipoVenta, nombreBd/*, done*/);
+        prepareAndSendDocumentoElectronicoAsync(idEmp, idVenta, identificacion, tipoVenta, nombreBd);
     }else {
-        queryStateDocumentoElectronicoError(idEmp, idVenta, identificacion, tipoVenta, nombreBd/*, done*/);
+        queryStateDocumentoElectronicoError(idEmp, idVenta, identificacion, tipoVenta, nombreBd);
     }
 };
 
 
 //----------------------------------------------------------------
-async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,identificacion,tipo,nombreBd/*, done*/){
+async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,identificacion,tipo,nombreBd){
     // VERIFICAR SI ES UNA COMPRA O VENTA POR QUE DE ESO 
     // CONSULTAR Y OBTENER LOS DATOS DE - DATOS CLIENTE O PROVEEDOR
     // - DATOS DE LA VENTA - DATOS DETALLE DE LA VENTA O COMPRA
@@ -49,8 +49,8 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
         const responseDatosVentaDetalles = await pool.query(querySelectVentasDetalles, [idVentaCompra]);
         const responseDatosEstablecimiento = await pool.query(sqlQuerySelectDatosEstablecimiento, [idEmp, responseDatosVenta[0].venta_001]);
 
-        const valorGenerateXmlResponse = await generateXmlDocumentoElectronicoVenta(responseDatosCliente[0][0],responseDatosVenta[0][0],responseDatosVentaDetalles[0],
-                                                                                    responseDatosEmpresa[0][0],responseDatosConfig[0], responseDatosEstablecimiento[0]);
+        const valorGenerateXmlResponse = await generateXmlDocumentoElectronicoVenta(responseDatosCliente[0][0], responseDatosVenta[0][0], responseDatosVentaDetalles[0],
+                                                                                    responseDatosEmpresa[0][0], responseDatosConfig[0], responseDatosEstablecimiento[0]);
 
         const pathFile = valorGenerateXmlResponse.pathFile;
         const claveActivacion = valorGenerateXmlResponse.claveAct;
@@ -95,7 +95,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                     //DELETE XML FILE GENERATED
                     console.log('inside xml estado pendiente');
                     await deleteFile(pathFile);
-                    return; //done(null, null)
+                    return;
                 }
 
             }else{
@@ -117,7 +117,7 @@ async function prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra,iden
                     deleteFile(pathFile);
 
                     sendDataToWorkerAutorizacion(claveActivacion, responseSelectEmpresaAutorizacion[0][0].empresa_id, responseDatosEmpresa[0][0],
-                                                        responseDatosCliente[0][0], responseDatosVenta[0][0], nombreBd/*, done*/);
+                                                        responseDatosCliente[0][0], responseDatosVenta[0][0], nombreBd);
                 });
             }
         }
@@ -177,7 +177,7 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
         if(results[0].length <= 0){
             // no existe en la tabla autorizaciones
             //enviar otra vez el xml al servicio
-            prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo, nombreBd/*, done*/);
+            prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion, tipo, nombreBd);
             return{estado:'ok'};
         }else{
             // SE OBTENIENE EL ESTADO DE LA FACTURA EN LA TABLA AUTORIZACION
@@ -187,10 +187,10 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
 
             //2.-Error
             if(results[0][0].auto_estado == 2){
-                await poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion]);                     
+                await poolEFactra.query(queryUpdateFacAutorizacion,[claveActivacion]);
                 await pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra]);
                             
-                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo, nombreBd/*, done*/);
+                prepareAndSendDocumentoElectronicoAsync(idEmp, idVentaCompra, identificacion,tipo, nombreBd);
 
                 return{estado:'ok'}
             }else if(results[0][0].auto_estado == 1){
@@ -199,13 +199,13 @@ async function queryStateDocumentoElectronicoError(idEmp, idVentaCompra, identif
                 
                 //ENVIAR A  LA COLA PARA QUE GUARDE LOS DATOS DEL XML Y ENVIE POR CORREO
                 sendDataToWorkerAutorizacion(claveActivacion,results[0][0].auto_id_empresa,datosEmpresa,
-                                                datosCliente,datosVenta,nombreBd/*, done*/)
+                                                datosCliente,datosVenta,nombreBd)
                 return{estado:'ok'}
             }else if(results[0][0].auto_estado == 0){
                 await pool.query(queryUpdateVentaEstado,[0,'En Espera...',idVentaCompra]);
 
                 sendDataToWorkerAutorizacion(claveActivacion,results[0][0].auto_id_empresa,datosEmpresa,
-                                            datosCliente,datosVenta,nombreBd/*, done*/)
+                                            datosCliente,datosVenta,nombreBd)
 
                 return{estado:'ok'}
             }
@@ -231,7 +231,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
 
             if(datosConfig && datosConfig.length > 0){
                 datosConfig.forEach((element) => {
-                    
                     if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
                         if(element.con_valor.trim().toUpperCase() != 'NO'){
                             contribuyenteEspecial = element.con_valor;
@@ -250,7 +249,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                     }
                 });
             }
-                    
+            
             const dateVenta = new Date(datosVenta.venta_fecha_hora);
             const dayVenta = dateVenta.getDate().toString().padStart(2,'0');
             const monthVenta = (dateVenta.getMonth() + 1).toString().padStart(2,'0');
@@ -281,7 +280,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             let totalDescuento = 0.00;
             let valorIva = Number(datosVenta.venta_valor_iva);
             let valorTotal = Number(datosVenta.venta_total);
-            let codigoFormaPago = getCodigoFormaPago(datosVenta.venta_forma_pago);    
+            let codigoFormaPago = getCodigoFormaPago(datosVenta.venta_forma_pago);
             
             try{
                 Array.from(listVentaDetalle).map((valor) => {
@@ -307,7 +306,7 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
             if(responseDatosEstablecimiento[0]){
                 rootElement = rootElement.ele('nombreComercial', removeAccentDiactricsFromString(responseDatosEstablecimiento[0].cone_nombre_establecimiento)).up();
             }
-            //rootElement.ele('nombreComercial','Prueba 2').up()
+            
             rootElement = rootElement.ele('ruc',rucEmpresa).up()
                                     .ele('claveAcceso',claveActivacion).up().ele('codDoc',codigoDocmento).up()
                                     .ele('estab',datosVenta.venta_001).up().ele('ptoEmi',datosVenta.venta_002).up().ele('secuencial',secuencial).up()
@@ -458,7 +457,6 @@ function generateXmlDocumentoElectronicoVenta(datosCliente, datosVenta, listVent
                 }
                 
                 detallesNode = detallesNode.ele('baseImponible',valorTotal.toFixed(2)).up().ele('valor',valorIva.toFixed(2)).up().up().up().up();
-
             }
          
             rootElement = rootElement.ele('infoAdicional');
@@ -617,7 +615,6 @@ async function sendDataToWorkerAutorizacion(claveActivacion, empresaId, datosEmp
             delay: 15000
         }
     });
-    //done(null, objSendJob);
 }
 
 const deleteFile = async (filePath) => {
