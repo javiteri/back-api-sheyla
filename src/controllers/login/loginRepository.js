@@ -476,21 +476,18 @@ exports.recoveryPasswordByRucAndEmail = function(ruc, email){
                             params = [ruc,email];
 
                             let results = await poolMysql.query(querySelectEmpresa, params);
-                            
-                            let idEmpresa = results[0][0].EMP_ID;
-                                /*Object.keys(results).forEach(function(key) {
-                                    idEmpresa = results[key].EMP_ID;
-                                });*/
-    
-                            if(results.length === 0 ){
+
+                            if(results[0].length === 0 ){
                                 resolve({
                                     isSucess: false,
                                     existEmpresa: false
                                 });
                                 return;
                             }
-                                
-                            let result = poolMysql.query(queryUser,[idEmpresa]);
+
+                            let idEmpresa = results[0][0].EMP_ID;
+    
+                            let result = await poolMysql.query(queryUser,[idEmpresa]);
                            
                             if(!result[0] && result[0].length === 0 ){
                                 resolve({
