@@ -414,6 +414,7 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
         });
     }
 
+    
     let pathImagen = '';
     if(responseDatosEstablecimiento[0]){
       pathImagen = await getImagenByRucEmp(`${datosEmpresa[0]['EMP_RUC']}${responseDatosEstablecimiento[0].cone_establecimiento}`);
@@ -863,11 +864,13 @@ async function getImagenByRucEmp(rucEmp){
         return (response.code == 505) ? '' : `${path}/${rucEmp}.${extensionRemoteFile}`;
         
     }catch(ex){
+      console.log('dentro de error ');
         client.close();
         //console.log(ex);
         return '';
     }
   }catch(error){
+    console.log('dentro de error ');
     return '';
   }
 
