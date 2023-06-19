@@ -78,6 +78,7 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
                             if(error){
                                 console.log('inside error');
                                 console.log(error);
+                                return;
                             }
 
                             sendFileLogoToFtp(`${path}/${ruc}.${extensionFile}`, `${ruc}.${extensionFile}`);
@@ -98,7 +99,7 @@ exports.updateDatosEmpresa = async function (datosEmpresa){
                 }
             }
 
-            queryInsertDatosEmpresa = ` UPDATE ${nombreBd}.empresas SET EMP_NOMBRE = ?, EMP_RAZON_SOCIAL = ?, EMP_FECHA_INICIO = ?, EMP_SLOGAN = ?, 
+            queryInsertDatosEmpresa = `UPDATE ${nombreBd}.empresas SET EMP_NOMBRE = ?, EMP_RAZON_SOCIAL = ?, EMP_FECHA_INICIO = ?, EMP_SLOGAN = ?, 
                                             EMP_WEB = ?, EMP_MAIL = ?, EMP_TELEFONOS = ?, EMP_DIRECCION_MATRIZ = ?, EMP_DIRECCION_SUCURSAL1 = ?,
                                             EMP_DIRECCION_SUCURSAL2 = ?, EMP_DIRECCION_SUCURSAL3 = ?, EMP_PROPIETARIO = ?,
                                             EMP_COMENTARIOS = ? WHERE EMP_ID = ? `;
@@ -136,9 +137,8 @@ async function sendFileLogoToFtp(pathFile, nombrePdf){
             password: "m10101418M"
         })
         const response = await client.uploadFrom(pathFile,`logos/${nombrePdf}` );
-        console.log(response);
     }catch(exception){
-        console.log(err)
+        console.log(exception)
     }
 
     client.close()
@@ -161,7 +161,7 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
             fs.mkdir(`${path}`,{recursive: true}, async (err) => {
                 if (err) {
                      // Si existe un error, comprueba si se debe a que el directorio ya existe
-                     if(!err.code === 'EEXIST'){ 
+                     if(err.code !== 'EEXIST'){ 
                         reject('error al crear directorio: ' + err);
                         return;
                     }
@@ -189,7 +189,6 @@ exports.getImagenLogoByRucEmp = function(rucEmp){
                 isSucess: false,
                 message: 'ocurrio un error obteniendo logo'
             });
-
         }
 
     });

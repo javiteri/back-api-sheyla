@@ -44,61 +44,6 @@ router.post('/login', async (req, res, next) => {
     }
 );
 
-router.post('/loginverify', async (req, res, next) => {
-
-    const {ruc, user, password} = req.body;
-
-    const resultValidate = loginRepository.loginValidateExistEmpresaRucBd1(ruc);    
-
-    resultValidate.then(
-        function(result){
-
-            if(result.isFacturacionAvailable){
-
-                const validateUserAndBusiness = loginRepository.loginValidateEmpresaAndUser(ruc, user, password);
-                validateUserAndBusiness.then(
-                    function(response){
-
-                        const body = {_id: response.rucEmpresa, username: response.idUsuario};
-                            
-                        const token = jwt.sign({
-                                user: body,
-                        }, secretkey/*process.env.SECRECT_KEY_HASH*/, {expiresIn: 43200});//seconds = 12 horas
-
-
-                        response["token"] = token;
-                        response["expire"] = 43200
-                        
-                        res.status(200).send(response);
-
-                    },
-                    function(error){
-                        res.send({
-                            'error': error
-                        });
-                        return;
-                    }
-                )
-
-            }else{
-                res.status(200).send({
-                    isSuccess: true,
-                    error : 'no tiene facturacion disponible'
-                });
-            }
-
-            
-        },
-        function(error){
-  
-            res.status(200).send({
-                isSuccess: true,
-                error: 'no existe empresa'
-            });
-        }
-    );
-    
-});
 
 router.post('/loginverify2', async (req, res, next) => {
 
