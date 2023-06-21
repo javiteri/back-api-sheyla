@@ -387,34 +387,32 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     }
   }
 
-    let contribuyenteEspecial = '';
-    let obligadoContabilidad = false;
-    let perteneceRegimenRimpe = false;
-    let agenteDeRetencion = '';
+  let contribuyenteEspecial = '';
+  let obligadoContabilidad = false;
+  let perteneceRegimenRimpe = false;
+  let agenteDeRetencion = '';
 
-    if(datosConfig && datosConfig.length > 0){
-        datosConfig.forEach((element) => {
-            
-            if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
-              if(element.con_valor.trim().toUpperCase() != 'NO'){
-                contribuyenteEspecial = element.con_valor;
-              }
-            }
-            if(element.con_nombre_config == 'FAC_ELECTRONICA_OBLIGADO_LLEVAR_CONTABILIDAD'){
-                obligadoContabilidad = element.con_valor === '1';
-            }
-            if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
-              if(element.con_valor.trim().toUpperCase() != 'NO'){
-                agenteDeRetencion = element.con_valor;
-              }
-            }
-            if(element.con_nombre_config == 'FAC_ELECTRONICA_PERTENECE_REGIMEN_RIMPE'){
-                perteneceRegimenRimpe = element.con_valor === '1';
-            }
-        });
-    }
+  if(datosConfig && datosConfig.length > 0){
+    datosConfig.forEach((element) => {
+        if(element.con_nombre_config == 'FAC_ELECTRONICA_CONTRIBUYENTE_ESPECIAL'){
+          if(element.con_valor.trim().toUpperCase() != 'NO'){
+            contribuyenteEspecial = element.con_valor;
+          }
+        }
+        if(element.con_nombre_config == 'FAC_ELECTRONICA_OBLIGADO_LLEVAR_CONTABILIDAD'){
+            obligadoContabilidad = element.con_valor === '1';
+        }
+        if(element.con_nombre_config == 'FAC_ELECTRONICA_AGENTE_RETENCION'){
+          if(element.con_valor.trim().toUpperCase() != 'NO'){
+            agenteDeRetencion = element.con_valor;
+          }
+        }
+        if(element.con_nombre_config == 'FAC_ELECTRONICA_PERTENECE_REGIMEN_RIMPE'){
+            perteneceRegimenRimpe = element.con_valor === '1';
+        }
+    });
+  }
 
-    
     let pathImagen = '';
     if(responseDatosEstablecimiento[0]){
       pathImagen = await getImagenByRucEmp(`${datosEmpresa[0]['EMP_RUC']}${responseDatosEstablecimiento[0].cone_establecimiento}`);
@@ -447,9 +445,6 @@ async function generateHeaderPDF(pdfDoc, datosEmpresa, datosCliente, datosVenta,
     if(responseDatosEstablecimiento[0]){
       pdfDoc.text(`DIRECCIÓN SUCURSAL: ${responseDatosEstablecimiento[0]['cone_direccion_sucursal']}`, {width: 250});
     }
-    /*if(!(datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1'] === '')){
-      pdfDoc.text(`DIRECCIÓN SUCURSAL: ${datosEmpresa[0]['EMP_DIRECCION_SUCURSAL1']}`, {width: 250});
-    }*/
 
     if(!(contribuyenteEspecial === '')){
       pdfDoc.text(`Contribuyente Especial Nro: ${contribuyenteEspecial}`, 20, 230,{width: 250});
@@ -778,8 +773,6 @@ function generateTableRow(
     quantity,
     lineTotal
   ) {
-    //let descriptionCut = (description.length > 60)? description.slice(0,59)  : description;
-    
     doc
       .fontSize(9)
       .text(item, 20, y)

@@ -4,7 +4,7 @@ const httpClient = require('http');
 const ftp = require("basic-ftp");
 const Readable = require('stream').Readable;
 const documentosElectronicosRepository = require('../../controllers/documentos-electronicos/data/DocumentosElectronicosRepository');
-const {deleteFile} = require('../../util/sharedfunctions');
+const { deleteFile} = require('../../util/sharedfunctions');
 
 
 module.exports = async (job, done) => {
@@ -39,9 +39,8 @@ module.exports = async (job, done) => {
             return done(new Error('Aun sin Respuesta'));
         }
 
-        // si el mensje indica qe fue atorizado significa que todo salio bien caso contrario 
+        // si el mensje indica que fue atorizado significa que todo salio bien caso contrario 
         // caso contrario guardar un estado dew error y el mensaje que tenga 
-        //let valorMensaje = resultMensaje[0].auto_mensaje;
         let valorAutoEstado = resultMensaje[0][0].auto_estado;
 
         let valorMensajeElectronica = '';
@@ -100,7 +99,6 @@ module.exports = async (job, done) => {
     }catch(exception){
         console.log(exception);
         done(null);
-        //done(exception);
     }
 };
 
@@ -162,7 +160,6 @@ async function createPDFSendFTP(jobData){
         }
 
         client.close()
-
     }
 
 }
@@ -268,7 +265,6 @@ function updateEstadoVentaDocumentoElectronico(estado,mensaje,ventaId, nombreBd)
             reject('error actalizando estado venta');
         }
     });
-
 }
 
 //UPDATE IN ONE PLAN ENVIADOS DOCUMENTO

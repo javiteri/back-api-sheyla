@@ -6,9 +6,6 @@ const pdfGenerator = require('../../pdf/PDFGenerator');
 const sharedFunctions = require('../../../util/sharedfunctions');
 const { processDocumento } = require('../../../jobs/workers/AutorizarListHandler');
 
-//const {docElectronicoQueue} = require('../../../jobs/queue');
-//const {docElectronicosValidarQueue} = require('../../../jobs/queue');
-
 const codDoc = [
     {
         nombre: 'Factura',
@@ -92,7 +89,6 @@ exports.autorizarListDocumentos = async(listDoc, nombreBd) => {
                 }
 
                 processDocumento(objSendJob);
-
             }
             
             resolve({
@@ -227,83 +223,72 @@ function createExcelDocumentosElectronicos(datosFiltro){
                             "%"+valueCiRucClient+"%", fechaIni, fechaFin,"%"+nodoc+"%", idEmp,"%"+tipo,
                             fechaIni,fechaFin,"%"+valueNombreClient+"%","%"+valueCiRucClient+"%","%"+nodoc+"%"]);
 
-                const arrayData = Array.from(results[0]);
-                const workBook = new excelJS.Workbook(); // Create a new workbook
-                const worksheet = workBook.addWorksheet("Lista Documentos Electronicos");
-                const path = `./files/${idEmp}`;
+            const arrayData = Array.from(results[0]);
+            const workBook = new excelJS.Workbook(); // Create a new workbook
+            const worksheet = workBook.addWorksheet("Lista Documentos Electronicos");
+            const path = `./files/${idEmp}`;
 
-                worksheet.columns = [
-                    {header: 'Fecha', key:'fecha', width: 20},
-                    {header: 'No. Factura', key:'numerofactura',width: 30},
-                    {header: 'Cliente', key:'cliente',width: 50},
-                    {header: 'CI/RUC', key:'identificacion',width: 20},
-                    {header: 'Forma de Pago', key:'formapago',width: 30},
-                    {header: 'Estado', key:'estado',width: 30},
-                    {header: 'Clave de Acceso', key:'claveacceso',width: 50}
-                ];
+            worksheet.columns = [
+                {header: 'Fecha', key:'fecha', width: 20},
+                {header: 'No. Factura', key:'numerofactura',width: 30},
+                {header: 'Cliente', key:'cliente',width: 50},
+                {header: 'CI/RUC', key:'identificacion',width: 20},
+                {header: 'Forma de Pago', key:'formapago',width: 30},
+                {header: 'Estado', key:'estado',width: 30},
+                {header: 'Clave de Acceso', key:'claveacceso',width: 50}
+            ];
             
-                arrayData.forEach(valor => {
+            arrayData.forEach(valor => {
+                const now = new Date(valor.fecha);
+                const dayVenta = now.getDate().toString().padStart(2,'0');
+                const monthVenta = (now.getMonth() + 1).toString().padStart(2,'0');
+                const yearVenta = now.getFullYear().toString();
 
-                    const now = new Date(valor.fecha);
-                    const dayVenta = now.getDate().toString().padStart(2,'0');
-                    const monthVenta = (now.getMonth() + 1).toString().padStart(2,'0');
-                    const yearVenta = now.getFullYear().toString();
-
-                    let dateString = `${dayVenta}/${monthVenta}/${yearVenta}`;
-                    let rucEmpresa = rucEmp;
-                    let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(valor.VENTA_TIPO); //getTipoComprobanteVenta(valor.VENTA_TIPO);
-                    let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
-                    let serie = `${valor.venta_001}${valor.venta_002}`;
-                    let codigoNumerico = '12174565';
-                    let secuencial = (valor.venta_numero).padStart(9,'0');
-                    let tipoEmision = 1;
+                let dateString = `${dayVenta}/${monthVenta}/${yearVenta}`;
+                let rucEmpresa = rucEmp;
+                let tipoComprobanteFactura = sharedFunctions.getTipoComprobanteVenta(valor.VENTA_TIPO); //getTipoComprobanteVenta(valor.VENTA_TIPO);
+                let tipoAmbiente = '2';//PRODUCCION //PRUEBAS '1    '
+                let serie = `${valor.venta_001}${valor.venta_002}`;
+                let codigoNumerico = '12174565';
+                let secuencial = (valor.venta_numero).padStart(9,'0');
+                let tipoEmision = 1;
                                                            
-                    let digit48 = `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
+                let digit48 = `${dayVenta}${monthVenta}${yearVenta}${tipoComprobanteFactura}${rucEmpresa}${tipoAmbiente}${serie}${secuencial}${codigoNumerico}${tipoEmision}`;
                                                 
-                    //let claveAcceso = modulo11(digit48);
-                    let claveAcceso = sharedFunctions.modulo11(digit48);
+                let claveAcceso = sharedFunctions.modulo11(digit48);
 
-                    let valorInsert = {
-                        fecha: dateString,
-                        numerofactura: valor.numeroFactura,
-                        cliente: valor.cliente,
-                        identificacion: valor.identificacion,
-                        formapago: valor.formaPago,
-                        estado: valor.estado,
-                        claveacceso: claveAcceso,
-                    }
-                    worksheet.addRow(valorInsert);
-                });
+                let valorInsert = {
+                    fecha: dateString,
+                    numerofactura: valor.numeroFactura,
+                    cliente: valor.cliente,
+                    identificacion: valor.identificacion,
+                    formapago: valor.formaPago,
+                    estado: valor.estado,
+                    claveacceso: claveAcceso,
+                }
+                worksheet.addRow(valorInsert);
+            });
 
-                // Making first line in excel
-                worksheet.getRow(1).eachCell((cell) => {
-                    cell.font = {bold: true},
-                    cell.border = {
-                        top: {style:'thin'},
-                        left: {style:'thin'},
-                        bottom: {style:'thin'},
-                        right: {style:'thin'}
-                    }
-                });
+            // Making first line in excel
+            worksheet.getRow(1).eachCell((cell) => {
+                cell.font = {bold: true},
+                cell.border = {
+                    top: {style:'thin'},
+                    left: {style:'thin'},
+                    bottom: {style:'thin'},
+                    right: {style:'thin'}
+                }
+            });
 
-                try{
-                    const nameFile = `/${Date.now()}_doc_electronicos.xlsx`;
-                    
-                    if(!fs.existsSync(`${path}`)){
-                        fs.mkdir(`${path}`,{recursive: true}, (err) => {
-                            if (err) {
-                                return console.error(err);
-                            }
-            
-                            workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
-                                resolve({
-                                    isSucess: true,
-                                    message: 'archivo creado correctamente',
-                                    pathFile: `${path}${nameFile}`
-                                });
-                            });
-                        });
-                    }else{
+            try{
+                const nameFile = `/${Date.now()}_doc_electronicos.xlsx`;
+                
+                if(!fs.existsSync(`${path}`)){
+                    fs.mkdir(`${path}`,{recursive: true}, (err) => {
+                        if (err) {
+                            return console.error(err);
+                        }
+        
                         workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
                             resolve({
                                 isSucess: true,
@@ -311,13 +296,22 @@ function createExcelDocumentosElectronicos(datosFiltro){
                                 pathFile: `${path}${nameFile}`
                             });
                         });
-                    }
-                }catch(error){
-                    reject({
-                        isSucess: false,
-                        error: 'error creando archivo, reintente'
                     });
-                }          
+                }else{
+                    workBook.xlsx.writeFile(`${path}${nameFile}`).then(() => {
+                        resolve({
+                            isSucess: true,
+                            message: 'archivo creado correctamente',
+                            pathFile: `${path}${nameFile}`
+                        });
+                    });
+                }
+            }catch(error){
+                reject({
+                    isSucess: false,
+                    error: 'error creando archivo, reintente'
+                });
+            }
         }catch(exception){
             reject({
                 isSucess: false,
@@ -341,7 +335,6 @@ exports.generateDownloadPdfFromVenta = (idEmp, idVentaCompra, identificacionClie
         const sqlQuerySelectDatosEstablecimiento = `SELECT * FROM ${nombreBd}.config_establecimientos WHERE cone_empresa_id = ? AND cone_establecimiento = ? LIMIT 1`;
 
         try{
-
             // const responseConfigValorIva = await pool.query(queryValorIvaEmp, [idEmp, '%FACTURA_VALORIVA%']);
             const responseDatosConfig = await pool.query(querySelectConfigFactElectr, [idEmp,'FAC_ELECTRONICA%']);
             const responseDatosEmpresa = await pool.query(sqlQuerySelectEmp,[idEmp]);

@@ -1,5 +1,5 @@
 const Queue = require('bull');
-const {docElectronicoworker} = require('./workers');
+const { docElectronicoworker } = require('./workers');
 
 const docElectronicoQueue = new Queue('docelectronicos');
 
