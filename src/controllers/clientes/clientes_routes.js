@@ -1,6 +1,6 @@
 let express = require('express');
 let router = express.Router();
-const {deleteFile} = require('../../util/sharedfunctions');
+const { deleteFile } = require('../../util/sharedfunctions');
 const clienteRepository = require('./data/clienterepository')
 
 

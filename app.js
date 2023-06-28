@@ -25,6 +25,8 @@ const dashboardRoter = require('./src/controllers/dashboard/dashboard_routes');
 const documentosElectronicosRouter = require('./src/controllers/documentos-electronicos/documentos_electronicos_routes');
 const establecimientosRouter = require('./src/controllers/establecimientos/establecimientos_routes');
 const proformasRouter = require('./src/controllers/proformas/proformas_routes');
+const paymentsRouter = require('./src/controllers/payments/payments_routes');
+
 
 const Arena = require('bull-arena');
 const Bull = require('bull');
@@ -84,6 +86,7 @@ app.use('/api/dashboard', passport.authenticate('jwt',{session: false}), dashboa
 app.use('/api/documentos_electronicos', passport.authenticate('jwt',{session: false}), documentosElectronicosRouter);
 app.use('/api/establecimientos', passport.authenticate('jwt',{session: false}), establecimientosRouter);
 app.use('/api/proformas', passport.authenticate('jwt',{session: false}), proformasRouter);
+app.use('/api/payments', passport.authenticate('jwt', { session: false}), paymentsRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
