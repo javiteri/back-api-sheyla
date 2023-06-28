@@ -8,17 +8,13 @@ const loginRepository = require('./loginRepository')
 const secretkey = process.env.SECRET_KEY_HASH;
 
 router.post('/login', async (req, res, next) => {
-
         passport.authenticate('login', async (err, user, info) => {
                 try{
                     if(err || !user){
                         return res.send(info.message) 
                     }
                 
-                    req.login(
-                        user,
-                        {session: false},
-                        async (error) => {
+                    req.login(user, {session: false}, async (error) => {
                             if(error) return next(error);
                         
                             const body = {_id: user.cedula, username: user.username};
@@ -39,8 +35,7 @@ router.post('/login', async (req, res, next) => {
             }
         )
         (req, res, next)
-        
-        //res.send('login terminado')
+    
     }
 );
 

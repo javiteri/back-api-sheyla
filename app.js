@@ -57,14 +57,14 @@ var app = express();
 
 app.use(helmet());
 app.use(express.json({
-  limit: '50mb'
+  limit: '20mb'
 }));
 // Make arena's resources (js/css deps) available at the base app route
 app.use('/', arenaConfig);
 app.use(cors());
 
 app.use(logger('dev'));
-app.use('/api/configsfile',passport.authenticate('jwt',{session: false}), fileConfigsRouter);
+app.use('/api/configsfile', passport.authenticate('jwt',{session: false}), fileConfigsRouter);
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
